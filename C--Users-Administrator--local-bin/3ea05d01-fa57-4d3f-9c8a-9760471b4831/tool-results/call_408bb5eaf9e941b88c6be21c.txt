@@ -1,0 +1,43 @@
+     1→{
+     2→  "pages": [
+     3→    "pages/index/index",
+     4→    "pages/partner/partner",
+     5→    "pages/statistics/statistics",
+     6→    "pages/ranking/ranking"
+     7→  ],
+     8→  "tabBar": {
+     9→    "color": "#999999",
+    10→    "selectedColor": "#07C160",
+    11→    "backgroundColor": "#ffffff",
+    12→    "borderStyle": "black",
+    13→    "list": [
+    14→      {
+    15→        "pagePath": "pages/index/index",
+    16→        "text": "我的打卡"
+    17→      },
+    18→      {
+    19→        "pagePath": "pages/partner/partner",
+    20→        "text": "搭档打卡"
+    21→      }
+    22→    ]
+    23→  },
+    24→  "window": {
+    25→    "navigationBarTitleText": "每日打卡",
+    26→    "navigationBarBackgroundColor": "#07C160",
+    27→    "navigationBarTextStyle": "white",
+    28→    "backgroundColor": "#f7f7f7"
+    29→  },
+    30→  "permission": {
+    31→    "scope.userLocation": {
+    32→      "desc": "你的位置信息将用于打卡定位"
+    33→    }
+    34→  },
+    35→  "sitemapLocation": "sitemap.json",
+    36→  "style": "v2",
+    37→  "lazyCodeLoading": "requiredComponents"
+    38→}
+    39→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

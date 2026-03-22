@@ -1,0 +1,27 @@
+The file C:\Users\Administrator\.local\bin\clockin-app\pages\index\index.wxml has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+    55→      <text class="add-text">添加事项</text>
+    56→    </view>
+    57→  </view>
+    58→
+    59→  <!-- 打卡按钮区域 -->
+    60→  <view class="clockin-section">
+    61→    <view class="clockin-btn-wrapper">
+    62→      <button
+    63→        class="clockin-btn {{canClockIn === false ? 'disabled' : ''}} {{checkedCount === totalCount && totalCount > 0 ? 'completed' : ''}}"
+    64→        bindtap="handleClockIn"
+    65→        disabled="{{canClockIn === false}}"
+    66→      >
+    67→        <text class="clockin-icon">{{canClockIn ? (checkedCount === totalCount && totalCount > 0 ? '✓' : '') : '✓'}}</text>
+    68→        <text class="clockin-text">{{canClockIn ? (checkedCount === totalCount && totalCount > 0 ? '今日完成' : '打卡') : '已打卡'}}</text>
+    69→      </button>
+    70→      <text class="clockin-time">{{currentTime}}</text>
+    71→    </view>
+    72→    <view class="location-text" wx:if="{{location}}">
+    73→      <text class="location-icon">📍</text>
+    74→      <text>{{location}}</text>
+    75→    </view>
+    76→  </view>
+    77→
+    78→  <!-- 今日状态 -->
+    79→  <view class="status-card card" wx:if="{{todayRecord}}">
+    80→    <view class="status-header">

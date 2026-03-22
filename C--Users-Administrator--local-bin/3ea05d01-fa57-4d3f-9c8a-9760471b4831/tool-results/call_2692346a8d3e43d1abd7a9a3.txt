@@ -1,0 +1,123 @@
+     1→<!--pages/statistics/statistics.wxml-->
+     2→<view class="container">
+     3→  <!-- 统计卡片 -->
+     4→  <view class="stats-card">
+     5→    <view class="stat-item">
+     6→      <text class="stat-value">{{totalDays}}</text>
+     7→      <text class="stat-label">累计打卡</text>
+     8→    </view>
+     9→    <view class="stat-divider"></view>
+    10→    <view class="stat-item">
+    11→      <text class="stat-value">{{streakDays}}</text>
+    12→      <text class="stat-label">连续打卡</text>
+    13→    </view>
+    14→    <view class="stat-divider"></view>
+    15→    <view class="stat-item">
+    16→      <text class="stat-value">{{maxStreakDays}}</text>
+    17→      <text class="stat-label">最长连续</text>
+    18→    </view>
+    19→  </view>
+    20→
+    21→  <!-- 打卡日历 -->
+    22→  <view class="calendar-section card">
+    23→    <view class="calendar-header">
+    24→      <text class="calendar-title">{{currentYear}}年{{currentMonth}}月</text>
+    25→      <view class="calendar-nav">
+    26→        <text class="nav-btn" bindtap="prevMonth">&lt;</text>
+    27→        <text class="nav-btn" bindtap="nextMonth">&gt;</text>
+    28→      </view>
+    29→    </view>
+    30→    <view class="calendar-weekdays">
+    31→      <text class="weekday" wx:for="{{weekdays}}" wx:key="index">{{item}}</text>
+    32→    </view>
+    33→    <view class="calendar-days">
+    34→      <view
+    35→        class="day-item {{item.checked ? 'checked' : ''}} {{item.today ? 'today' : ''}} {{item.future ? 'future' : ''}}"
+    36→        wx:for="{{calendarDays}}"
+    37→        wx:key="date"
+    38→        bindtap="onDayClick"
+    39→        data-date="{{item.date}}"
+    40→      >
+    41→        <text class="day-num">{{item.day}}</text>
+    42→        <text class="day-count" wx:if="{{item.checked && item.completedCount > 0}}">{{item.completedCount}}</text>
+    43→      </view>
+    44→    </view>
+    45→  </view>
+    46→
+    47→  <!-- 日历详情弹窗 -->
+    48→  <view class="dialog-mask" wx:if="{{showDayDetail}}" bindtap="hideDayDetail">
+    49→    <view class="dialog-content day-detail" catchtap="true">
+    50→      <view class="dialog-header">
+    51→        <text class="dialog-title">{{selectedDate}} 详情</text>
+    52→        <text class="dialog-close" bindtap="hideDayDetail">✕</text>
+    53→      </view>
+    54→      <view class="dialog-body">
+    55→        <view class="day-status" wx:if="{{dayDetail}}">
+    56→          <view class="status-badge {{dayDetail.isComplete ? 'success' : 'warning'}}">
+    57→            {{dayDetail.isComplete ? '全部完成' : '部分完成'}}
+    58→          </view>
+    59→          <text class="completed-text">{{dayDetail.completedCount || 0}}/{{dayDetail.totalCount || 0}}</text>
+    60→        </view>
+    61→        <view class="completed-items" wx:if="{{dayDetail && dayDetail.items && dayDetail.items.length > 0}}">
+    62→          <text class="items-label">已完成事项：</text>
+    63→          <view class="items-list">
+    64→            <text class="item-tag" wx:for="{{dayDetail.items}}" wx:key="id" wx:for-item="subItem">{{subItem.name}}</text>
+    65→          </view>
+    66→        </view>
+    67→        <view class="no-record" wx:if="{{!dayDetail}}">
+    68→          <text>当天无打卡记录</text>
+    69→        </view>
+    70→      </view>
+    71→    </view>
+    72→  </view>
+    73→
+    74→  <!-- 月度统计 -->
+    75→  <view class="month-stats card">
+    76→    <view class="stat-title">本月统计</view>
+    77→    <view class="stat-row">
+    78→      <text class="stat-label">本月打卡</text>
+    79→      <text class="stat-value">{{monthDays}} 天</text>
+    80→    </view>
+    81→    <view class="stat-row">
+    82→      <text class="stat-label">本月遗漏</text>
+    83→      <text class="stat-value">{{missedDays}} 天</text>
+    84→    </view>
+    85→    <view class="stat-row">
+    86→      <text class="stat-label">打卡率</text>
+    87→      <text class="stat-value text-primary">{{monthRate}}%</text>
+    88→    </view>
+    89→  </view>
+    90→
+    91→  <!-- 全部记录 -->
+    92→  <view class="records-section">
+    93→    <view class="section-header">
+    94→      <text class="section-title">全部打卡记录</text>
+    95→    </view>
+    96→    <view class="records-list card">
+    97→      <view class="record-item" wx:for="{{allRecords}}" wx:key="id">
+    98→        <view class="record-date">
+    99→          <text class="date-day">{{item.day}}</text>
+   100→          <text class="date-month">{{item.month}}</text>
+   101→        </view>
+   102→        <view class="record-info">
+   103→          <text class="record-time">{{item.time}}</text>
+   104→          <text class="record-completed">完成 {{item.completedCount || 0}}/{{item.totalCount || 0}}</text>
+   105→          <view class="record-items" wx:if="{{item.items && item.items.length > 0}}">
+   106→            <text class="record-item-tag" wx:for="{{item.items}}" wx:key="id" wx:for-item="subItem">{{subItem.name}}</text>
+   107→          </view>
+   108→        </view>
+   109→        <view class="record-status">
+   110→          <view class="status-dot {{item.isComplete ? 'success' : 'warning'}}"></view>
+   111→        </view>
+   112→      </view>
+   113→      <view class="empty-tip" wx:if="{{allRecords.length === 0}}">
+   114→        <text>暂无打卡记录</text>
+   115→      </view>
+   116→    </view>
+   117→  </view>
+   118→</view>
+   119→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

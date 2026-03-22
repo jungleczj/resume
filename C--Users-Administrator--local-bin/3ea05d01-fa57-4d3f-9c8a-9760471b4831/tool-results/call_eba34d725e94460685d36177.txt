@@ -1,0 +1,13 @@
+total 27
+drwxr-xr-x 1 Administrator 197121    0  1月 19 15:28 .
+drwxr-xr-x 1 Administrator 197121    0  1月 19 11:09 ..
+-rw-r--r-- 1 Administrator 197121 1647  1月 19 11:11 app.js
+-rw-r--r-- 1 Administrator 197121  870  1月 19 15:28 app.json
+-rw-r--r-- 1 Administrator 197121 1382  1月 19 11:11 app.wxss
+drwxr-xr-x 1 Administrator 197121    0  1月 19 11:09 assets
+drwxr-xr-x 1 Administrator 197121    0  1月 19 11:09 pages
+-rw-r--r-- 1 Administrator 197121  526  1月 19 15:20 project.config.json
+-rw-r--r-- 1 Administrator 197121  328  1月 19 15:18 project.private.config.json
+-rw-r--r-- 1 Administrator 197121 5509  1月 19 11:30 README.md
+-rw-r--r-- 1 Administrator 197121  196  1月 19 11:11 sitemap.json
+drwxr-xr-x 1 Administrator 197121    0  1月 19 15:48 utils

@@ -1,0 +1,154 @@
+     1→<!--pages/index/index.wxml-->
+     2→<view class="container">
+     3→  <!-- 顶部统计卡片 -->
+     4→  <view class="stats-card">
+     5→    <view class="stat-item">
+     6→      <text class="stat-value">{{totalDays}}</text>
+     7→      <text class="stat-label">累计打卡</text>
+     8→    </view>
+     9→    <view class="stat-divider"></view>
+    10→    <view class="stat-item">
+    11→      <text class="stat-value">{{streakDays}}</text>
+    12→      <text class="stat-label">连续打卡</text>
+    13→    </view>
+    14→  </view>
+    15→
+    16→  <!-- 打卡事项列表 -->
+    17→  <view class="items-section card">
+    18→    <view class="items-header">
+    19→      <text class="items-title">今日打卡事项</text>
+    20→      <text class="items-count">{{checkedCount}}/{{totalCount}}</text>
+    21→    </view>
+    22→    <view class="items-list">
+    23→      <view
+    24→        class="item-row"
+    25→        wx:for="{{items}}"
+    26→        wx:key="id"
+    27→        bindtap="toggleItem"
+    28→        data-id="{{item.id}}"
+    29→      >
+    30→        <view class="checkbox {{item.checked ? 'checked' : ''}}">
+    31→          <text class="check-icon" wx:if="{{item.checked}}">✓</text>
+    32→        </view>
+    33→        <text class="item-text {{item.checked ? 'checked' : ''}}">{{item.name}}</text>
+    34→        <view class="item-actions">
+    35→          <text class="delete-btn" bindtap="deleteItem" data-id="{{item.id}}" catchtap="true">✕</text>
+    36→        </view>
+    37→      </view>
+    38→    </view>
+    39→    <view class="add-item-row" bindtap="showAddItemDialog">
+    40→      <text class="add-icon">+</text>
+    41→      <text class="add-text">添加事项</text>
+    42→    </view>
+    43→  </view>
+    44→
+    45→  <!-- 打卡按钮区域 -->
+    46→  <view class="clockin-section">
+    47→    <view class="clockin-btn-wrapper">
+    48→      <button
+    49→        class="clockin-btn {{checkedCount === 0 ? 'disabled' : ''}}"
+    50→        bindtap="handleClockIn"
+    51→        disabled="{{canClockIn === false || checkedCount === 0}}"
+    52→      >
+    53→        <text class="clockin-icon">{{checkedCount === totalCount && totalCount > 0 ? '✓' : '✓'}}</text>
+    54→        <text class="clockin-text">{{canClockIn ? (checkedCount === totalCount && totalCount > 0 ? '打卡完成' : '打卡') : '已打卡'}}</text>
+    55→      </button>
+    56→      <text class="clockin-time">{{currentTime}}</text>
+    57→    </view>
+    58→    <view class="location-text" wx:if="{{location}}">
+    59→      <text class="location-icon">📍</text>
+    60→      <text>{{location}}</text>
+    61→    </view>
+    62→  </view>
+    63→
+    64→  <!-- 今日状态 -->
+    65→  <view class="status-card card" wx:if="{{todayRecord}}">
+    66→    <view class="status-header">
+    67→      <text class="status-title">今日打卡详情</text>
+    68→      <view class="badge {{todayRecord.isComplete ? 'badge-success' : 'badge-warning'}}">
+    69→        {{todayRecord.isComplete ? '已完成' : '部分完成'}}
+    70→      </view>
+    71→    </view>
+    72→    <view class="status-info">
+    73→      <view class="info-row">
+    74→        <text class="info-label">打卡时间</text>
+    75→        <text class="info-value">{{todayRecord.time}}</text>
+    76→      </view>
+    77→      <view class="info-row">
+    78→        <text class="info-label">完成事项</text>
+    79→        <text class="info-value">{{todayRecord.completedCount}}/{{todayRecord.totalCount}}</text>
+    80→      </view>
+    81→      <view class="info-row" wx:if="{{todayRecord.location}}">
+    82→        <text class="info-label">打卡地点</text>
+    83→        <text class="info-value">{{todayRecord.location}}</text>
+    84→      </view>
+    85→      <view class="completed-items" wx:if="{{todayRecord.items && todayRecord.items.length > 0}}">
+    86→        <text class="items-label">已完成事项：</text>
+    87→        <view class="items-tags">
+    88→          <text class="item-tag" wx:for="{{todayRecord.items}}" wx:key="id" wx:for-item="subItem">{{subItem.name}}</text>
+    89→        </view>
+    90→      </view>
+    91→    </view>
+    92→  </view>
+    93→
+    94→  <!-- 打卡记录列表 -->
+    95→  <view class="records-section">
+    96→    <view class="section-header">
+    97→      <text class="section-title">最近记录</text>
+    98→      <text class="section-more" bindtap="goStatistics">查看全部 ></text>
+    99→    </view>
+   100→    <view class="records-list">
+   101→      <view class="record-item" wx:for="{{recentRecords}}" wx:key="id">
+   102→        <view class="record-date">
+   103→          <text class="date-day">{{item.day}}</text>
+   104→          <text class="date-month">{{item.month}}</text>
+   105→        </view>
+   106→        <view class="record-info">
+   107→          <text class="record-time">{{item.time}}</text>
+   108→          <text class="record-completed">完成 {{item.completedCount || 0}}/{{item.totalCount || 0}}</text>
+   109→        </view>
+   110→        <view class="record-status">
+   111→          <view class="status-dot {{item.isComplete ? 'success' : 'warning'}}"></view>
+   112→        </view>
+   113→      </view>
+   114→      <view class="empty-tip" wx:if="{{recentRecords.length === 0}}">
+   115→        <text>暂无打卡记录，点击上方按钮开始打卡吧！</text>
+   116→      </view>
+   117→    </view>
+   118→  </view>
+   119→
+   120→  <!-- 排行榜入口 -->
+   121→  <view class="ranking-entry" bindtap="goRanking">
+   122→    <text class="ranking-icon">🏆</text>
+   123→    <text class="ranking-text">排行榜</text>
+   124→    <text class="ranking-arrow">></text>
+   125→  </view>
+   126→
+   127→  <!-- 添加事项弹窗 -->
+   128→  <view class="dialog-mask" wx:if="{{showDialog}}" bindtap="hideAddItemDialog">
+   129→    <view class="dialog-content" catchtap="true">
+   130→      <view class="dialog-header">
+   131→        <text class="dialog-title">添加打卡事项</text>
+   132→        <text class="dialog-close" bindtap="hideAddItemDialog">✕</text>
+   133→      </view>
+   134→      <view class="dialog-body">
+   135→        <input
+   136→          class="dialog-input"
+   137→          placeholder="请输入事项名称"
+   138→          value="{{newItemName}}"
+   139→          bindinput="onNewItemInput"
+   140→          focus="{{showDialog}}"
+   141→        />
+   142→      </view>
+   143→      <view class="dialog-footer">
+   144→        <button class="dialog-btn dialog-btn-cancel" bindtap="hideAddItemDialog">取消</button>
+   145→        <button class="dialog-btn dialog-btn-confirm" bindtap="confirmAddItem">确定</button>
+   146→      </view>
+   147→    </view>
+   148→  </view>
+   149→</view>
+   150→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

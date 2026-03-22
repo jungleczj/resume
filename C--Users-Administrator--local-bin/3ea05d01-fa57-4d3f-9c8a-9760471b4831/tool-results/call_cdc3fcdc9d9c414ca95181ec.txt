@@ -1,0 +1,85 @@
+     1→App({
+     2→  globalData: {
+     3→    userInfo: null,
+     4→    partnerId: null,
+     5→    db: null
+     6→  },
+     7→
+     8→  onLaunch() {
+     9→    // 初始化数据库
+    10→    this.initDatabase();
+    11→
+    12→    // 检查提醒通知权限
+    13→    this.checkNotificationPermission();
+    14→
+    15→    // 设置定时提醒
+    16→    this.setReminder();
+    17→  },
+    18→
+    19→  // 初始化SQLite数据库
+    20→  initDatabase() {
+    21→    const that = this;
+    22→    wx.request({
+    23→      url: 'https://your-server.com/api/init-db',
+    24→      method: 'POST',
+    25→      success(res) {
+    26→        console.log('数据库初始化成功', res);
+    27→        that.globalData.db = res.data.db;
+    28→      }
+    29→    });
+    30→  },
+    31→
+    32→  // 检查通知权限
+    33→  checkNotificationPermission() {
+    34→    wx.getSetting({
+    35→      success(res) {
+    36→        if (!res.authSetting['scope.subscribeMessage']) {
+    37→          wx.authorize({
+    38→            scope: 'scope.subscribeMessage',
+    39→            success() {
+    40→              console.log('订阅消息授权成功');
+    41→            }
+    42→          });
+    43→        }
+    44→      }
+    45→    });
+    46→  },
+    47→
+    48→  // 设置提醒
+    49→  setReminder() {
+    50→    // 设置每天9点的提醒
+    51→    const now = new Date();
+    52→    const reminderTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
+    53→
+    54→    if (now > reminderTime) {
+    55→      reminderTime.setDate(reminderTime.getDate() + 1);
+    56→    }
+    57→
+    58→    console.log('提醒时间:', reminderTime);
+    59→  },
+    60→
+    61→  // 获取用户信息
+    62→  getUserInfo() {
+    63→    return this.globalData.userInfo;
+    64→  },
+    65→
+    66→  // 设置用户信息
+    67→  setUserInfo(userInfo) {
+    68→    this.globalData.userInfo = userInfo;
+    69→  },
+    70→
+    71→  // 获取搭档ID
+    72→  getPartnerId() {
+    73→    return this.globalData.partnerId;
+    74→  },
+    75→
+    76→  // 设置搭档ID
+    77→  setPartnerId(partnerId) {
+    78→    this.globalData.partnerId = partnerId;
+    79→  }
+    80→});
+    81→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

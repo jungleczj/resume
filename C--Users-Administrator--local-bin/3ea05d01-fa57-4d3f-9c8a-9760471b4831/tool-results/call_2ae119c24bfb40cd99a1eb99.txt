@@ -1,0 +1,532 @@
+     1→/* pages/index/index.wxss */
+     2→.stats-card {
+     3→  display: flex;
+     4→  align-items: center;
+     5→  justify-content: space-around;
+     6→  background: linear-gradient(135deg, #07C160 0%, #06A552 100%);
+     7→  border-radius: 20rpx;
+     8→  padding: 40rpx 0;
+     9→  margin-bottom: 30rpx;
+    10→  box-shadow: 0 8rpx 20rpx rgba(7, 193, 96, 0.3);
+    11→}
+    12→
+    13→.stat-item {
+    14→  display: flex;
+    15→  flex-direction: column;
+    16→  align-items: center;
+    17→}
+    18→
+    19→.stat-value {
+    20→  font-size: 56rpx;
+    21→  font-weight: bold;
+    22→  color: white;
+    23→  line-height: 1;
+    24→}
+    25→
+    26→.stat-label {
+    27→  font-size: 24rpx;
+    28→  color: rgba(255, 255, 255, 0.8);
+    29→  margin-top: 8rpx;
+    30→}
+    31→
+    32→.stat-divider {
+    33→  width: 1rpx;
+    34→  height: 60rpx;
+    35→  background-color: rgba(255, 255, 255, 0.3);
+    36→}
+    37→
+    38→/* 打卡事项列表 */
+    39→.items-section {
+    40→  margin-bottom: 30rpx;
+    41→}
+    42→
+    43→.items-header {
+    44→  display: flex;
+    45→  align-items: center;
+    46→  justify-content: space-between;
+    47→  margin-bottom: 20rpx;
+    48→}
+    49→
+    50→.items-title {
+    51→  font-size: 32rpx;
+    52→  font-weight: bold;
+    53→  color: #333;
+    54→}
+    55→
+    56→.items-count {
+    57→  font-size: 28rpx;
+    58→  color: #07C160;
+    59→  font-weight: bold;
+    60→}
+    61→
+    62→.items-list {
+    63→  display: flex;
+    64→  flex-direction: column;
+    65→  gap: 16rpx;
+    66→}
+    67→
+    68→.item-row {
+    69→  display: flex;
+    70→  align-items: center;
+    71→  gap: 20rpx;
+    72→  padding: 20rpx 0;
+    73→  border-bottom: 1rpx solid #f0f0f0;
+    74→}
+    75→
+    76→.item-row:last-child {
+    77→  border-bottom: none;
+    78→}
+    79→
+    80→.checkbox {
+    81→  width: 44rpx;
+    82→  height: 44rpx;
+    83→  border-radius: 50%;
+    84→  border: 3rpx solid #d9d9d9;
+    85→  display: flex;
+    86→  align-items: center;
+    87→  justify-content: center;
+    88→  transition: all 0.3s ease;
+    89→}
+    90→
+    91→.checkbox.checked {
+    92→  background-color: #07C160;
+    93→  border-color: #07C160;
+    94→}
+    95→
+    96→.check-icon {
+    97→  color: white;
+    98→  font-size: 28rpx;
+    99→  font-weight: bold;
+   100→}
+   101→
+   102→.item-text {
+   103→  flex: 1;
+   104→  font-size: 28rpx;
+   105→  color: #333;
+   106→  transition: all 0.3s ease;
+   107→}
+   108→
+   109→.item-text.checked {
+   110→  color: #999;
+   111→  text-decoration: line-through;
+   112→}
+   113→
+   114→.item-actions {
+   115→  display: flex;
+   116→  align-items: center;
+   117→}
+   118→
+   119→.delete-btn {
+   120→  width: 44rpx;
+   121→  height: 44rpx;
+   122→  display: flex;
+   123→  align-items: center;
+   124→  justify-content: center;
+   125→  color: #999;
+   126→  font-size: 32rpx;
+   127→  border-radius: 50%;
+   128→  background: #f5f5f5;
+   129→}
+   130→
+   131→.add-item-row {
+   132→  display: flex;
+   133→  align-items: center;
+   134→  justify-content: center;
+   135→  gap: 10rpx;
+   136→  padding: 24rpx;
+   137→  border: 2rpx dashed #d9d9d9;
+   138→  border-radius: 12rpx;
+   139→  margin-top: 10rpx;
+   140→}
+   141→
+   142→.add-icon {
+   143→  font-size: 36rpx;
+   144→  color: #07C160;
+   145→  font-weight: bold;
+   146→}
+   147→
+   148→.add-text {
+   149→  font-size: 28rpx;
+   150→  color: #07C160;
+   151→}
+   152→
+   153→.clockin-section {
+   154→  display: flex;
+   155→  flex-direction: column;
+   156→  align-items: center;
+   157→  margin-bottom: 30rpx;
+   158→}
+   159→
+   160→.clockin-btn-wrapper {
+   161→  display: flex;
+   162→  flex-direction: column;
+   163→  align-items: center;
+   164→  gap: 16rpx;
+   165→}
+   166→
+   167→.clockin-btn {
+   168→  width: 280rpx;
+   169→  height: 280rpx;
+   170→  border-radius: 50%;
+   171→  background: linear-gradient(135deg, #07C160 0%, #06A552 100%);
+   172→  border: none;
+   173→  display: flex;
+   174→  flex-direction: column;
+   175→  align-items: center;
+   176→  justify-content: center;
+   177→  box-shadow: 0 12rpx 30rpx rgba(7, 193, 96, 0.4);
+   178→  transition: all 0.3s ease;
+   179→}
+   180→
+   181→.clockin-btn:active {
+   182→  transform: scale(0.95);
+   183→}
+   184→
+   185→.clockin-btn.disabled {
+   186→  background: linear-gradient(135deg, #ccc 0%, #999 100%);
+   187→  box-shadow: none;
+   188→}
+   189→
+   190→.clockin-btn[disabled] {
+   191→  background: linear-gradient(135deg, #ccc 0%, #999 100%);
+   192→  box-shadow: none;
+   193→}
+   194→
+   195→.clockin-icon {
+   196→  font-size: 80rpx;
+   197→  color: white;
+   198→  font-weight: bold;
+   199→}
+   200→
+   201→.clockin-text {
+   202→  font-size: 36rpx;
+   203→  color: white;
+   204→  font-weight: bold;
+   205→  margin-top: 10rpx;
+   206→}
+   207→
+   208→.clockin-time {
+   209→  font-size: 32rpx;
+   210→  color: #333;
+   211→  font-weight: bold;
+   212→}
+   213→
+   214→.location-text {
+   215→  display: flex;
+   216→  align-items: center;
+   217→  gap: 8rpx;
+   218→  margin-top: 16rpx;
+   219→  font-size: 24rpx;
+   220→  color: #999;
+   221→}
+   222→
+   223→.location-icon {
+   224→  font-size: 28rpx;
+   225→}
+   226→
+   227→.status-card {
+   228→  margin-bottom: 30rpx;
+   229→}
+   230→
+   231→.status-header {
+   232→  display: flex;
+   233→  align-items: center;
+   234→  justify-content: space-between;
+   235→  margin-bottom: 20rpx;
+   236→}
+   237→
+   238→.status-title {
+   239→  font-size: 32rpx;
+   240→  font-weight: bold;
+   241→  color: #333;
+   242→}
+   243→
+   244→.status-info {
+   245→  display: flex;
+   246→  flex-direction: column;
+   247→  gap: 16rpx;
+   248→}
+   249→
+   250→.info-row {
+   251→  display: flex;
+   252→  align-items: center;
+   253→  justify-content: space-between;
+   254→}
+   255→
+   256→.info-label {
+   257→  font-size: 28rpx;
+   258→  color: #999;
+   259→}
+   260→
+   261→.info-value {
+   262→  font-size: 28rpx;
+   263→  color: #333;
+   264→}
+   265→
+   266→.completed-items {
+   267→  display: flex;
+   268→  flex-direction: column;
+   269→  gap: 10rpx;
+   270→  margin-top: 10rpx;
+   271→  padding-top: 16rpx;
+   272→  border-top: 1rpx solid #f0f0f0;
+   273→}
+   274→
+   275→.items-label {
+   276→  font-size: 24rpx;
+   277→  color: #999;
+   278→}
+   279→
+   280→.items-tags {
+   281→  display: flex;
+   282→  flex-wrap: wrap;
+   283→  gap: 10rpx;
+   284→}
+   285→
+   286→.item-tag {
+   287→  display: inline-block;
+   288→  padding: 8rpx 16rpx;
+   289→  background-color: #E6F7E9;
+   290→  color: #07C160;
+   291→  border-radius: 20rpx;
+   292→  font-size: 24rpx;
+   293→}
+   294→
+   295→.badge {
+   296→  display: inline-block;
+   297→  padding: 4rpx 12rpx;
+   298→  border-radius: 20rpx;
+   299→  font-size: 24rpx;
+   300→}
+   301→
+   302→.badge-success {
+   303→  background-color: #E6F7E9;
+   304→  color: #07C160;
+   305→}
+   306→
+   307→.badge-warning {
+   308→  background-color: #FFF7E6;
+   309→  color: #FA8C16;
+   310→}
+   311→
+   312→.records-section {
+   313→  margin-top: 30rpx;
+   314→}
+   315→
+   316→.section-header {
+   317→  display: flex;
+   318→  align-items: center;
+   319→  justify-content: space-between;
+   320→  margin-bottom: 20rpx;
+   321→}
+   322→
+   323→.section-title {
+   324→  font-size: 32rpx;
+   325→  font-weight: bold;
+   326→  color: #333;
+   327→}
+   328→
+   329→.section-more {
+   330→  font-size: 24rpx;
+   331→  color: #999;
+   332→}
+   333→
+   334→.records-list {
+   335→  background: white;
+   336→  border-radius: 20rpx;
+   337→  padding: 0 30rpx;
+   338→  overflow: hidden;
+   339→}
+   340→
+   341→.record-item {
+   342→  display: flex;
+   343→  align-items: center;
+   344→  padding: 30rpx 0;
+   345→  border-bottom: 1rpx solid #f0f0f0;
+   346→}
+   347→
+   348→.record-item:last-child {
+   349→  border-bottom: none;
+   350→}
+   351→
+   352→.record-date {
+   353→  display: flex;
+   354→  flex-direction: column;
+   355→  align-items: center;
+   356→  width: 80rpx;
+   357→}
+   358→
+   359→.date-day {
+   360→  font-size: 32rpx;
+   361→  font-weight: bold;
+   362→  color: #333;
+   363→}
+   364→
+   365→.date-month {
+   366→  font-size: 20rpx;
+   367→  color: #999;
+   368→}
+   369→
+   370→.record-info {
+   371→  flex: 1;
+   372→  display: flex;
+   373→  flex-direction: column;
+   374→  gap: 8rpx;
+   375→  margin-left: 20rpx;
+   376→}
+   377→
+   378→.record-time {
+   379→  font-size: 28rpx;
+   380→  color: #333;
+   381→}
+   382→
+   383→.record-completed {
+   384→  font-size: 24rpx;
+   385→  color: #999;
+   386→}
+   387→
+   388→.record-status {
+   389→  display: flex;
+   390→  align-items: center;
+   391→}
+   392→
+   393→.status-dot {
+   394→  width: 16rpx;
+   395→  height: 16rpx;
+   396→  border-radius: 50%;
+   397→}
+   398→
+   399→.status-dot.success {
+   400→  background-color: #07C160;
+   401→}
+   402→
+   403→.status-dot.warning {
+   404→  background-color: #FA8C16;
+   405→}
+   406→
+   407→.empty-tip {
+   408→  display: flex;
+   409→  justify-content: center;
+   410→  align-items: center;
+   411→  padding: 80rpx 0;
+   412→  font-size: 28rpx;
+   413→  color: #999;
+   414→}
+   415→
+   416→/* 排行榜入口 */
+   417→.ranking-entry {
+   418→  display: flex;
+   419→  align-items: center;
+   420→  justify-content: space-between;
+   421→  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+   422→  border-radius: 20rpx;
+   423→  padding: 30rpx;
+   424→  margin-top: 30rpx;
+   425→  box-shadow: 0 8rpx 20rpx rgba(255, 215, 0, 0.3);
+   426→}
+   427→
+   428→.ranking-icon {
+   429→  font-size: 48rpx;
+   430→}
+   431→
+   432→.ranking-text {
+   433→  font-size: 32rpx;
+   434→  font-weight: bold;
+   435→  color: white;
+   436→  flex: 1;
+   437→  text-align: center;
+   438→}
+   439→
+   440→.ranking-arrow {
+   441→  font-size: 32rpx;
+   442→  color: white;
+   443→  font-weight: bold;
+   444→}
+   445→
+   446→/* 弹窗样式 */
+   447→.dialog-mask {
+   448→  position: fixed;
+   449→  top: 0;
+   450→  left: 0;
+   451→  right: 0;
+   452→  bottom: 0;
+   453→  background-color: rgba(0, 0, 0, 0.5);
+   454→  display: flex;
+   455→  align-items: center;
+   456→  justify-content: center;
+   457→  z-index: 999;
+   458→}
+   459→
+   460→.dialog-content {
+   461→  width: 600rpx;
+   462→  background: white;
+   463→  border-radius: 20rpx;
+   464→  overflow: hidden;
+   465→}
+   466→
+   467→.dialog-header {
+   468→  display: flex;
+   469→  align-items: center;
+   470→  justify-content: space-between;
+   471→  padding: 30rpx;
+   472→  border-bottom: 1rpx solid #f0f0f0;
+   473→}
+   474→
+   475→.dialog-title {
+   476→  font-size: 32rpx;
+   477→  font-weight: bold;
+   478→  color: #333;
+   479→}
+   480→
+   481→.dialog-close {
+   482→  width: 48rpx;
+   483→  height: 48rpx;
+   484→  display: flex;
+   485→  align-items: center;
+   486→  justify-content: center;
+   487→  font-size: 32rpx;
+   488→  color: #999;
+   489→}
+   490→
+   491→.dialog-body {
+   492→  padding: 30rpx;
+   493→}
+   494→
+   495→.dialog-input {
+   496→  width: 100%;
+   497→  height: 80rpx;
+   498→  border: 2rpx solid #d9d9d9;
+   499→  border-radius: 10rpx;
+   500→  padding: 0 20rpx;
+   501→  font-size: 28rpx;
+   502→  box-sizing: border-box;
+   503→}
+   504→
+   505→.dialog-footer {
+   506→  display: flex;
+   507→  gap: 20rpx;
+   508→  padding: 0 30rpx 30rpx;
+   509→}
+   510→
+   511→.dialog-btn {
+   512→  flex: 1;
+   513→  height: 80rpx;
+   514→  border-radius: 10rpx;
+   515→  font-size: 28rpx;
+   516→  border: none;
+   517→}
+   518→
+   519→.dialog-btn-cancel {
+   520→  background-color: #f5f5f5;
+   521→  color: #666;
+   522→}
+   523→
+   524→.dialog-btn-confirm {
+   525→  background-color: #07C160;
+   526→  color: white;
+   527→}
+   528→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

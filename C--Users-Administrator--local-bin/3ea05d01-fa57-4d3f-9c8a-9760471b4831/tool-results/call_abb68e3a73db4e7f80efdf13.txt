@@ -1,0 +1,51 @@
+The file C:\Users\Administrator\.local\bin\clockin-app\pages\index\index.wxml has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+    12→      <text class="stat-label">连续打卡</text>
+    13→    </view>
+    14→  </view>
+    15→
+    16→  <!-- 打卡事项列表 -->
+    17→  <view class="items-section card">
+    18→    <view class="items-header">
+    19→      <text class="items-title">今日打卡事项</text>
+    20→      <text class="items-count">{{checkedCount}}/{{totalCount}}</text>
+    21→    </view>
+    22→    <view class="items-list">
+    23→      <view
+    24→        class="item-row"
+    25→        wx:for="{{items}}"
+    26→        wx:key="id"
+    27→      >
+    28→        <view class="checkbox {{item.checked ? 'checked' : ''}}" bindtap="toggleItem" data-id="{{item.id}}">
+    29→          <text class="check-icon" wx:if="{{item.checked}}">✓</text>
+    30→        </view>
+    31→        <input
+    32→          wx:if="{{item.editing}}"
+    33→          class="item-input"
+    34→          value="{{item.editName}}"
+    35→          bindinput="onItemEditInput"
+    36→          bindblur="onItemEditBlur"
+    37→          bindconfirm="onItemEditConfirm"
+    38→          data-id="{{item.id}}"
+    39→          focus="{{item.editing}}"
+    40→        />
+    41→        <text wx:else class="item-text {{item.checked ? 'checked' : ''}}" bindtap="startEditItem" data-id="{{item.id}}">{{item.name}}</text>
+    42→        <text class="item-time" wx:if="{{item.checked && item.checkTime}}">{{item.checkTime}}</text>
+    43→        <view class="item-actions" wx:if="{{!item.editing}}">
+    44→          <text class="edit-btn" bindtap="startEditItem" data-id="{{item.id}}" catchtap="true">✎</text>
+    45→          <text class="delete-btn" bindtap="deleteItem" data-id="{{item.id}}" catchtap="true">✕</text>
+    46→        </view>
+    47→        <view class="item-actions" wx:else>
+    48→          <text class="confirm-btn" bindtap="confirmEditItem" data-id="{{item.id}}" catchtap="true">✓</text>
+    49→          <text class="cancel-btn" bindtap="cancelEditItem" data-id="{{item.id}}" catchtap="true">✕</text>
+    50→        </view>
+    51→      </view>
+    52→    </view>
+    53→    <view class="add-item-row" bindtap="showAddItemDialog">
+    54→      <text class="add-icon">+</text>
+    55→      <text class="add-text">添加事项</text>
+    56→    </view>
+    57→  </view>
+    58→
+    59→  <!-- 打卡按钮区域 -->
+    60→  <view class="clockin-section">
+    61→    <view class="clockin-btn-wrapper">

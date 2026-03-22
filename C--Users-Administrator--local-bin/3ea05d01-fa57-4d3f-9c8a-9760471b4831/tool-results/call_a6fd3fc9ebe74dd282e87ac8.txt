@@ -1,0 +1,220 @@
+     1→# 微信小程序打卡应用
+     2→
+     3→一个功能完整的微信小程序打卡应用，支持个人打卡、搭档打卡、统计报表和排行榜功能。
+     4→
+     5→## 项目结构
+     6→
+     7→```
+     8→clockin-app/
+     9→├── app.js              # 小程序入口文件
+    10→├── app.json            # 小程序配置文件
+    11→├── app.wxss            # 全局样式文件
+    12→├── sitemap.json        # 搜索配置
+    13→├── pages/              # 页面目录
+    14→│   ├── index/          # 我的打卡页面
+    15→│   │   ├── index.wxml
+    16→│   │   ├── index.wxss
+    17→│   │   ├── index.js
+    18→│   │   └── index.json
+    19→│   ├── partner/        # 搭档打卡页面
+    20→│   │   ├── partner.wxml
+    21→│   │   ├── partner.wxss
+    22→│   │   ├── partner.js
+    23→│   │   └── partner.json
+    24→│   ├── statistics/     # 统计报表页面
+    25→│   │   ├── statistics.wxml
+    26→│   │   ├── statistics.wxss
+    27→│   │   ├── statistics.js
+    28→│   │   └── statistics.json
+    29→│   └── ranking/        # 排行榜页面
+    30→│       ├── ranking.wxml
+    31→│       ├── ranking.wxss
+    32→│       ├── ranking.js
+    33→│       └── ranking.json
+    34→└── utils/              # 工具类
+    35→    └── db.js           # 数据库工具类
+    36→```
+    37→
+    38→## 功能特性
+    39→
+    40→### 1. 我的打卡 (首页)
+    41→- 显示累计打卡天数和连续打卡天数
+    42→- 大号打卡按钮，支持今日打卡
+    43→- 实时显示当前时间
+    44→- 获取打卡位置信息
+    45→- 显示今日打卡详情
+    46→- 展示最近打卡记录
+    47→
+    48→### 2. 搭档打卡
+    49→- 绑定打卡搭档（通过ID）
+    50→- 查看搭档打卡统计
+    51→- 打卡天数对比（进度条展示）
+    52→- 查看搭档打卡记录
+    53→- 随机激励语
+    54→
+    55→### 3. 统计报表
+    56→- 累计打卡、连续打卡、最长连续打卡统计
+    57→- 打卡日历视图（月份切换）
+    58→- 本月打卡统计（打卡天数、遗漏天数、打卡率）
+    59→- 全部打卡记录列表
+    60→
+    61→### 4. 排行榜
+    62→- 前三名特殊展示（带皇冠和奖牌效果）
+    63→- 完整排行榜列表
+    64→- 我的排名高亮显示
+    65→- 实时排名数据
+    66→
+    67→## 快速开始
+    68→
+    69→### 1. 使用微信开发者工具
+    70→
+    71→1. 打开 [微信开发者工具](https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html)
+    72→2. 选择"小程序项目"
+    73→3. 项目目录选择 `clockin-app` 文件夹
+    74→4. AppID 填写你的小程序AppID（测试可使用测试号）
+    75→5. 点击"新建"
+    76→
+    77→### 2. 配置项目
+    78→
+    79→1. 在 `app.json` 中修改 `navigationBarTitleText` 为你的应用名称
+    80→2. 修改 `app.js` 中的云服务器地址（如使用云数据库）
+    81→
+    82→### 3. 数据存储说明
+    83→
+    84→当前版本使用微信小程序的本地存储（`wx.setStorageSync`）保存数据，适合个人使用和测试。
+    85→
+    86→如需使用云数据库，需要：
+    87→
+    88→1. 在微信小程序后台开通云开发
+    89→2. 创建数据库集合（records、users）
+    90→3. 修改 `utils/db.js` 中的云数据库调用逻辑
+    91→
+    92→### 4. 添加统计页面入口
+    93→
+    94→在 `pages/index/index.wxml` 中添加统计页面入口按钮：
+    95→
+    96→```html
+    97→<button class="nav-btn" bindtap="goStatistics">查看统计</button>
+    98→```
+    99→
+   100→在 `pages/index/index.js` 中添加：
+   101→
+   102→```javascript
+   103→goStatistics() {
+   104→  wx.navigateTo({
+   105→    url: '/pages/statistics/statistics'
+   106→  })
+   107→}
+   108→```
+   109→
+   110→### 5. 添加排行榜入口
+   111→
+   112→在任意页面添加排行榜入口按钮：
+   113→
+   114→```html
+   115→<button class="nav-btn" bindtap="goRanking">排行榜</button>
+   116→```
+   117→
+   118→在对应 js 文件中添加：
+   119→
+   120→```javascript
+   121→goRanking() {
+   122→  wx.navigateTo({
+   123→    url: '/pages/ranking/ranking'
+   124→  })
+   125→}
+   126→```
+   127→
+   128→## 数据库说明
+   129→
+   130→### 当前实现（本地存储）
+   131→
+   132→- `records`: 打卡记录数组
+   133→- `users`: 用户信息数组
+   134→
+   135→### 云数据库版本
+   136→
+   137→如需升级到云数据库，需要创建以下集合：
+   138→
+   139→#### records 集合
+   140→```json
+   141→{
+   142→  "_id": "自动生成",
+   143→  "userId": "用户ID",
+   144→  "date": "2026-01-19",
+   145→  "time": "09:30",
+   146→  "location": "位置信息",
+   147→  "note": "备注",
+   148→  "status": "success",
+   149→  "createdAt": "2026-01-19T09:30:00Z"
+   150→}
+   151→```
+   152→
+   153→#### users 集合
+   154→```json
+   155→{
+   156→  "_id": "自动生成",
+   157→  "id": "用户唯一ID",
+   158→  "name": "用户名称",
+   159→  "totalDays": 0,
+   160→  "streakDays": 0,
+   161→  "maxStreakDays": 0,
+   162→  "createdAt": "2026-01-19T09:30:00Z"
+   163→}
+   164→```
+   165→
+   166→## 接口说明
+   167→
+   168→### 数据库工具类 (utils/db.js)
+   169→
+   170→```javascript
+   171→// 添加打卡记录
+   172→await db.addRecord(record)
+   173→
+   174→// 获取今日记录
+   175→await db.getTodayRecord(date)
+   176→
+   177→// 获取最近记录
+   178→await db.getRecentRecords(limit)
+   179→
+   180→// 获取全部记录
+   181→await db.getAllRecords()
+   182→
+   183→// 获取月度记录
+   184→await db.getMonthRecords(year, month)
+   185→
+   186→// 获取统计数据
+   187→await db.getStatistics()
+   188→
+   189→// 获取排行榜
+   190→await db.getRanking()
+   191→```
+   192→
+   193→## 部署说明
+   194→
+   195→1. 在微信开发者工具中，点击"上传"按钮
+   196→2. 登录微信小程序后台，进入"版本管理"
+   197→3. 在"开发版本"中找到你上传的版本
+   198→4. 点击"选为体验版本"生成体验码
+   199→5. 通过体验码分享给其他用户体验
+   200→
+   201→## 注意事项
+   202→
+   203→1. **AppID**: 部署前需要申请正式的小程序AppID
+   204→2. **域名白名单**: 如使用云服务，需在后台配置服务器域名白名单
+   205→3. **权限申请**: 使用地理位置功能需要申请权限
+   206→4. **订阅消息**: 提醒通知功能需要申请订阅消息模板
+   207→
+   208→## 扩展功能建议
+   209→
+   210→1. **云数据库**: 将本地存储升级为云数据库，支持多用户真实数据
+   211→2. **微信登录**: 集成微信登录功能，获取用户真实信息
+   212→3. **分享功能**: 完善分享到朋友圈、好友功能
+   213→4. **签到奖励**: 添加打卡奖励机制
+   214→5. **主题切换**: 支持深色模式
+   215→6. **数据导出**: 支持导出打卡数据为Excel
+   216→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

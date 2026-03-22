@@ -1,0 +1,6 @@
+total 226032
+drwxr-xr-x 1 Administrator 197121         0  1月 19 11:09 .
+drwxr-xr-x 1 Administrator 197121         0  1月 14 15:50 ..
+drwxr-xr-x 1 Administrator 197121         0  1月 14 19:06 .claude
+-rwxr-xr-x 1 Administrator 197121 231449760  1月 14 15:52 claude.exe
+drwxr-xr-x 1 Administrator 197121         0  1月 19 15:28 clockin-app

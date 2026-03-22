@@ -1,0 +1,359 @@
+     1→// utils/db.js
+     2→// 数据库工具类
+     3→
+     4→class Database {
+     5→  constructor() {
+     6→    this.storageKey = 'clockin_data'
+     7→    this.userKey = 'clockin_user'
+     8→    this.partnerKey = 'clockin_partner'
+     9→    this.itemsKey = 'clockin_items'
+    10→    this.initData()
+    11→  }
+    12→
+    13→  // 初始化数据
+    14→  initData() {
+    15→    const data = wx.getStorageSync(this.storageKey) || {
+    16→      records: [],
+    17→      users: []
+    18→    }
+    19→    wx.setStorageSync(this.storageKey, data)
+    20→
+    21→    // 初始化默认打卡事项
+    22→    const items = wx.getStorageSync(this.itemsKey)
+    23→    if (!items) {
+    24→      const defaultItems = [
+    25→        { id: 1, name: '早起打卡', checked: false },
+    26→        { id: 2, name: '运动30分钟', checked: false },
+    27→        { id: 3, name: '阅读1小时', checked: false },
+    28→        { id: 4, name: '喝水8杯', checked: false }
+    29→      ]
+    30→      wx.setStorageSync(this.itemsKey, defaultItems)
+    31→    }
+    32→  }
+    33→
+    34→  // 获取所有数据
+    35→  getData() {
+    36→    return wx.getStorageSync(this.storageKey) || { records: [], users: [] }
+    37→  }
+    38→
+    39→  // 保存数据
+    40→  saveData(data) {
+    41→    wx.setStorageSync(this.storageKey, data)
+    42→  }
+    43→
+    44→  // ========== 打卡事项相关 ==========
+    45→
+    46→  // 获取打卡事项列表
+    47→  getItems() {
+    48→    return wx.getStorageSync(this.itemsKey) || []
+    49→  }
+    50→
+    51→  // 保存打卡事项列表
+    52→  saveItems(items) {
+    53→    wx.setStorageSync(this.itemsKey, items)
+    54→  }
+    55→
+    56→  // 添加打卡事项
+    57→  addItem(item) {
+    58→    const items = this.getItems()
+    59→    item.id = Date.now()
+    60→    item.checked = false
+    61→    items.push(item)
+    62→    this.saveItems(items)
+    63→    return item
+    64→  }
+    65→
+    66→  // 更新打卡事项
+    67→  updateItem(itemId, updates) {
+    68→    const items = this.getItems()
+    69→    const index = items.findIndex(item => item.id === itemId)
+    70→    if (index !== -1) {
+    71→      items[index] = { ...items[index], ...updates }
+    72→      this.saveItems(items)
+    73→      return items[index]
+    74→    }
+    75→    return null
+    76→  }
+    77→
+    78→  // 删除打卡事项
+    79→  deleteItem(itemId) {
+    80→    let items = this.getItems()
+    81→    items = items.filter(item => item.id !== itemId)
+    82→    this.saveItems(items)
+    83→  }
+    84→
+    85→  // 重置所有事项的勾选状态（每次打卡前调用）
+    86→  resetItemsChecked() {
+    87→    const items = this.getItems()
+    88→    items.forEach(item => {
+    89→      item.checked = false
+    90→    })
+    91→    this.saveItems(items)
+    92→  }
+    93→
+    94→  // ========== 打卡记录相关 ==========
+    95→
+    96→  // 添加打卡记录
+    97→  async addRecord(record) {
+    98→    const data = this.getData()
+    99→
+   100→    // 获取当前选中的事项
+   101→    const items = this.getItems()
+   102→    const checkedItems = items.filter(item => item.checked)
+   103→
+   104→    record.items = checkedItems.map(item => ({
+   105→      id: item.id,
+   106→      name: item.name
+   107→    }))
+   108→    record.completedCount = checkedItems.length
+   109→    record.totalCount = items.length
+   110→    record.isComplete = checkedItems.length === items.length && items.length > 0
+   111→
+   112→    data.records.unshift(record)
+   113→    this.saveData(data)
+   114→
+   115→    // 重置事项勾选状态
+   116→    this.resetItemsChecked()
+   117→
+   118→    return record
+   119→  }
+   120→
+   121→  // 获取今日记录
+   122→  async getTodayRecord(date) {
+   123→    const data = this.getData()
+   124→    return data.records.find(r => r.date === date) || null
+   125→  }
+   126→
+   127→  // 获取最近记录
+   128→  async getRecentRecords(limit = 10) {
+   129→    const data = this.getData()
+   130→    const records = data.records.slice(0, limit)
+   131→    return records.map(r => ({
+   132→      ...r,
+   133→      day: new Date(r.date).getDate(),
+   134→      month: new Date(r.date).getMonth() + 1
+   135→    }))
+   136→  }
+   137→
+   138→  // 获取全部记录
+   139→  async getAllRecords() {
+   140→    const data = this.getData()
+   141→    return data.records
+   142→  }
+   143→
+   144→  // 获取月度记录
+   145→  async getMonthRecords(year, month) {
+   146→    const data = this.getData()
+   147→    const monthStr = `${year}-${String(month).padStart(2, '0')}`
+   148→    return data.records.filter(r => r.date.startsWith(monthStr))
+   149→  }
+   150→
+   151→  // 获取统计数据
+   152→  async getStatistics() {
+   153→    const data = this.getData()
+   154→    const records = data.records.sort((a, b) => new Date(b.date) - new Date(a.date))
+   155→
+   156→    // 只计算完成所有事项的记录
+   157→    const completedRecords = records.filter(r => r.isComplete)
+   158→    const totalDays = completedRecords.length
+   159→
+   160→    // 计算连续打卡天数
+   161→    let streakDays = 0
+   162→    let maxStreakDays = 0
+   163→    let currentStreak = 0
+   164→
+   165→    const today = new Date()
+   166→    today.setHours(0, 0, 0, 0)
+   167→
+   168→    for (let i = 0; i < completedRecords.length; i++) {
+   169→      const recordDate = new Date(completedRecords[i].date)
+   170→      recordDate.setHours(0, 0, 0, 0)
+   171→
+   172→      if (i === 0) {
+   173→        // 检查第一条记录是否是今天或昨天
+   174→        const yesterday = new Date(today)
+   175→        yesterday.setDate(yesterday.getDate() - 1)
+   176→
+   177→        if (recordDate.getTime() === today.getTime() || recordDate.getTime() === yesterday.getTime()) {
+   178→          currentStreak = 1
+   179→        } else {
+   180→          break
+   181→        }
+   182→      } else {
+   183→        const prevDate = new Date(completedRecords[i - 1].date)
+   184→        prevDate.setHours(0, 0, 0, 0)
+   185→
+   186→        const diffDays = (prevDate - recordDate) / (1000 * 60 * 60 * 24)
+   187→        if (diffDays === 1) {
+   188→          currentStreak++
+   189→        } else {
+   190→          break
+   191→        }
+   192→      }
+   193→
+   194→      maxStreakDays = Math.max(maxStreakDays, currentStreak)
+   195→    }
+   196→
+   197→    streakDays = maxStreakDays
+   198→
+   199→    // 计算最长连续打卡（遍历所有记录）
+   200→    maxStreakDays = 0
+   201→    let tempStreak = 0
+   202→    for (let i = 0; i < completedRecords.length; i++) {
+   203→      if (i === 0) {
+   204→        tempStreak = 1
+   205→      } else {
+   206→        const prevDate = new Date(completedRecords[i - 1].date)
+   207→        const currDate = new Date(completedRecords[i].date)
+   208→        const diffDays = (prevDate - currDate) / (1000 * 60 * 60 * 24)
+   209→
+   210→        if (diffDays === 1) {
+   211→          tempStreak++
+   212→        } else {
+   213→          maxStreakDays = Math.max(maxStreakDays, tempStreak)
+   214→          tempStreak = 1
+   215→        }
+   216→      }
+   217→      maxStreakDays = Math.max(maxStreakDays, tempStreak)
+   218→    }
+   219→
+   220→    return {
+   221→      totalDays,
+   222→      streakDays,
+   223→      maxStreakDays
+   224→    }
+   225→  }
+   226→
+   227→  // ========== 用户相关 ==========
+   228→
+   229→  // 获取用户信息
+   230→  getUser() {
+   231→    return wx.getStorageSync(this.userKey) || null
+   232→  }
+   233→
+   234→  // 保存用户信息
+   235→  async saveUser(user) {
+   236→    wx.setStorageSync(this.userKey, user)
+   237→    return user
+   238→  }
+   239→
+   240→  // 根据ID获取用户
+   241→  async getUserById(userId) {
+   242→    const data = this.getData()
+   243→    const user = data.users.find(u => u.id === userId)
+   244→    if (user) return user
+   245→
+   246→    // 测试搭档ID
+   247→    if (userId === 'TEST_PARTNER_001') {
+   248→      return {
+   249→        id: 'TEST_PARTNER_001',
+   250→        name: '测试搭档',
+   251→        totalDays: 30,
+   252→        streakDays: 5,
+   253→        maxStreakDays: 10
+   254→      }
+   255→    }
+   256→
+   257→    return null
+   258→  }
+   259→
+   260→  // 获取搭档ID
+   261→  getPartnerId() {
+   262→    return wx.getStorageSync(this.partnerKey) || null
+   263→  }
+   264→
+   265→  // 保存搭档ID
+   266→  async savePartnerId(partnerId) {
+   267→    wx.setStorageSync(this.partnerKey, partnerId)
+   268→    return partnerId
+   269→  }
+   270→
+   271→  // 移除搭档ID
+   272→  async removePartnerId() {
+   273→    wx.removeStorageSync(this.partnerKey)
+   274→  }
+   275→
+   276→  // 根据用户ID获取记录
+   277→  async getRecordsByUserId(userId) {
+   278→    // 如果是测试搭档，返回模拟数据
+   279→    if (userId === 'TEST_PARTNER_001') {
+   280→      const mockRecords = []
+   281→      const today = new Date()
+   282→      for (let i = 0; i < 10; i++) {
+   283→        const date = new Date(today)
+   284→        date.setDate(date.getDate() - i)
+   285→        mockRecords.push({
+   286→          id: Date.now() + i,
+   287→          date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+   288→          time: '09:00',
+   289→          location: '位置信息',
+   290→          note: '',
+   291→          status: 'success',
+   292→          isComplete: true,
+   293→          completedCount: 4,
+   294→          totalCount: 4,
+   295→          day: date.getDate(),
+   296→          month: date.getMonth() + 1
+   297→        })
+   298→      }
+   299→      return mockRecords
+   300→    }
+   301→
+   302→    const data = this.getData()
+   303→    const records = data.records.slice(0, 10)
+   304→    return records.map(r => ({
+   305→      ...r,
+   306→      day: new Date(r.date).getDate(),
+   307→      month: new Date(r.date).getMonth() + 1
+   308→    }))
+   309→  }
+   310→
+   311→  // 获取排行榜
+   312→  async getRanking() {
+   313→    // 排行榜数据
+   314→    const mockUsers = [
+   315→      { id: 'user1', name: '打卡达人', totalDays: 365 },
+   316→      { id: 'user2', name: '坚持者', totalDays: 280 },
+   317→      { id: 'user3', name: '努力中', totalDays: 200 },
+   318→      { id: 'user4', name: '新手', totalDays: 100 },
+   319→      { id: 'user5', name: '刚刚开始', totalDays: 30 }
+   320→    ]
+   321→
+   322→    // 添加测试搭档到排行榜
+   323→    mockUsers.push({
+   324→      id: 'TEST_PARTNER_001',
+   325→      name: '测试搭档',
+   326→      totalDays: 30
+   327→    })
+   328→
+   329→    // 获取当前用户的统计数据
+   330→    const stats = await this.getStatistics()
+   331→    const currentUser = this.getUser()
+   332→
+   333→    if (currentUser) {
+   334→      // 检查当前用户是否已在列表中
+   335→      const existingIndex = mockUsers.findIndex(u => u.id === currentUser.id)
+   336→      if (existingIndex === -1) {
+   337→        mockUsers.push({
+   338→          id: currentUser.id,
+   339→          name: currentUser.name || '我',
+   340→          totalDays: stats.totalDays || 0
+   341→        })
+   342→      } else {
+   343→        mockUsers[existingIndex].totalDays = stats.totalDays || 0
+   344→      }
+   345→    }
+   346→
+   347→    // 按打卡天数降序排序
+   348→    return mockUsers.sort((a, b) => b.totalDays - a.totalDays)
+   349→  }
+   350→}
+   351→
+   352→// 导出数据库实例
+   353→const db = new Database()
+   354→module.exports = { db }
+   355→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

@@ -1,0 +1,120 @@
+The file C:\Users\Administrator\.local\bin\clockin-app\pages\index\index.js has been updated. Here's the result of running `cat -n` on a snippet of the edited file:
+    65→      console.error('加载事项失败', error)
+    66→    }
+    67→  },
+    68→
+    69→  // 切换事项勾选状态
+    70→  toggleItem(e) {
+    71→    const itemId = e.currentTarget.dataset.id
+    72→    const items = this.data.items
+    73→    const item = items.find(i => i.id === itemId)
+    74→    if (item) {
+    75→      item.checked = !item.checked
+    76→      // 如果勾选了，记录打卡时间
+    77→      if (item.checked) {
+    78→        const now = new Date()
+    79→        const hours = String(now.getHours()).padStart(2, '0')
+    80→        const minutes = String(now.getMinutes()).padStart(2, '0')
+    81→        item.checkTime = `${hours}:${minutes}`
+    82→      } else {
+    83→        item.checkTime = null
+    84→      }
+    85→      db.saveItems(items)
+    86→
+    87→      const checkedCount = items.filter(i => i.checked).length
+    88→      this.setData({
+    89→        items: items,
+    90→        checkedCount: checkedCount
+    91→      })
+    92→    }
+    93→  },
+    94→
+    95→  // 开始编辑事项
+    96→  startEditItem(e) {
+    97→    const itemId = e.currentTarget.dataset.id
+    98→    const items = this.data.items.map(item => {
+    99→      if (item.id === itemId) {
+   100→        return {
+   101→          ...item,
+   102→          editing: true,
+   103→          editName: item.name
+   104→        }
+   105→      }
+   106→      return { ...item, editing: false }
+   107→    })
+   108→    this.setData({ items })
+   109→  },
+   110→
+   111→  // 编辑输入
+   112→  onItemEditInput(e) {
+   113→    const itemId = e.currentTarget.dataset.id
+   114→    const items = this.data.items.map(item => {
+   115→      if (item.id === itemId) {
+   116→        return { ...item, editName: e.detail.value }
+   117→      }
+   118→      return item
+   119→    })
+   120→    this.setData({ items })
+   121→  },
+   122→
+   123→  // 失去焦点时保存
+   124→  onItemEditBlur(e) {
+   125→    const itemId = e.currentTarget.dataset.id
+   126→    // 延迟处理，避免与确认按钮冲突
+   127→    setTimeout(() => {
+   128→      const items = this.data.items.map(item => {
+   129→        if (item.id === itemId && item.editing) {
+   130→          return {
+   131→            ...item,
+   132→            editing: false,
+   133→            name: item.editName || item.name
+   134→          }
+   135→        }
+   136→        return item
+   137→      })
+   138→      this.setData({ items })
+   139→      // 保存到数据库
+   140→      db.saveItems(items.filter(item => !item.editing))
+   141→    }, 200)
+   142→  },
+   143→
+   144→  // 确认编辑
+   145→  onItemEditConfirm(e) {
+   146→    const itemId = e.currentTarget.dataset.id
+   147→    this.confirmEditItem({ currentTarget: { dataset: { id: itemId } } })
+   148→  },
+   149→
+   150→  // 确认编辑事项
+   151→  confirmEditItem(e) {
+   152→    const itemId = e.currentTarget.dataset.id
+   153→    const items = this.data.items.map(item => {
+   154→      if (item.id === itemId) {
+   155→        return {
+   156→          ...item,
+   157→          editing: false,
+   158→          name: item.editName || item.name
+   159→        }
+   160→      }
+   161→      return { ...item, editing: false }
+   162→    })
+   163→    db.saveItems(items)
+   164→    this.setData({ items })
+   165→  },
+   166→
+   167→  // 取消编辑
+   168→  cancelEditItem(e) {
+   169→    const itemId = e.currentTarget.dataset.id
+   170→    const items = this.data.items.map(item => {
+   171→      if (item.id === itemId) {
+   172→        return { ...item, editing: false }
+   173→      }
+   174→      return item
+   175→    })
+   176→    this.setData({ items })
+   177→  },
+   178→
+   179→  // 删除事项
+   180→  deleteItem(e) {
+   181→    const itemId = e.currentTarget.dataset.id
+   182→    wx.showModal({
+   183→      title: '确认删除',

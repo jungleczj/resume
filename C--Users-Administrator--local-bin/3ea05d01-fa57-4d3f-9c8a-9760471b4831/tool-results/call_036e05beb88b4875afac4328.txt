@@ -1,0 +1,233 @@
+     1→// pages/statistics/statistics.js
+     2→const app = getApp()
+     3→const { db } = require('../../utils/db.js')
+     4→
+     5→Page({
+     6→  data: {
+     7→    totalDays: 0,
+     8→    streakDays: 0,
+     9→    maxStreakDays: 0,
+    10→    currentYear: new Date().getFullYear(),
+    11→    currentMonth: new Date().getMonth() + 1,
+    12→    weekdays: ['日', '一', '二', '三', '四', '五', '六'],
+    13→    calendarDays: [],
+    14→    monthDays: 0,
+    15→    missedDays: 0,
+    16→    monthRate: 0,
+    17→    allRecords: [],
+    18→    showDayDetail: false,
+    19→    selectedDate: '',
+    20→    dayDetail: null
+    21→  },
+    22→
+    23→  onLoad() {
+    24→    this.initData()
+    25→  },
+    26→
+    27→  // 初始化数据
+    28→  initData() {
+    29→    this.loadStatistics()
+    30→    this.generateCalendar()
+    31→    this.loadMonthStats()
+    32→    this.loadAllRecords()
+    33→  },
+    34→
+    35→  // 加载统计数据
+    36→  async loadStatistics() {
+    37→    try {
+    38→      const stats = await db.getStatistics()
+    39→      this.setData({
+    40→        totalDays: stats.totalDays || 0,
+    41→        streakDays: stats.streakDays || 0,
+    42→        maxStreakDays: stats.maxStreakDays || 0
+    43→      })
+    44→    } catch (error) {
+    45→      console.error('加载统计数据失败', error)
+    46→    }
+    47→  },
+    48→
+    49→  // 生成日历
+    50→  async generateCalendar() {
+    51→    const { currentYear, currentMonth } = this.data
+    52→    const today = new Date()
+    53→
+    54→    // 获取当月第一天和最后一天
+    55→    const firstDay = new Date(currentYear, currentMonth - 1, 1)
+    56→    const lastDay = new Date(currentYear, currentMonth, 0)
+    57→    const daysInMonth = lastDay.getDate()
+    58→
+    59→    // 获取当月第一天是星期几
+    60→    const firstDayOfWeek = firstDay.getDay()
+    61→
+    62→    // 获取当月的打卡记录
+    63→    const records = await db.getMonthRecords(currentYear, currentMonth)
+    64→
+    65→    // 构建打卡记录映射
+    66→    const recordMap = {}
+    67→    records.forEach(r => {
+    68→      recordMap[r.date] = r
+    69→    })
+    70→
+    71→    // 生成日历数组
+    72→    const calendarDays = []
+    73→
+    74→    // 填充空白（上个月的日期）
+    75→    for (let i = 0; i < firstDayOfWeek; i++) {
+    76→      calendarDays.push({
+    77→        day: '',
+    78→        date: null,
+    79→        checked: false,
+    80→        today: false,
+    81→        future: false,
+    82→        completedCount: 0
+    83→      })
+    84→    }
+    85→
+    86→    // 填充当月日期
+    87→    for (let i = 1; i <= daysInMonth; i++) {
+    88→      const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(i).padStart(2, '0')}`
+    89→      const record = recordMap[dateStr]
+    90→      const isToday = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth && today.getDate() === i
+    91→      const isFuture = new Date(currentYear, currentMonth - 1, i) > today
+    92→
+    93→      calendarDays.push({
+    94→        day: i,
+    95→        date: dateStr,
+    96→        checked: !!record,
+    97→        today: isToday,
+    98→        future: isFuture,
+    99→        completedCount: record ? record.completedCount || 0 : 0,
+   100→        isComplete: record ? record.isComplete : false,
+   101→        items: record ? record.items : [],
+   102→        totalCount: record ? record.totalCount || 0 : 0
+   103→      })
+   104→    }
+   105→
+   106→    this.setData({ calendarDays })
+   107→  },
+   108→
+   109→  // 上个月
+   110→  prevMonth() {
+   111→    let { currentYear, currentMonth } = this.data
+   112→    currentMonth--
+   113→    if (currentMonth < 1) {
+   114→      currentMonth = 12
+   115→      currentYear--
+   116→    }
+   117→    this.setData({ currentYear, currentMonth })
+   118→    this.generateCalendar()
+   119→    this.loadMonthStats()
+   120→  },
+   121→
+   122→  // 下个月
+   123→  nextMonth() {
+   124→    let { currentYear, currentMonth } = this.data
+   125→    const today = new Date()
+   126→
+   127→    // 不能查看未来月份
+   128→    if (currentYear > today.getFullYear() || (currentYear === today.getFullYear() && currentMonth > today.getMonth() + 1)) {
+   129→      return
+   130→    }
+   131→
+   132→    currentMonth++
+   133→    if (currentMonth > 12) {
+   134→      currentMonth = 1
+   135→      currentYear++
+   136→    }
+   137→    this.setData({ currentYear, currentMonth })
+   138→    this.generateCalendar()
+   139→    this.loadMonthStats()
+   140→  },
+   141→
+   142→  // 点击日期
+   143→  onDayClick(e) {
+   144→    const date = e.currentTarget.dataset.date
+   145→    if (!date) return
+   146→
+   147→    const calendarDays = this.data.calendarDays
+   148→    const dayInfo = calendarDays.find(d => d.date === date)
+   149→
+   150→    if (dayInfo && dayInfo.checked) {
+   151→      // 如果当天有打卡记录，显示详情
+   152→      this.setData({
+   153→        showDayDetail: true,
+   154→        selectedDate: date,
+   155→        dayDetail: {
+   156→          isComplete: dayInfo.isComplete,
+   157→          completedCount: dayInfo.completedCount,
+   158→          totalCount: dayInfo.totalCount,
+   159→          items: dayInfo.items || []
+   160→        }
+   161→      })
+   162→    } else {
+   163→      wx.showToast({
+   164→        title: date,
+   165→        icon: 'none'
+   166→      })
+   167→    }
+   168→  },
+   169→
+   170→  // 隐藏日期详情
+   171→  hideDayDetail() {
+   172→    this.setData({
+   173→      showDayDetail: false,
+   174→      selectedDate: '',
+   175→      dayDetail: null
+   176→    })
+   177→  },
+   178→
+   179→  // 加载月度统计
+   180→  async loadMonthStats() {
+   181→    const { currentYear, currentMonth } = this.data
+   182→    const today = new Date()
+   183→    const currentDay = today.getDate()
+   184→
+   185→    try {
+   186→      const records = await db.getMonthRecords(currentYear, currentMonth)
+   187→      const monthDays = records.length
+   188→
+   189→      // 计算当前月已过的天数
+   190→      let passedDays = currentMonth - 1 === today.getMonth() ? currentDay : new Date(currentYear, currentMonth, 0).getDate()
+   191→      const missedDays = passedDays - monthDays
+   192→      const monthRate = passedDays > 0 ? Math.round((monthDays / passedDays) * 100) : 0
+   193→
+   194→      this.setData({
+   195→        monthDays,
+   196→        missedDays,
+   197→        monthRate
+   198→      })
+   199→    } catch (error) {
+   200→      console.error('加载月度统计失败', error)
+   201→    }
+   202→  },
+   203→
+   204→  // 加载全部记录
+   205→  async loadAllRecords() {
+   206→    try {
+   207→      const records = await db.getAllRecords()
+   208→      const formattedRecords = records.map(r => ({
+   209→        ...r,
+   210→        day: new Date(r.date).getDate(),
+   211→        month: new Date(r.date).getMonth() + 1
+   212→      }))
+   213→
+   214→      this.setData({
+   215→        allRecords: formattedRecords
+   216→      })
+   217→    } catch (error) {
+   218→      console.error('加载全部记录失败', error)
+   219→    }
+   220→  },
+   221→
+   222→  onShareAppMessage() {
+   223→    return {
+   224→      title: '我的打卡统计',
+   225→      path: '/pages/index/index'
+   226→    }
+   227→  }
+   228→})
+   229→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>

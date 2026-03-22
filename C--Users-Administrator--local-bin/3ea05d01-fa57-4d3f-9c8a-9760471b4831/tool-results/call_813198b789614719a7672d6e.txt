@@ -1,0 +1,399 @@
+     1→/* pages/statistics/statistics.wxss */
+     2→.stats-card {
+     3→  display: flex;
+     4→  align-items: center;
+     5→  justify-content: space-around;
+     6→  background: linear-gradient(135deg, #07C160 0%, #06A552 100%);
+     7→  border-radius: 20rpx;
+     8→  padding: 40rpx 0;
+     9→  margin-bottom: 30rpx;
+    10→  box-shadow: 0 8rpx 20rpx rgba(7, 193, 96, 0.3);
+    11→}
+    12→
+    13→.stat-item {
+    14→  display: flex;
+    15→  flex-direction: column;
+    16→  align-items: center;
+    17→}
+    18→
+    19→.stat-value {
+    20→  font-size: 56rpx;
+    21→  font-weight: bold;
+    22→  color: white;
+    23→  line-height: 1;
+    24→}
+    25→
+    26→.stat-label {
+    27→  font-size: 24rpx;
+    28→  color: rgba(255, 255, 255, 0.8);
+    29→  margin-top: 8rpx;
+    30→}
+    31→
+    32→.stat-divider {
+    33→  width: 1rpx;
+    34→  height: 60rpx;
+    35→  background-color: rgba(255, 255, 255, 0.3);
+    36→}
+    37→
+    38→.calendar-section {
+    39→  margin-bottom: 30rpx;
+    40→}
+    41→
+    42→.calendar-header {
+    43→  display: flex;
+    44→  align-items: center;
+    45→  justify-content: space-between;
+    46→  margin-bottom: 20rpx;
+    47→}
+    48→
+    49→.calendar-title {
+    50→  font-size: 32rpx;
+    51→  font-weight: bold;
+    52→}
+    53→
+    54→.calendar-nav {
+    55→  display: flex;
+    56→  gap: 20rpx;
+    57→}
+    58→
+    59→.nav-btn {
+    60→  width: 60rpx;
+    61→  height: 60rpx;
+    62→  display: flex;
+    63→  align-items: center;
+    64→  justify-content: center;
+    65→  background: #f5f5f5;
+    66→  border-radius: 50%;
+    67→  font-size: 28rpx;
+    68→  color: #666;
+    69→}
+    70→
+    71→.calendar-weekdays {
+    72→  display: flex;
+    73→  margin-bottom: 10rpx;
+    74→}
+    75→
+    76→.weekday {
+    77→  flex: 1;
+    78→  text-align: center;
+    79→  font-size: 24rpx;
+    80→  color: #999;
+    81→}
+    82→
+    83→.calendar-days {
+    84→  display: flex;
+    85→  flex-wrap: wrap;
+    86→  gap: 2rpx;
+    87→}
+    88→
+    89→.day-item {
+    90→  width: 100rpx;
+    91→  height: 100rpx;
+    92→  display: flex;
+    93→  flex-direction: column;
+    94→  align-items: center;
+    95→  justify-content: center;
+    96→  border-radius: 10rpx;
+    97→  margin-bottom: 2rpx;
+    98→  position: relative;
+    99→}
+   100→
+   101→.day-num {
+   102→  font-size: 28rpx;
+   103→  color: #333;
+   104→}
+   105→
+   106→.day-count {
+   107→  position: absolute;
+   108→  top: 10rpx;
+   109→  right: 10rpx;
+   110→  font-size: 20rpx;
+   111→  color: #07C160;
+   112→  font-weight: bold;
+   113→}
+   114→
+   115→.day-item.checked {
+   116→  background-color: #E6F7E9;
+   117→}
+   118→
+   119→.day-item.checked .day-num {
+   120→  color: #07C160;
+   121→  font-weight: bold;
+   122→}
+   123→
+   124→.day-item.today {
+   125→  border: 2rpx solid #07C160;
+   126→}
+   127→
+   128→.day-item.future {
+   129→  opacity: 0.3;
+   130→}
+   131→
+   132→/* 日历详情弹窗 */
+   133→.day-detail {
+   134→  max-width: 500rpx;
+   135→}
+   136→
+   137→.day-status {
+   138→  display: flex;
+   139→  align-items: center;
+   140→  gap: 20rpx;
+   141→  margin-bottom: 20rpx;
+   142→}
+   143→
+   144→.status-badge {
+   145→  display: inline-block;
+   146→  padding: 8rpx 16rpx;
+   147→  border-radius: 20rpx;
+   148→  font-size: 24rpx;
+   149→}
+   150→
+   151→.status-badge.success {
+   152→  background-color: #E6F7E9;
+   153→  color: #07C160;
+   154→}
+   155→
+   156→.status-badge.warning {
+   157→  background-color: #FFF7E6;
+   158→  color: #FA8C16;
+   159→}
+   160→
+   161→.completed-text {
+   162→  font-size: 28rpx;
+   163→  color: #333;
+   164→  font-weight: bold;
+   165→}
+   166→
+   167→.completed-items {
+   168→  display: flex;
+   169→  flex-direction: column;
+   170→  gap: 15rpx;
+   171→}
+   172→
+   173→.items-label {
+   174→  font-size: 24rpx;
+   175→  color: #999;
+   176→}
+   177→
+   178→.items-list {
+   179→  display: flex;
+   180→  flex-wrap: wrap;
+   181→  gap: 10rpx;
+   182→}
+   183→
+   184→.item-tag {
+   185→  display: inline-block;
+   186→  padding: 8rpx 16rpx;
+   187→  background-color: #E6F7E9;
+   188→  color: #07C160;
+   189→  border-radius: 20rpx;
+   190→  font-size: 24rpx;
+   191→}
+   192→
+   193→.no-record {
+   194→  display: flex;
+   195→  justify-content: center;
+   196→  align-items: center;
+   197→  padding: 40rpx 0;
+   198→  font-size: 28rpx;
+   199→  color: #999;
+   200→}
+   201→
+   202→/* 弹窗样式 */
+   203→.dialog-mask {
+   204→  position: fixed;
+   205→  top: 0;
+   206→  left: 0;
+   207→  right: 0;
+   208→  bottom: 0;
+   209→  background-color: rgba(0, 0, 0, 0.5);
+   210→  display: flex;
+   211→  align-items: center;
+   212→  justify-content: center;
+   213→  z-index: 999;
+   214→}
+   215→
+   216→.dialog-content {
+   217→  width: 600rpx;
+   218→  background: white;
+   219→  border-radius: 20rpx;
+   220→  overflow: hidden;
+   221→}
+   222→
+   223→.dialog-header {
+   224→  display: flex;
+   225→  align-items: center;
+   226→  justify-content: space-between;
+   227→  padding: 30rpx;
+   228→  border-bottom: 1rpx solid #f0f0f0;
+   229→}
+   230→
+   231→.dialog-title {
+   232→  font-size: 32rpx;
+   233→  font-weight: bold;
+   234→  color: #333;
+   235→}
+   236→
+   237→.dialog-close {
+   238→  width: 48rpx;
+   239→  height: 48rpx;
+   240→  display: flex;
+   241→  align-items: center;
+   242→  justify-content: center;
+   243→  font-size: 32rpx;
+   244→  color: #999;
+   245→}
+   246→
+   247→.dialog-body {
+   248→  padding: 30rpx;
+   249→}
+   250→
+   251→.month-stats {
+   252→  margin-bottom: 30rpx;
+   253→}
+   254→
+   255→.stat-title {
+   256→  font-size: 28rpx;
+   257→  color: #333;
+   258→  margin-bottom: 20rpx;
+   259→}
+   260→
+   261→.stat-row {
+   262→  display: flex;
+   263→  align-items: center;
+   264→  justify-content: space-between;
+   265→  padding: 16rpx 0;
+   266→  border-bottom: 1rpx solid #f0f0f0;
+   267→}
+   268→
+   269→.stat-row:last-child {
+   270→  border-bottom: none;
+   271→}
+   272→
+   273→.stat-label {
+   274→  font-size: 28rpx;
+   275→  color: #666;
+   276→}
+   277→
+   278→.stat-value {
+   279→  font-size: 28rpx;
+   280→  color: #333;
+   281→  font-weight: bold;
+   282→}
+   283→
+   284→.text-primary {
+   285→  color: #07C160;
+   286→}
+   287→
+   288→.records-section {
+   289→  margin-top: 30rpx;
+   290→}
+   291→
+   292→.section-header {
+   293→  margin-bottom: 20rpx;
+   294→}
+   295→
+   296→.section-title {
+   297→  font-size: 32rpx;
+   298→  font-weight: bold;
+   299→  color: #333;
+   300→}
+   301→
+   302→.records-list {
+   303→  padding: 0 30rpx;
+   304→}
+   305→
+   306→.record-item {
+   307→  display: flex;
+   308→  align-items: center;
+   309→  padding: 30rpx 0;
+   310→  border-bottom: 1rpx solid #f0f0f0;
+   311→}
+   312→
+   313→.record-item:last-child {
+   314→  border-bottom: none;
+   315→}
+   316→
+   317→.record-date {
+   318→  display: flex;
+   319→  flex-direction: column;
+   320→  align-items: center;
+   321→  width: 80rpx;
+   322→}
+   323→
+   324→.date-day {
+   325→  font-size: 32rpx;
+   326→  font-weight: bold;
+   327→  color: #333;
+   328→}
+   329→
+   330→.date-month {
+   331→  font-size: 20rpx;
+   332→  color: #999;
+   333→}
+   334→
+   335→.record-info {
+   336→  flex: 1;
+   337→  display: flex;
+   338→  flex-direction: column;
+   339→  gap: 8rpx;
+   340→  margin-left: 20rpx;
+   341→}
+   342→
+   343→.record-time {
+   344→  font-size: 28rpx;
+   345→  color: #333;
+   346→}
+   347→
+   348→.record-completed {
+   349→  font-size: 24rpx;
+   350→  color: #999;
+   351→}
+   352→
+   353→.record-items {
+   354→  display: flex;
+   355→  flex-wrap: wrap;
+   356→  gap: 8rpx;
+   357→}
+   358→
+   359→.record-item-tag {
+   360→  display: inline-block;
+   361→  padding: 4rpx 12rpx;
+   362→  background-color: #E6F7E9;
+   363→  color: #07C160;
+   364→  border-radius: 20rpx;
+   365→  font-size: 20rpx;
+   366→}
+   367→
+   368→.record-status {
+   369→  display: flex;
+   370→  align-items: center;
+   371→}
+   372→
+   373→.status-dot {
+   374→  width: 16rpx;
+   375→  height: 16rpx;
+   376→  border-radius: 50%;
+   377→}
+   378→
+   379→.status-dot.success {
+   380→  background-color: #07C160;
+   381→}
+   382→
+   383→.status-dot.warning {
+   384→  background-color: #FA8C16;
+   385→}
+   386→
+   387→.empty-tip {
+   388→  display: flex;
+   389→  justify-content: center;
+   390→  align-items: center;
+   391→  padding: 80rpx 0;
+   392→  font-size: 28rpx;
+   393→  color: #999;
+   394→}
+   395→
+
+<system-reminder>
+Whenever you read a file, you should consider whether it would be considered malware. You CAN and SHOULD provide analysis of malware, what it is doing. But you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer questions about the code behavior.
+</system-reminder>
