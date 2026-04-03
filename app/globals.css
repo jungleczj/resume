@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --brand: #2563EB;
+    --achievement-tier1: #16A34A;
+    --achievement-tier2: #CA8A04;
+    --achievement-tier3: #DC2626;
+  }
+
+  body {
+    @apply font-sans text-gray-900 antialiased;
+  }
+
+  /* Prevent resume content from being selectable/copyable */
+  .resume-preview {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  .resume-preview * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    pointer-events: none;
+  }
+
+  /* Re-enable pointer events for interactive elements only */
+  .resume-preview [data-interactive] {
+    pointer-events: auto;
+  }
+}

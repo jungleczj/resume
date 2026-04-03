@@ -1,0 +1,97 @@
+{
+  "brand": {
+    "name": "CareerFlow",
+    "tagline": "Your Career Achievement Manager",
+    "description": "Capture achievements continuously, generate resumes instantly"
+  },
+  "landing": {
+    "hero": {
+      "title": "Your Achievements, Always Ready",
+      "subtitle": "Stop stressing over resumes. Upload your old resume or connect Notion—AI extracts your career highlights. Generate tailored resumes whenever you need.",
+      "cta_upload": "Upload Resume",
+      "cta_notion": "Connect Notion",
+      "upload_hint": "PDF or Word, no signup required"
+    },
+    "features": {
+      "achievement_bank": {
+        "title": "Achievement Bank",
+        "desc": "AI extracts career highlights from resumes and Notion, organized by impact, ready to use"
+      },
+      "one_click_resume": {
+        "title": "One-Click Resume",
+        "desc": "Paste job description, AI matches relevant achievements, generates tailored resume"
+      },
+      "always_ready": {
+        "title": "Always Prepared",
+        "desc": "Whenever opportunity knocks, your career story is ready to go"
+      }
+    }
+  },
+  "workspace": {
+    "toolbar": {
+      "generate": "Generate",
+      "export": "Export",
+      "history": "History",
+      "language": "Language",
+      "photo": "Photo",
+      "save": "Save"
+    },
+    "jd_panel": {
+      "title": "Job Description (Optional)",
+      "placeholder": "Paste job description here, AI will match your most relevant achievements...\n\nOr skip this and drag achievements directly from your library",
+      "char_limit": "Max 5000 characters",
+      "generate_btn": "Generate Tailored Resume"
+    },
+    "achievement_panel": {
+      "tabs": {
+        "library": "Library",
+        "drafts": "Drafts"
+      },
+      "search_placeholder": "Search achievements...",
+      "tier_labels": {
+        "tier1": "Key Highlights",
+        "tier2": "Major Wins",
+        "tier3": "Core Experience"
+      },
+      "empty_state": "No achievements yet. Upload resume or connect Notion to start",
+      "drag_hint": "Drag to resume"
+    }
+  },
+  "export": {
+    "modal_title": "Export Resume",
+    "formats": {
+      "pdf": "PDF Format",
+      "docx": "Word Format"
+    },
+    "photo_toggle": "Include Photo",
+    "export_btn": "Export",
+    "processing": "Generating..."
+  },
+  "paywall": {
+    "title": "Unlock Full Access",
+    "subtitle": "Keep your achievement manager working for you",
+    "features": [
+      "Unlimited resume exports",
+      "Unlimited achievement storage",
+      "Notion auto-sync",
+      "Priority AI processing"
+    ],
+    "cta": "Unlock Now",
+    "free_trial": "7-day free trial"
+  },
+  "notifications": {
+    "upload_success": "Resume uploaded, extracting achievements...",
+    "parse_complete": "Achievements extracted!",
+    "resume_generated": "Resume generated",
+    "export_success": "Export successful",
+    "save_success": "Saved",
+    "notion_connected": "Notion connected",
+    "error_generic": "Operation failed, please retry"
+  },
+  "status": {
+    "uploading": "Uploading...",
+    "parsing": "AI extracting achievements...",
+    "generating": "Generating resume...",
+    "exporting": "Exporting..."
+  }
+}

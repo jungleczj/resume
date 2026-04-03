@@ -1,0 +1,97 @@
+{
+  "brand": {
+    "name": "CareerFlow",
+    "tagline": "你的职业成就管家",
+    "description": "持续记录职业成就，随时生成完美简历"
+  },
+  "landing": {
+    "hero": {
+      "title": "职业成就，随时可用",
+      "subtitle": "不再为写简历发愁。上传旧简历或连接 Notion，AI 自动提炼你的职业亮点，需要时一键生成",
+      "cta_upload": "上传简历开始",
+      "cta_notion": "连接 Notion",
+      "upload_hint": "支持 PDF、Word，无需注册"
+    },
+    "features": {
+      "achievement_bank": {
+        "title": "成就银行",
+        "desc": "AI 自动从简历、Notion 中提炼职业亮点，分级管理，随时调用"
+      },
+      "one_click_resume": {
+        "title": "一键生成简历",
+        "desc": "粘贴职位描述，AI 匹配最相关成就，生成定制简历"
+      },
+      "always_ready": {
+        "title": "随时准备好",
+        "desc": "无论何时需要，你的职业故事都已整理就绪"
+      }
+    }
+  },
+  "workspace": {
+    "toolbar": {
+      "generate": "生成简历",
+      "export": "导出",
+      "history": "版本历史",
+      "language": "语言",
+      "photo": "照片",
+      "save": "保存"
+    },
+    "jd_panel": {
+      "title": "职位描述（可选）",
+      "placeholder": "粘贴职位描述，AI 将匹配最相关的成就...\n\n不粘贴也可以，直接从成就库拖入你想展示的亮点",
+      "char_limit": "最多 5000 字",
+      "generate_btn": "生成定制简历"
+    },
+    "achievement_panel": {
+      "tabs": {
+        "library": "成就库",
+        "drafts": "草稿"
+      },
+      "search_placeholder": "搜索成就...",
+      "tier_labels": {
+        "tier1": "核心亮点",
+        "tier2": "重要成就",
+        "tier3": "基础经历"
+      },
+      "empty_state": "暂无成就，上传简历或连接 Notion 开始积累",
+      "drag_hint": "拖入右侧简历"
+    }
+  },
+  "export": {
+    "modal_title": "导出简历",
+    "formats": {
+      "pdf": "PDF 格式",
+      "docx": "Word 格式"
+    },
+    "photo_toggle": "显示照片",
+    "export_btn": "导出",
+    "processing": "生成中..."
+  },
+  "paywall": {
+    "title": "解锁完整功能",
+    "subtitle": "继续使用成就管家，随时生成完美简历",
+    "features": [
+      "无限次导出简历",
+      "无限成就存储",
+      "Notion 自动同步",
+      "优先 AI 处理"
+    ],
+    "cta": "立即解锁",
+    "free_trial": "7 天免费试用"
+  },
+  "notifications": {
+    "upload_success": "简历已上传，正在提炼成就...",
+    "parse_complete": "成就提炼完成！",
+    "resume_generated": "简历已生成",
+    "export_success": "导出成功",
+    "save_success": "已保存",
+    "notion_connected": "Notion 已连接",
+    "error_generic": "操作失败，请重试"
+  },
+  "status": {
+    "uploading": "上传中...",
+    "parsing": "AI 正在提炼成就...",
+    "generating": "生成简历中...",
+    "exporting": "导出中..."
+  }
+}
