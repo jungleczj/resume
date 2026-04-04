@@ -13,11 +13,7 @@ const TIER_COLORS: Record<AchievementTier, string> = {
   3: 'bg-red-400'
 }
 
-const TIER_LABELS: Record<AchievementTier, string> = {
-  1: '核心亮点',
-  2: '重要成就',
-  3: '基础经历'
-}
+// Tier labels resolved at render time via i18n (see AchievementCard)
 
 export function AchievementPanel() {
   const t = useTranslations()
@@ -123,6 +119,9 @@ function AchievementCard({
   achievement: Achievement
   onDragStart: (e: React.DragEvent, a: Achievement) => void
 }) {
+  const t = useTranslations()
+  const tierKey = `workspace.achievement_panel.tier_labels.tier${achievement.tier}` as const
+
   return (
     <div
       draggable
@@ -135,7 +134,7 @@ function AchievementCard({
           'w-2 h-2 rounded-full flex-shrink-0 mt-1',
           TIER_COLORS[achievement.tier as AchievementTier]
         )}
-        title={TIER_LABELS[achievement.tier as AchievementTier]}
+        title={t(tierKey)}
       />
 
       {/* Text */}

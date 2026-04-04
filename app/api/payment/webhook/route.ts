@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { trackEvent } from '@/lib/analytics'
+import { createHmac, timingSafeEqual } from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await req.json()
+    const rawBody = await req.text()
     const signature = req.headers.get('creem-signature')
 
-    // Verify webhook signature
-    if (!verifySignature(payload, signature)) {
+    if (!verifySignature(rawBody, signature)) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
+
+    const payload = JSON.parse(rawBody)
 
     const supabase = await createClient()
 
@@ -40,7 +42,22 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function verifySignature(payload: any, signature: string | null): boolean {
-  // TODO: Implement Creem signature verification
-  return true
+function verifySignature(rawBody: string, signature: string | null): boolean {
+  const secret = process.env.CREEM_WEBHOOK_SECRET
+  if (!secret) {
+    console.error('CREEM_WEBHOOK_SECRET is not set')
+    return false
+  }
+  if (!signature) return false
+
+  // Creem sends HMAC-SHA256 hex digest in the creem-signature header
+  const expected = createHmac('sha256', secret)
+    .update(rawBody, 'utf8')
+    .digest('hex')
+
+  try {
+    return timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(expected, 'hex'))
+  } catch {
+    return false
+  }
 }

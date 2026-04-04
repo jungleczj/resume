@@ -17,7 +17,7 @@ interface ExportModalProps {
 }
 
 export function ExportModal({
-  format: _initialFormat,
+  format: initialFormat,
   anonymousId,
   userId,
   profile,
@@ -27,6 +27,7 @@ export function ExportModal({
   const router = useRouter()
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const format = initialFormat
 
   // CRITICAL: payment decision uses ONLY payment_market, never geo
   const isCNFree = !profile || profile.payment_market === 'cn_free'
@@ -37,7 +38,7 @@ export function ExportModal({
 
     await trackEvent('export_clicked', {
       anonymous_id: anonymousId,
-      format: 'pdf',
+      format,
       market: isCNFree ? 'cn_free' : 'en_paid'
     })
 
@@ -46,7 +47,7 @@ export function ExportModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          format: 'pdf',
+          format,
           anonymous_id: anonymousId,
           user_id: userId
         })
@@ -61,7 +62,7 @@ export function ExportModal({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'resume.pdf'
+      a.download = `resume.${format}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -69,8 +70,8 @@ export function ExportModal({
 
       await trackEvent('export_completed', {
         anonymous_id: anonymousId,
-        format: 'pdf',
-        market: 'cn_free'
+        format,
+        market: isCNFree ? 'cn_free' : 'en_paid'
       })
 
       onClose()

@@ -7,6 +7,12 @@ import { extractTextFromFile } from '@/lib/utils/file-parser'
 import type { BeautifyOutput } from '@/lib/types/domain'
 
 export async function POST(req: NextRequest) {
+  // Internal-only endpoint: must be called with the shared secret
+  const internalSecret = req.headers.get('x-internal-secret')
+  if (!internalSecret || internalSecret !== process.env.INTERNAL_API_SECRET) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   let upload_id: string | undefined
   try {
     const body = await req.json()

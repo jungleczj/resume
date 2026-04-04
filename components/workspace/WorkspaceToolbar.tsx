@@ -60,11 +60,32 @@ export function WorkspaceToolbar({
 
   const handleGenerate = async () => {
     setIsGenerating(true)
-    await trackEvent('resume_generated', {
-      anonymous_id: anonymousId,
-      has_jd: jdText.length > 0,
-      resume_lang: resumeLang
-    })
+    try {
+      const res = await fetch('/api/resume/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jd_text: jdText,
+          anonymous_id: anonymousId,
+          user_id: userId,
+          resume_lang: resumeLang
+        })
+      })
+      if (!res.ok) throw new Error('Generation failed')
+      const { data } = await res.json()
+      if (data?.editor_json) {
+        useWorkspaceStore.getState().setEditorJson(data.editor_json)
+      }
+      await trackEvent('resume_generated', {
+        anonymous_id: anonymousId,
+        has_jd: jdText.length > 0,
+        resume_lang: resumeLang
+      })
+    } catch {
+      // handled by UI state
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleExport = async () => {
@@ -98,7 +119,7 @@ export function WorkspaceToolbar({
 
   return (
     <header className="flex-shrink-0 bg-white/60 backdrop-blur-xl border-b border-indigo-500/10 shadow-sm shadow-indigo-500/5 z-50">
-      <div className="flex justify-between items-center w-full px-8 h-16 max-w-screen-2xl mx-auto">
+      <div className="flex justify-between items-center w-full px-8 h-20 max-w-screen-2xl mx-auto">
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-8">
           <Link href="/" className="flex-shrink-0">

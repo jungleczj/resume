@@ -18,7 +18,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             if (response) {
               response.cookies.set(name, value, options)
@@ -45,7 +45,10 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (profile?.payment_market === 'cn_free') {
-      const workspaceUrl = new URL('/workspace', request.url)
+      // Extract locale from pathname to preserve it in the redirect
+      const localeMatch = pathname.match(/^\/(zh-CN|en-US)/)
+      const locale = localeMatch ? localeMatch[1] : 'zh-CN'
+      const workspaceUrl = new URL(`/${locale}/workspace`, request.url)
       return NextResponse.redirect(workspaceUrl)
     }
   }

@@ -56,7 +56,7 @@ export function NavBar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-indigo-500/10 shadow-sm shadow-indigo-500/5">
-      <div className="max-w-screen-2xl mx-auto px-8 h-16 flex items-center">
+      <div className="max-w-screen-2xl mx-auto px-8 h-20 flex items-center">
         {/* Logo + Nav Links */}
         <div className="flex items-center gap-8 flex-1">
           <Link href="/" className="flex-shrink-0">

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations, useLocale } from 'next-intl'
 import { useWorkspaceStore } from '@/store/workspace'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +10,9 @@ interface ResumePreviewProps {
 }
 
 export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
+  const t = useTranslations()
+  const locale = useLocale()
+  const isZH = locale === 'zh-CN'
   const { editorJson, showPhoto, photoPath, resumeLang, experiences } =
     useWorkspaceStore()
 
@@ -58,7 +62,7 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
                 />
               ) : (
                 <span className="text-xs text-gray-400 text-center px-1">
-                  点击上传
+                  {t('workspace.resume_preview.photo_upload')}
                 </span>
               )}
             </div>
@@ -70,13 +74,13 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
         {/* Work experiences */}
         {confirmedExperiences.length === 0 ? (
           <div className="text-center py-16 text-gray-400 text-sm">
-            <p>成就正在生成中...</p>
-            <p className="text-xs mt-1">请稍候</p>
+            <p>{t('workspace.resume_preview.generating')}</p>
+            <p className="text-xs mt-1">{t('workspace.resume_preview.wait')}</p>
           </div>
         ) : (
           <div className="space-y-6">
             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider border-b border-gray-200 pb-1">
-              工作经历
+              {t('workspace.resume_preview.experience_title')}
             </h2>
             {confirmedExperiences.map((exp) => (
               <div key={exp.id}>
@@ -91,7 +95,7 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
                   </div>
                   <span className="text-xs text-gray-400">
                     {exp.start_year}
-                    {exp.end_year ? ` – ${exp.end_year}` : ' – 至今'}
+                    {exp.end_year ? ` – ${exp.end_year}` : ` – ${t('workspace.resume_preview.present')}`}
                   </span>
                 </div>
                 <ul className="space-y-1 mt-1.5">
@@ -119,7 +123,7 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
 
         {/* Anti-copy notice */}
         <div className="absolute bottom-4 right-4">
-          <span className="text-xs text-gray-300">预览仅供查看，内容不可复制</span>
+          <span className="text-xs text-gray-300">{t('workspace.resume_preview.copy_notice')}</span>
         </div>
       </div>
     </div>

@@ -15,30 +15,90 @@
   },
   "landing": {
     "hero": {
-      "title": "Your Achievements, Always Ready",
-      "subtitle": "Stop stressing over resumes. Upload your resume or connect Notion—AI extracts your career highlights and generates tailored resumes whenever opportunity knocks.",
-      "cta_upload": "Choose File",
+      "badge": "AI-Powered Excellence",
+      "title_before": "Transform Your ",
+      "title_highlight": "Resume",
+      "title_after": " with AI",
+      "subtitle": "Get matched to your dream job with AI-powered resume optimization and job matching. Elevate your career trajectory with data-driven insights.",
+      "cta_upload": "Upload Resume",
       "cta_notion": "Import from Notion",
-      "upload_hint": "Supported formats: PDF or DOCX, max 10MB",
+      "cta_demo": "See How It Works",
       "drop_title": "Drop your resume here",
-      "drop_subtitle": "or click to browse through your local files"
+      "drop_subtitle": "or click to browse through your local files",
+      "upload_hint": "Supported formats: PDF or DOCX, max 10MB",
+      "float_label": "Optimization Complete",
+      "float_score": "Score: 98/100"
     },
-    "ai_ready": "AI Extraction Ready",
-    "ai_match": "98% Match Rate",
+    "trust": {
+      "heading": "Trusted by 10,000+ professionals",
+      "stat1_num": "50k+",
+      "stat1_label": "Resumes optimized",
+      "stat2_num": "95%",
+      "stat2_label": "Match rate",
+      "stat3_num": "2M+",
+      "stat3_label": "Jobs matched"
+    },
     "features": {
-      "achievement_bank": {
-        "title": "Achievement Bank",
-        "desc": "AI extracts career highlights from resumes and Notion, organized by impact tier, always ready to deploy"
-      },
-      "one_click_resume": {
-        "title": "Tailored in Seconds",
-        "desc": "Paste a job description, AI matches your strongest achievements and assembles a custom resume"
-      },
-      "always_ready": {
-        "title": "Always Prepared",
-        "desc": "When the right opportunity appears, your career story is already polished and ready"
-      }
+      "heading": "Precision-Engineered Features",
+      "subheading": "Our AI doesn't just scan; it understands your unique career narrative and aligns it with market demands.",
+      "f1_title": "AI Resume Analysis",
+      "f1_desc": "Our neural engine identifies semantic gaps and strengthens your professional impact with high-conversion keywords.",
+      "f2_title": "Job Matching",
+      "f2_desc": "Proprietary algorithms bridge the gap between your skill set and real-time market opportunities globally.",
+      "f3_title": "Export to PDF/DOCX",
+      "f3_desc": "Download your ATS-optimized documents in multiple high-fidelity formats ready for application.",
+      "learn_more": "Learn more"
+    },
+    "how_it_works": {
+      "heading": "Your Path to Career Growth",
+      "subheading": "Simple, powerful, and effective optimization in four steps.",
+      "s1_title": "Upload Resume",
+      "s1_desc": "Simply drag and drop your current resume to begin the journey.",
+      "s2_title": "AI Analysis",
+      "s2_desc": "Our model scans for 50+ key metrics used by top recruiters.",
+      "s3_title": "Optimize Content",
+      "s3_desc": "Receive real-time suggestions to rewrite and refine your content.",
+      "s4_title": "Export & Apply",
+      "s4_desc": "Get your polished resume and start applying to matched roles.",
+      "cta": "Start Free Optimization"
+    },
+    "testimonials": {
+      "heading": "Trusted by Industry Leaders",
+      "subheading": "Join thousands of professionals who have accelerated their careers with AI.",
+      "t1_name": "Sarah Jenkins",
+      "t1_role": "Senior Product Designer at Google",
+      "t1_quote": "\"The AI analysis was surprisingly accurate. It picked up on nuances in my portfolio and helped me frame my experience in a way that resonated perfectly with top-tier recruiters. I landed my role at Google within weeks of using CareerFlow.\"",
+      "t2_name": "David Chen",
+      "t2_role": "Software Engineering Manager at Meta",
+      "t2_quote": "\"As someone who hires engineers, I'm impressed by the quality of resumes generated here. CareerFlow doesn't just buzzword-stuff; it builds a genuine narrative of impact. Highly recommended for any serious job seeker.\"",
+      "t3_name": "Elena Rodriguez",
+      "t3_role": "Data Scientist at Airbnb",
+      "t3_quote": "\"The job matching feature is a game-changer. It saved me hours of scrolling through irrelevant listings by showing me exactly where my skills were most in demand. The resume optimization was the cherry on top.\""
+    },
+    "footer": {
+      "tagline": "Precision resume optimization for the modern era.",
+      "about": "About",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "copyright": "© 2024 CareerFlow AI. All rights reserved."
     }
+  },
+  "login": {
+    "title_before": "Unlock Your ",
+    "title_highlight": "Career Potential",
+    "title_after": "",
+    "subtitle": "Access your AI-architected workspace and transform your professional trajectory today.",
+    "google_btn": "Continue with Google",
+    "or": "OR",
+    "email_label": "Email Address",
+    "email_placeholder": "name@company.com",
+    "email_btn": "Continue with Email",
+    "sending": "Sending...",
+    "legal_prefix": "By continuing, you acknowledge our",
+    "privacy": "Privacy Policy",
+    "legal_and": "and",
+    "terms": "Terms of Service",
+    "social_proof": "Joined by 12,000+ Professionals"
   },
   "workspace": {
     "toolbar": {
@@ -68,6 +128,14 @@
       },
       "empty_state": "No achievements yet. Upload a resume or connect Notion to get started",
       "drag_hint": "Drag to resume"
+    },
+    "resume_preview": {
+      "generating": "Generating achievements...",
+      "wait": "Please wait a moment",
+      "experience_title": "Work Experience",
+      "present": "Present",
+      "photo_upload": "Click to upload",
+      "copy_notice": "Preview only — content cannot be copied"
     }
   },
   "library": {
@@ -88,33 +156,47 @@
     }
   },
   "pricing": {
-    "title": "Choose Your Plan",
-    "subtitle": "Unlock unlimited exports and always be ready for your next opportunity",
-    "per_export": {
-      "name": "Per Export",
-      "price": "$0.99",
-      "period": "/export",
-      "desc": "Pay as you go",
-      "features": ["Single download", "Standard Templates"],
-      "not_included": ["No Unlimited Edits"]
-    },
-    "monthly": {
-      "name": "Monthly",
-      "price": "$14.99",
-      "period": "/mo",
-      "desc": "Full monthly access",
-      "features": ["Unlimited exports", "All premium templates", "Priority AI processing", "Version history"]
-    },
-    "yearly": {
-      "name": "Yearly",
-      "price": "$99",
-      "period": "/yr",
-      "desc": "Save 45%",
-      "badge": "Best Value",
-      "features": ["Unlimited exports", "All premium templates", "Priority AI processing", "Version history", "Dedicated support"]
-    },
+    "title_before": "Unlock Your ",
+    "title_highlight": "Career Potential",
+    "subtitle": "Join over 50,000 professionals who used CareerFlow AI to land roles at top-tier international firms.",
+    "vp1_title": "Unlimited AI Optimization",
+    "vp1_desc": "Continuous refinement of your resume for every job description you target.",
+    "vp2_title": "Watermark-free Exports",
+    "vp2_desc": "Professional, clean PDFs and Word documents ready for high-stakes applications.",
+    "vp3_title": "All Templates Unlocked",
+    "vp3_desc": "Access our full library of ATS-optimized designs for any industry or seniority level.",
+    "pro_tip": "AI Pro-Tip: Users with Premium templates get 3x more interview callbacks.",
+    "per_export_name": "Per Export",
+    "per_export_price": "$0.99",
+    "per_export_period": "/export",
+    "per_export_desc": "Pay as you go",
+    "per_export_f1": "Single download",
+    "per_export_f2": "Standard Templates",
+    "per_export_no": "No Unlimited Edits",
+    "monthly_name": "Monthly",
+    "monthly_price": "$14.99",
+    "monthly_period": "/mo",
+    "monthly_desc": "Full monthly access",
+    "monthly_f1": "Unlimited exports",
+    "monthly_f2": "Priority AI",
+    "monthly_f3": "All Templates",
+    "yearly_name": "Yearly",
+    "yearly_price": "$99",
+    "yearly_period": "/yr",
+    "yearly_desc": "Billed annually",
+    "yearly_badge": "Best Value",
+    "yearly_save": "SAVE 34%",
+    "yearly_f1": "Unlimited exports",
+    "yearly_f2": "Priority AI",
+    "yearly_f3": "All Templates Unlocked",
+    "yearly_f4": "AI Cover Letter Gen",
     "cta": "Continue to Payment",
-    "secure": "Secure checkout · Cancel anytime"
+    "trust": "Secure Payment & 14-day Money Back Guarantee",
+    "trust_sub": "Trusted by professionals worldwide. Encryption by industry leaders.",
+    "footer_tagline": "© 2024 CareerFlow AI. International Edition.",
+    "footer_privacy": "Privacy Policy",
+    "footer_terms": "Terms of Service",
+    "footer_support": "Contact Support"
   },
   "version_history": {
     "title": "Version History",

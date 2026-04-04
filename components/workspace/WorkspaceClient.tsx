@@ -171,7 +171,7 @@ export function WorkspaceClient({
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar navigation (fixed width, collapsible on mobile) */}
-        <aside className="hidden md:flex flex-col flex-shrink-0 w-20 lg:w-64 bg-surface-container-low border-r border-outline-variant/10 py-6 px-3 z-10">
+        <aside className="hidden md:flex flex-col flex-shrink-0 w-20 lg:w-64 bg-slate-50 border-r border-slate-100 py-8 px-4 z-10">
           <div className="space-y-1 flex-1">
             {SIDEBAR_ITEMS.map(item => {
               const isActive = pathname === item.href || pathname.startsWith(item.href.split('?')[0] + '/')
@@ -193,10 +193,10 @@ export function WorkspaceClient({
             })}
           </div>
 
-          {/* Upgrade prompt */}
-          {!profile || profile.payment_market === 'cn_free' ? null : (
-            <div className="hidden lg:block p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl mt-4">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-tight mb-1">CareerFlow AI</p>
+          {/* Upgrade prompt — show for free users */}
+          {(!profile || profile.payment_market === 'cn_free') && (
+            <div className="mt-auto p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl hidden lg:block">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-1">CareerFlow AI</p>
               <p className="text-on-surface font-headline font-bold text-sm mb-3">Upgrade to Pro</p>
               <Link
                 href="/pricing"

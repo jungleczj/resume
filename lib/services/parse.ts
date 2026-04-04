@@ -20,10 +20,15 @@ export async function parseResume(
   const rawText = await parseFile(upload.file_path)
   const prompt = await getPrompt('resume_beautify', context.market)
 
-  const beautified = await callAI('resume_beautify', [
+  const beautifiedRaw = await callAI('resume_beautify', [
     { role: 'system', content: prompt },
     { role: 'user', content: rawText }
   ], context.market)
+
+  const beautified = JSON.parse(beautifiedRaw) as {
+    items: Array<{ tier: number; text: string; [key: string]: unknown }>
+    tiptap_json: unknown
+  }
 
   await saveAchievements(beautified.items, context)
 

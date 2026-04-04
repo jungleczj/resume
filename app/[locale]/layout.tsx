@@ -3,7 +3,16 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
+import type { Metadata } from 'next'
 import '@/app/globals.css'
+
+export const metadata: Metadata = {
+  title: {
+    default: 'CareerFlow AI — Transform Your Resume with AI',
+    template: '%s | CareerFlow AI'
+  },
+  description: 'AI-powered resume optimization. Upload your resume, extract career achievements, and generate tailored resumes for every opportunity.'
+}
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))

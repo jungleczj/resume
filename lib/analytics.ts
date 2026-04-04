@@ -1,7 +1,9 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
+import { createClient as createAnonClient } from '@supabase/supabase-js'
 
 export interface EventProperties {
   anonymous_id?: string
+  user_id?: string
   page_path?: string
   referrer?: string
   utm_source?: string
@@ -36,15 +38,29 @@ export async function trackEvent(
   properties: EventProperties = {}
 ): Promise<void> {
   try {
-    const supabase = createClient()
-    const {
-      data: { user }
-    } = await supabase.auth.getUser()
+    const isServer = typeof window === 'undefined'
+    let userId: string | null = properties.user_id ?? null
+
+    // Client-side: resolve auth user from browser session
+    if (!isServer && !userId) {
+      const browserClient = createBrowserClient()
+      const { data: { user } } = await browserClient.auth.getUser()
+      userId = user?.id ?? null
+    }
+
+    // Use a plain anon client for the insert — safe in both client and server contexts.
+    // The browser client's auth session is separate from this insert; we embed user_id explicitly.
+    const supabase = isServer
+      ? createAnonClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+      : createBrowserClient()
 
     // Fire-and-forget: don't block the caller
     void supabase.from('analytics_events').insert({
-      user_id: user?.id ?? null,
-      anonymous_id: properties.anonymous_id ?? getAnonymousId(),
+      user_id: userId,
+      anonymous_id: properties.anonymous_id ?? (isServer ? null : getAnonymousId()),
       event_name: eventName,
       properties,
       page_path: properties.page_path ?? (typeof window !== 'undefined' ? window.location.pathname : null),

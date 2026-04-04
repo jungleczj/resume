@@ -33,10 +33,14 @@ const qianwenClient = new OpenAI({
   baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1'
 })
 
-// Claude client
+// Claude client — uses Anthropic's OpenAI-compatible endpoint with correct auth
 const claudeClient = new OpenAI({
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  baseURL: 'https://api.anthropic.com/v1'
+  baseURL: 'https://api.anthropic.com/v1',
+  defaultHeaders: {
+    'x-api-key': process.env.ANTHROPIC_API_KEY!,
+    'anthropic-version': '2023-06-01'
+  }
 })
 
 export async function callAI(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { shouldShowPaywall } from '@/lib/services/paywall'
+import { createCreemCheckout } from '@/lib/services/creem'
 import { trackEvent } from '@/lib/analytics'
 import { generatePDF } from '@/lib/utils/pdf-generator'
 import { generateDOCX } from '@/lib/utils/docx-generator'
@@ -19,13 +20,14 @@ export async function POST(req: NextRequest) {
     const { show: needsPayment } = await shouldShowPaywall(user_id ?? null, 'export')
 
     if (needsPayment) {
-      // Create Creem checkout
-      const checkoutRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payment/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id, format, plan_type: 'per_export' })
+      const checkout = await createCreemCheckout({
+        userId: user_id,
+        anonymousId: anonymous_id,
+        planType: 'per_export',
+        format: format as 'pdf' | 'docx',
+        amount: 4.99,
+        currency: 'usd'
       })
-      const checkout = await checkoutRes.json()
       return NextResponse.json(
         { requires_payment: true, checkout_url: checkout.checkout_url },
         { status: 402 }
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Load profile for name/contact info
-    let name = '用户'
+    let name = ''
     let email = ''
     let phone = ''
     let lang: 'zh' | 'en' = 'zh'
@@ -46,10 +48,17 @@ export async function POST(req: NextRequest) {
         .single()
       if (profile) {
         lang = profile.resume_lang_preference === 'en' ? 'en' : 'zh'
+        phone = profile.phone ?? ''
       }
 
-      const { data: authUser } = await supabase.auth.getUser()
-      if (authUser?.user?.email) email = authUser.user.email
+      const { data: authData } = await supabase.auth.getUser()
+      if (authData?.user) {
+        email = authData.user.email ?? ''
+        // full_name set during OAuth or sign-up
+        name = (authData.user.user_metadata?.full_name as string | undefined)
+          ?? (authData.user.user_metadata?.name as string | undefined)
+          ?? ''
+      }
     }
 
     // Load experiences + confirmed achievements

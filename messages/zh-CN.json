@@ -15,30 +15,90 @@
   },
   "landing": {
     "hero": {
-      "title": "职业成就，随时可用",
-      "subtitle": "不再为写简历发愁。上传旧简历或连接 Notion，AI 自动提炼你的职业亮点，需要时一键生成",
+      "badge": "AI 驱动求职新体验",
+      "title_before": "用 AI 打造",
+      "title_highlight": "出彩简历",
+      "title_after": "，抢占先机",
+      "subtitle": "上传旧简历，AI 自动提炼职业亮点，按职位需求一键生成定制简历。告别反复修改，让每份简历都精准匹配。",
       "cta_upload": "上传简历",
       "cta_notion": "导入 Notion",
-      "upload_hint": "支持 PDF、DOCX，最大 10MB，无需注册",
+      "cta_demo": "查看演示",
       "drop_title": "将简历拖放至此",
-      "drop_subtitle": "或点击从本地文件中选择"
+      "drop_subtitle": "或点击从本地文件中选择",
+      "upload_hint": "支持 PDF、DOCX，最大 10MB，无需注册",
+      "float_label": "优化完成",
+      "float_score": "得分：98/100"
     },
-    "ai_ready": "AI 提炼就绪",
-    "ai_match": "98% 匹配率",
+    "trust": {
+      "heading": "10,000+ 职场人的信赖之选",
+      "stat1_num": "50k+",
+      "stat1_label": "简历已优化",
+      "stat2_num": "95%",
+      "stat2_label": "岗位匹配率",
+      "stat3_num": "200万+",
+      "stat3_label": "职位已匹配"
+    },
     "features": {
-      "achievement_bank": {
-        "title": "成就银行",
-        "desc": "AI 自动从简历、Notion 中提炼职业亮点，分级管理，随时调用"
-      },
-      "one_click_resume": {
-        "title": "一键生成简历",
-        "desc": "粘贴职位描述，AI 匹配最相关成就，生成定制简历"
-      },
-      "always_ready": {
-        "title": "随时准备好",
-        "desc": "无论何时需要，你的职业故事都已整理就绪"
-      }
+      "heading": "专为求职者打造的 AI 能力",
+      "subheading": "不只是扫描简历，而是深度理解你的职业故事，精准对齐招聘需求。",
+      "f1_title": "AI 简历诊断",
+      "f1_desc": "深度解析简历中的薄弱环节，补充高转化关键词，显著提升 ATS 通过率。",
+      "f2_title": "智能职位匹配",
+      "f2_desc": "算法实时对比你的能力与市场需求，精准推荐最适合的岗位机会。",
+      "f3_title": "一键导出简历",
+      "f3_desc": "支持 PDF、DOCX 多种格式，符合国内外招聘标准，随时投递。",
+      "learn_more": "了解更多"
+    },
+    "how_it_works": {
+      "heading": "四步开启职业新征程",
+      "subheading": "简单、高效，全程 AI 陪伴优化。",
+      "s1_title": "上传简历",
+      "s1_desc": "拖拽或点击上传现有简历，立即开始。",
+      "s2_title": "AI 深度分析",
+      "s2_desc": "扫描 50+ 项招聘官关注的核心指标。",
+      "s3_title": "优化内容",
+      "s3_desc": "实时获取改写建议，精炼每一条表达。",
+      "s4_title": "导出投递",
+      "s4_desc": "下载精美简历，一键投递心仪职位。",
+      "cta": "免费开始优化"
+    },
+    "testimonials": {
+      "heading": "职场精英的共同选择",
+      "subheading": "数千名职场人借助 AI，成功加速了职业发展。",
+      "t1_name": "Sarah Jenkins",
+      "t1_role": "Google 高级产品设计师",
+      "t1_quote": "「AI 分析精准到令人惊讶，准确捕捉到我作品集的核心优势，帮我以招聘官最看重的方式呈现经历。使用 CareerFlow 几周后，我就收到了 Google 的 Offer。」",
+      "t2_name": "David Chen",
+      "t2_role": "Meta 软件工程经理",
+      "t2_quote": "「作为面试官，CareerFlow 生成的简历质量让我印象深刻——不堆砌关键词，而是构建真实的影响力叙事。诚心推荐给每一位认真求职的人。」",
+      "t3_name": "Elena Rodriguez",
+      "t3_role": "Airbnb 数据科学家",
+      "t3_quote": "「职位匹配功能彻底改变了我的求职方式，省去了大量无效刷屏时间，精准指向我最具竞争力的方向。简历优化则是锦上添花。」"
+    },
+    "footer": {
+      "tagline": "用 AI 重新定义简历优化。",
+      "about": "关于我们",
+      "privacy": "隐私政策",
+      "terms": "服务条款",
+      "copyright": "© 2024 CareerFlow AI. 保留所有权利。"
     }
+  },
+  "login": {
+    "title_before": "开启你的",
+    "title_highlight": "职业新征程",
+    "title_after": "",
+    "subtitle": "借助 AI 工作台，系统整理职业亮点，精准匹配心仪职位，把握每一个机会。",
+    "google_btn": "使用 Google 登录",
+    "or": "或",
+    "email_label": "邮箱地址",
+    "email_placeholder": "your@email.com",
+    "email_btn": "邮箱登录",
+    "sending": "发送中...",
+    "legal_prefix": "继续即表示你同意我们的",
+    "privacy": "隐私政策",
+    "legal_and": "和",
+    "terms": "服务条款",
+    "social_proof": "已有 12,000+ 职场人加入"
   },
   "workspace": {
     "toolbar": {
@@ -68,6 +128,14 @@
       },
       "empty_state": "暂无成就，上传简历或连接 Notion 开始积累",
       "drag_hint": "拖入右侧简历"
+    },
+    "resume_preview": {
+      "generating": "成就正在生成中...",
+      "wait": "请稍候",
+      "experience_title": "工作经历",
+      "present": "至今",
+      "photo_upload": "点击上传照片",
+      "copy_notice": "仅供预览，内容受保护"
     }
   },
   "library": {
@@ -88,33 +156,47 @@
     }
   },
   "pricing": {
-    "title": "选择套餐",
-    "subtitle": "解锁无限导出，让每次求职都准备充分",
-    "per_export": {
-      "name": "单次导出",
-      "price": "$0.99",
-      "period": "/次",
-      "desc": "按需付费",
-      "features": ["单次下载", "标准模板"],
-      "not_included": ["不含无限次编辑"]
-    },
-    "monthly": {
-      "name": "月度订阅",
-      "price": "$14.99",
-      "period": "/月",
-      "desc": "随时取消",
-      "features": ["无限次导出", "所有高级模板", "优先 AI 处理", "版本历史"]
-    },
-    "yearly": {
-      "name": "年度订阅",
-      "price": "$99",
-      "period": "/年",
-      "desc": "节省 45%",
-      "badge": "最划算",
-      "features": ["无限次导出", "所有高级模板", "优先 AI 处理", "版本历史", "专属客服"]
-    },
-    "cta": "立即开始",
-    "secure": "安全加密支付 · 随时取消"
+    "title_before": "解锁你的",
+    "title_highlight": "职业新可能",
+    "subtitle": "超过 50,000 名职场人借助 CareerFlow AI，成功拿到国际大厂 Offer。",
+    "vp1_title": "无限 AI 优化",
+    "vp1_desc": "针对每个目标职位持续优化你的简历，精准命中招聘需求。",
+    "vp2_title": "无水印导出",
+    "vp2_desc": "专业干净的 PDF 和 Word 文件，随时可用于高门槛职位投递。",
+    "vp3_title": "解锁全部模板",
+    "vp3_desc": "访问全量 ATS 优化模板库，覆盖各行业各级别职位。",
+    "pro_tip": "AI 提示：使用高级模板的用户获得面试邀请的概率提升 3 倍。",
+    "per_export_name": "单次导出",
+    "per_export_price": "$0.99",
+    "per_export_period": "/次",
+    "per_export_desc": "按需付费",
+    "per_export_f1": "单次下载",
+    "per_export_f2": "标准模板",
+    "per_export_no": "不含无限次编辑",
+    "monthly_name": "月度订阅",
+    "monthly_price": "$14.99",
+    "monthly_period": "/月",
+    "monthly_desc": "随时取消",
+    "monthly_f1": "无限次导出",
+    "monthly_f2": "优先 AI 处理",
+    "monthly_f3": "全部模板",
+    "yearly_name": "年度订阅",
+    "yearly_price": "$99",
+    "yearly_period": "/年",
+    "yearly_desc": "按年计费",
+    "yearly_badge": "最划算",
+    "yearly_save": "节省 34%",
+    "yearly_f1": "无限次导出",
+    "yearly_f2": "优先 AI 处理",
+    "yearly_f3": "全部模板",
+    "yearly_f4": "AI 求职信生成",
+    "cta": "立即开通",
+    "trust": "安全支付 & 14 天无理由退款",
+    "trust_sub": "受全球职场人信赖，采用行业领先加密技术。",
+    "footer_tagline": "© 2024 CareerFlow AI. 保留所有权利。",
+    "footer_privacy": "隐私政策",
+    "footer_terms": "服务条款",
+    "footer_support": "联系客服"
   },
   "version_history": {
     "title": "版本历史",
