@@ -6,6 +6,9 @@ CareerFlow MVP 开发工作流，基于 PRD v5.9 和 Tech Spec v9.0
 
 **核心开发原则**：
 - 🎨 UI/UX 设计优先（使用 Stitch MCP）
+	Stitch项目为：https://stitch.withgoogle.com/projects/17366397665912095806
+	项目id为17366397665912095806
+	需要完全复刻已经评审通过的stitch UI
 - 🗄️ 数据库 Migration 优先（自动同步到 Supabase Remote）
 
 ---

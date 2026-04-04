@@ -17,6 +17,13 @@
 ## 全局最高优先级规则
 
 ### 🎨 规则一：Stitch MCP UI/UX 设计优先
+Stitch项目为：https://stitch.withgoogle.com/projects/17366397665912095806
+项目id为17366397665912095806
+需要完全复刻已经评审通过的stitch UI；
+MCP为：claude mcp add stitch \
+  --transport http \
+   "https://stitch.googleapis.com/mcp" \
+  --header "X-Goog-Api-Key: <STITCH_API_KEY>"；
 
 **开发任何功能前，必须先完成 UI/UX 设计**：
 

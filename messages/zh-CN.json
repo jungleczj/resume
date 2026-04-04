@@ -4,14 +4,27 @@
     "tagline": "你的职业成就管家",
     "description": "持续记录职业成就，随时生成完美简历"
   },
+  "nav": {
+    "workspace": "工作台",
+    "library": "成就库",
+    "pricing": "定价",
+    "settings": "设置",
+    "login": "登录",
+    "logout": "退出",
+    "lang_toggle": "EN"
+  },
   "landing": {
     "hero": {
       "title": "职业成就，随时可用",
       "subtitle": "不再为写简历发愁。上传旧简历或连接 Notion，AI 自动提炼你的职业亮点，需要时一键生成",
-      "cta_upload": "上传简历开始",
-      "cta_notion": "连接 Notion",
-      "upload_hint": "支持 PDF、Word，无需注册"
+      "cta_upload": "上传简历",
+      "cta_notion": "导入 Notion",
+      "upload_hint": "支持 PDF、DOCX，最大 10MB，无需注册",
+      "drop_title": "将简历拖放至此",
+      "drop_subtitle": "或点击从本地文件中选择"
     },
+    "ai_ready": "AI 提炼就绪",
+    "ai_match": "98% 匹配率",
     "features": {
       "achievement_bank": {
         "title": "成就银行",
@@ -57,27 +70,87 @@
       "drag_hint": "拖入右侧简历"
     }
   },
+  "library": {
+    "title": "我的成就库",
+    "subtitle": "管理你所有的职业成就",
+    "search_placeholder": "搜索成就...",
+    "filter_all": "全部",
+    "filter_tier1": "核心亮点",
+    "filter_tier2": "重要成就",
+    "filter_tier3": "基础经历",
+    "empty_state": "暂无成就，去工作台上传简历开始积累",
+    "go_workspace": "去工作台",
+    "achievement_count": "{count} 条成就",
+    "tier_badge": {
+      "1": "T1",
+      "2": "T2",
+      "3": "T3"
+    }
+  },
+  "pricing": {
+    "title": "选择套餐",
+    "subtitle": "解锁无限导出，让每次求职都准备充分",
+    "per_export": {
+      "name": "单次导出",
+      "price": "$0.99",
+      "period": "/次",
+      "desc": "按需付费",
+      "features": ["单次下载", "标准模板"],
+      "not_included": ["不含无限次编辑"]
+    },
+    "monthly": {
+      "name": "月度订阅",
+      "price": "$14.99",
+      "period": "/月",
+      "desc": "随时取消",
+      "features": ["无限次导出", "所有高级模板", "优先 AI 处理", "版本历史"]
+    },
+    "yearly": {
+      "name": "年度订阅",
+      "price": "$99",
+      "period": "/年",
+      "desc": "节省 45%",
+      "badge": "最划算",
+      "features": ["无限次导出", "所有高级模板", "优先 AI 处理", "版本历史", "专属客服"]
+    },
+    "cta": "立即开始",
+    "secure": "安全加密支付 · 随时取消"
+  },
+  "version_history": {
+    "title": "版本历史",
+    "search_placeholder": "搜索版本...",
+    "empty": "暂无历史版本",
+    "current": "当前版本",
+    "view": "查看",
+    "restore": "恢复",
+    "restore_confirm": "确认恢复到此版本？当前内容将被替换。",
+    "restore_yes": "确认恢复",
+    "restore_cancel": "取消",
+    "groups": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "this_week": "本周",
+      "earlier": "更早"
+    }
+  },
   "export": {
     "modal_title": "导出简历",
+    "free_badge": "免费导出",
+    "download_btn": "立即下载",
     "formats": {
       "pdf": "PDF 格式",
       "docx": "Word 格式"
     },
     "photo_toggle": "显示照片",
     "export_btn": "导出",
-    "processing": "生成中..."
-  },
-  "paywall": {
-    "title": "解锁完整功能",
-    "subtitle": "继续使用成就管家，随时生成完美简历",
-    "features": [
-      "无限次导出简历",
-      "无限成就存储",
-      "Notion 自动同步",
-      "优先 AI 处理"
-    ],
-    "cta": "立即解锁",
-    "free_trial": "7 天免费试用"
+    "processing": "生成中...",
+    "paywall": {
+      "title": "解锁导出功能",
+      "subtitle": "升级 Pro 版，无限次导出",
+      "features": ["无限次 PDF/Word 导出", "多种精美模板", "优先 AI 处理", "版本历史保存"],
+      "upgrade_btn": "升级 Pro",
+      "later": "稍后"
+    }
   },
   "notifications": {
     "upload_success": "简历已上传，正在提炼成就...",

@@ -2,18 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 @layer base {
   :root {
-    --brand: #2563EB;
+    --brand: #4F46E5;
     --achievement-tier1: #16A34A;
     --achievement-tier2: #CA8A04;
     --achievement-tier3: #DC2626;
   }
 
   body {
-    @apply font-sans text-gray-900 antialiased;
+    @apply font-sans text-on-surface antialiased;
+    background-color: #fcf8ff;
+  }
+
+  h1, h2, h3, .font-headline {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Glass panel utility */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
 
   /* Prevent resume content from being selectable/copyable */
@@ -33,5 +62,14 @@
   /* Re-enable pointer events for interactive elements only */
   .resume-preview [data-interactive] {
     pointer-events: auto;
+  }
+
+  /* Scrollbar hide utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

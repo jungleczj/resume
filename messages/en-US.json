@@ -4,26 +4,39 @@
     "tagline": "Your Career Achievement Manager",
     "description": "Capture achievements continuously, generate resumes instantly"
   },
+  "nav": {
+    "workspace": "Workspace",
+    "library": "Library",
+    "pricing": "Pricing",
+    "settings": "Settings",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "lang_toggle": "中"
+  },
   "landing": {
     "hero": {
       "title": "Your Achievements, Always Ready",
-      "subtitle": "Stop stressing over resumes. Upload your old resume or connect Notion—AI extracts your career highlights. Generate tailored resumes whenever you need.",
-      "cta_upload": "Upload Resume",
-      "cta_notion": "Connect Notion",
-      "upload_hint": "PDF or Word, no signup required"
+      "subtitle": "Stop stressing over resumes. Upload your resume or connect Notion—AI extracts your career highlights and generates tailored resumes whenever opportunity knocks.",
+      "cta_upload": "Choose File",
+      "cta_notion": "Import from Notion",
+      "upload_hint": "Supported formats: PDF or DOCX, max 10MB",
+      "drop_title": "Drop your resume here",
+      "drop_subtitle": "or click to browse through your local files"
     },
+    "ai_ready": "AI Extraction Ready",
+    "ai_match": "98% Match Rate",
     "features": {
       "achievement_bank": {
         "title": "Achievement Bank",
-        "desc": "AI extracts career highlights from resumes and Notion, organized by impact, ready to use"
+        "desc": "AI extracts career highlights from resumes and Notion, organized by impact tier, always ready to deploy"
       },
       "one_click_resume": {
-        "title": "One-Click Resume",
-        "desc": "Paste job description, AI matches relevant achievements, generates tailored resume"
+        "title": "Tailored in Seconds",
+        "desc": "Paste a job description, AI matches your strongest achievements and assembles a custom resume"
       },
       "always_ready": {
         "title": "Always Prepared",
-        "desc": "Whenever opportunity knocks, your career story is ready to go"
+        "desc": "When the right opportunity appears, your career story is already polished and ready"
       }
     }
   },
@@ -53,31 +66,91 @@
         "tier2": "Major Wins",
         "tier3": "Core Experience"
       },
-      "empty_state": "No achievements yet. Upload resume or connect Notion to start",
+      "empty_state": "No achievements yet. Upload a resume or connect Notion to get started",
       "drag_hint": "Drag to resume"
+    }
+  },
+  "library": {
+    "title": "Achievement Library",
+    "subtitle": "Your career highlights, organized and ready",
+    "search_placeholder": "Search achievements...",
+    "filter_all": "All",
+    "filter_tier1": "Key Highlights",
+    "filter_tier2": "Major Wins",
+    "filter_tier3": "Core Experience",
+    "empty_state": "No achievements yet. Head to the workspace to upload your resume",
+    "go_workspace": "Go to Workspace",
+    "achievement_count": "{count} achievements",
+    "tier_badge": {
+      "1": "T1",
+      "2": "T2",
+      "3": "T3"
+    }
+  },
+  "pricing": {
+    "title": "Choose Your Plan",
+    "subtitle": "Unlock unlimited exports and always be ready for your next opportunity",
+    "per_export": {
+      "name": "Per Export",
+      "price": "$0.99",
+      "period": "/export",
+      "desc": "Pay as you go",
+      "features": ["Single download", "Standard Templates"],
+      "not_included": ["No Unlimited Edits"]
+    },
+    "monthly": {
+      "name": "Monthly",
+      "price": "$14.99",
+      "period": "/mo",
+      "desc": "Full monthly access",
+      "features": ["Unlimited exports", "All premium templates", "Priority AI processing", "Version history"]
+    },
+    "yearly": {
+      "name": "Yearly",
+      "price": "$99",
+      "period": "/yr",
+      "desc": "Save 45%",
+      "badge": "Best Value",
+      "features": ["Unlimited exports", "All premium templates", "Priority AI processing", "Version history", "Dedicated support"]
+    },
+    "cta": "Continue to Payment",
+    "secure": "Secure checkout · Cancel anytime"
+  },
+  "version_history": {
+    "title": "Version History",
+    "search_placeholder": "Search versions...",
+    "empty": "No saved versions yet",
+    "current": "Current",
+    "view": "View",
+    "restore": "Restore",
+    "restore_confirm": "Restore this version? Your current content will be replaced.",
+    "restore_yes": "Restore",
+    "restore_cancel": "Cancel",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "this_week": "This Week",
+      "earlier": "Earlier"
     }
   },
   "export": {
     "modal_title": "Export Resume",
+    "free_badge": "Free Export",
+    "download_btn": "Download Now",
     "formats": {
-      "pdf": "PDF Format",
-      "docx": "Word Format"
+      "pdf": "PDF",
+      "docx": "Word"
     },
     "photo_toggle": "Include Photo",
     "export_btn": "Export",
-    "processing": "Generating..."
-  },
-  "paywall": {
-    "title": "Unlock Full Access",
-    "subtitle": "Keep your achievement manager working for you",
-    "features": [
-      "Unlimited resume exports",
-      "Unlimited achievement storage",
-      "Notion auto-sync",
-      "Priority AI processing"
-    ],
-    "cta": "Unlock Now",
-    "free_trial": "7-day free trial"
+    "processing": "Generating...",
+    "paywall": {
+      "title": "Ready to Export",
+      "subtitle": "Upgrade to Pro to download your resume",
+      "features": ["Unlimited PDF & Word exports", "Premium templates", "Priority AI processing", "Version history"],
+      "upgrade_btn": "Upgrade to Pro",
+      "later": "Maybe Later"
+    }
   },
   "notifications": {
     "upload_success": "Resume uploaded, extracting achievements...",

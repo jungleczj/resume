@@ -1,18 +1,14 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useWorkspaceStore } from '@/store/workspace'
 import { trackEvent } from '@/lib/analytics'
-import {
-  FileText,
-  Download,
-  History,
-  ChevronDown,
-  Camera,
-  Save,
-  Loader2
-} from 'lucide-react'
+import { Link, usePathname, useRouter } from '@/lib/i18n/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types/domain'
 
 interface WorkspaceToolbarProps {
@@ -27,6 +23,9 @@ export function WorkspaceToolbar({
   profile
 }: WorkspaceToolbarProps) {
   const t = useTranslations()
+  const locale = useLocale()
+  const pathname = usePathname()
+  const router = useRouter()
   const {
     resumeLang,
     setResumeLang,
@@ -34,9 +33,30 @@ export function WorkspaceToolbar({
     togglePhoto,
     isGenerating,
     jdText,
-    editorJson,
     setIsGenerating
   } = useWorkspaceStore()
+
+  const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+  }, [])
+
+  const isEN = locale === 'en-US'
+  const isCNFree = !profile || profile.payment_market === 'cn_free'
+
+  const toggleLocale = () => {
+    const next = isEN ? 'zh-CN' : 'en-US'
+    router.replace(pathname, { locale: next })
+  }
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -45,141 +65,208 @@ export function WorkspaceToolbar({
       has_jd: jdText.length > 0,
       resume_lang: resumeLang
     })
-    // Generation logic handled in JDPanel
   }
 
-  const handleExport = async (format: 'pdf' | 'docx') => {
+  const handleExport = async () => {
     await trackEvent('export_clicked', {
       anonymous_id: anonymousId,
-      format,
+      format: 'pdf',
       has_jd: jdText.length > 0,
-      has_photo: showPhoto,
-      resume_lang: resumeLang
+      has_photo: showPhoto
     })
-
-    // Paywall check for EN market
     if (profile?.payment_market === 'en_paid') {
-      // Trigger paywall modal (handled by parent)
-      window.dispatchEvent(new CustomEvent('cf:paywall', { detail: { format } }))
+      window.dispatchEvent(new CustomEvent('cf:paywall', { detail: { format: 'pdf' } }))
       return
     }
-
-    // CN free: direct export
-    window.dispatchEvent(new CustomEvent('cf:export', { detail: { format } }))
+    window.dispatchEvent(new CustomEvent('cf:export', { detail: { format: 'pdf' } }))
   }
 
   const handlePhotoToggle = () => {
     togglePhoto()
     trackEvent('photo_toggled', {
       anonymous_id: anonymousId,
-      state: !showPhoto ? 'on' : 'off',
-      has_photo: !!profile?.photo_path
+      state: !showPhoto ? 'on' : 'off'
     })
   }
 
+  const navItems = [
+    { key: 'workspace', href: '/workspace', label: t('nav.workspace'), show: true },
+    { key: 'library', href: '/library', label: t('nav.library'), show: !!userId },
+    { key: 'pricing', href: '/pricing', label: t('nav.pricing'), show: !userId || !isCNFree },
+    { key: 'settings', href: '/settings', label: t('nav.settings'), show: !!userId },
+  ]
+
   return (
-    <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-3 shadow-sm z-10">
-      {/* Logo */}
-      <span className="font-display font-bold text-gray-900 mr-2">
-        CareerFlow
-      </span>
+    <header className="flex-shrink-0 bg-white/60 backdrop-blur-xl border-b border-indigo-500/10 shadow-sm shadow-indigo-500/5 z-50">
+      <div className="flex justify-between items-center w-full px-8 h-16 max-w-screen-2xl mx-auto">
+        {/* Left: Logo + Nav */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex-shrink-0">
+            <span className="text-2xl font-extrabold tracking-tighter text-[#4F46E5] font-headline">
+              CareerFlow
+            </span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.filter(i => i.show).map(item => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className={cn(
+                    'px-3 py-2 text-sm font-medium font-headline tracking-tight transition-all',
+                    isActive
+                      ? 'text-[#4F46E5] font-bold border-b-2 border-[#4F46E5] rounded-none pb-1'
+                      : 'text-slate-500 hover:text-[#4F46E5] hover:bg-indigo-50/50 rounded-lg'
+                  )}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
 
-      <div className="w-px h-5 bg-gray-200" />
-
-      {/* Generate */}
-      <button
-        onClick={handleGenerate}
-        disabled={isGenerating}
-        className={cn(
-          'flex items-center gap-1.5 px-3 py-1.5 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors',
-          isGenerating && 'opacity-60 cursor-not-allowed'
-        )}
-      >
-        {isGenerating ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <FileText className="w-3.5 h-3.5" />
-        )}
-        {t('workspace.toolbar.generate')}
-      </button>
-
-      {/* Export dropdown */}
-      <div className="relative group">
-        <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-          <Download className="w-3.5 h-3.5" />
-          {t('workspace.toolbar.export')}
-          <ChevronDown className="w-3 h-3" />
-        </button>
-        <div className="absolute top-full left-0 mt-1 w-36 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+        {/* Center: Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Generate */}
           <button
-            onClick={() => handleExport('pdf')}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className={cn(
+              'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold font-headline text-on-primary shadow-md shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all',
+              isGenerating && 'opacity-60 cursor-not-allowed'
+            )}
+            style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #3525cd 100%)' }}
           >
-            {t('export.formats.pdf')}
+            {isGenerating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+            )}
+            {t('workspace.toolbar.generate')}
           </button>
+
+          {/* Export */}
           <button
-            onClick={() => handleExport('docx')}
-            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg"
+            onClick={handleExport}
+            className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant text-on-surface text-sm font-bold font-headline rounded-full hover:bg-surface-container-high transition-all"
           >
-            {t('export.formats.docx')}
+            <span className="material-symbols-outlined text-base">download</span>
+            {t('workspace.toolbar.export')}
+          </button>
+
+          {/* History */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('cf:history'))}
+            className="flex items-center gap-1.5 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-all"
+            title={t('workspace.toolbar.history')}
+          >
+            <span className="material-symbols-outlined text-xl">history</span>
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-5 bg-outline-variant/30 mx-1" />
+
+          {/* Language toggle */}
+          <button
+            className="flex items-center border border-outline-variant rounded-lg overflow-hidden text-xs"
+            title={t('workspace.toolbar.language')}
+          >
+            {(['zh', 'en'] as const).map(lang => (
+              <span
+                key={lang}
+                onClick={() => setResumeLang(lang)}
+                className={cn(
+                  'px-2.5 py-1.5 font-bold font-headline transition-colors cursor-pointer',
+                  resumeLang === lang
+                    ? 'bg-primary text-on-primary'
+                    : 'text-on-surface-variant hover:bg-surface-container-high'
+                )}
+              >
+                {lang === 'zh' ? '中' : 'EN'}
+              </span>
+            ))}
+          </button>
+
+          {/* Photo toggle */}
+          <button
+            onClick={handlePhotoToggle}
+            title={t('workspace.toolbar.photo')}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-sm transition-all',
+              showPhoto
+                ? 'bg-primary/10 text-primary'
+                : 'text-on-surface-variant hover:bg-surface-container-high'
+            )}
+          >
+            <span className="material-symbols-outlined text-base">
+              {showPhoto ? 'photo_camera' : 'photo_camera_off'}
+            </span>
+          </button>
+
+          {/* Save */}
+          <button
+            className="flex items-center gap-1 p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high rounded-lg transition-all"
+            title={t('workspace.toolbar.save')}
+          >
+            <span className="material-symbols-outlined text-xl">save</span>
           </button>
         </div>
-      </div>
 
-      {/* History */}
-      <button className="flex items-center gap-1 px-2 py-1.5 text-gray-500 text-sm hover:text-gray-700 transition-colors">
-        <History className="w-3.5 h-3.5" />
-        <span className="hidden md:block">{t('workspace.toolbar.history')}</span>
-      </button>
+        {/* Right: Language + User */}
+        <div className="flex items-center gap-3">
+          {/* App language pill */}
+          <button
+            onClick={toggleLocale}
+            className="flex items-center gap-1.5 bg-surface-container-high rounded-full px-3 py-1.5 hover:bg-surface-container-highest transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm text-on-surface-variant">language</span>
+            <div className="flex items-center text-[10px] font-bold font-headline tracking-tighter">
+              <span className={cn(isEN ? 'text-primary' : 'text-on-surface-variant')}>EN</span>
+              <span className="mx-1 text-outline-variant/50">|</span>
+              <span className={cn(!isEN ? 'text-primary' : 'text-on-surface-variant')}>中</span>
+            </div>
+          </button>
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Language toggle */}
-      <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden text-xs">
-        <button
-          onClick={() => setResumeLang('zh')}
-          className={cn(
-            'px-2.5 py-1.5 font-medium transition-colors',
-            resumeLang === 'zh'
-              ? 'bg-brand text-white'
-              : 'text-gray-600 hover:bg-gray-50'
+          {/* User avatar */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(v => !v)}
+                className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border-2 border-white shadow-sm hover:ring-2 hover:ring-primary/20 transition-all overflow-hidden"
+              >
+                <span className="material-symbols-outlined text-on-surface-variant text-lg">person</span>
+              </button>
+              {userMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-outline-variant/20 rounded-2xl shadow-xl z-20 py-1">
+                    <div className="px-4 py-3 border-b border-outline-variant/10">
+                      <p className="text-xs text-on-surface-variant truncate">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-base text-on-surface-variant">logout</span>
+                      {t('nav.logout')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-1.5 text-sm font-bold font-headline text-on-primary rounded-full transition-all shadow-md shadow-primary/20 hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #3525cd 100%)' }}
+            >
+              {t('nav.login')}
+            </Link>
           )}
-        >
-          中文
-        </button>
-        <button
-          onClick={() => setResumeLang('en')}
-          className={cn(
-            'px-2.5 py-1.5 font-medium transition-colors',
-            resumeLang === 'en'
-              ? 'bg-brand text-white'
-              : 'text-gray-600 hover:bg-gray-50'
-          )}
-        >
-          EN
-        </button>
+        </div>
       </div>
-
-      {/* Photo toggle */}
-      <button
-        onClick={handlePhotoToggle}
-        title={t('workspace.toolbar.photo')}
-        className={cn(
-          'flex items-center gap-1 px-2 py-1.5 text-sm rounded-lg transition-colors',
-          showPhoto
-            ? 'bg-brand-50 text-brand'
-            : 'text-gray-500 hover:text-gray-700'
-        )}
-      >
-        <Camera className="w-3.5 h-3.5" />
-        <span className="hidden md:block text-xs">{t('workspace.toolbar.photo')}</span>
-      </button>
-
-      {/* Save */}
-      <button className="flex items-center gap-1 px-2 py-1.5 text-gray-500 text-sm hover:text-gray-700 transition-colors">
-        <Save className="w-3.5 h-3.5" />
-      </button>
-    </div>
+    </header>
   )
 }
