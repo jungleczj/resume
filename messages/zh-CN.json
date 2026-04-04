@@ -5,10 +5,12 @@
     "description": "持续记录职业成就，随时生成完美简历"
   },
   "nav": {
+    "resumes": "我的简历",
     "workspace": "工作台",
-    "library": "成就库",
+    "achievements": "成就库",
     "pricing": "定价",
     "settings": "设置",
+    "library": "成就库",
     "login": "登录",
     "logout": "退出",
     "lang_toggle": "EN"
@@ -20,7 +22,7 @@
       "title_highlight": "出彩简历",
       "title_after": "，抢占先机",
       "subtitle": "上传旧简历，AI 自动提炼职业亮点，按职位需求一键生成定制简历。告别反复修改，让每份简历都精准匹配。",
-      "cta_upload": "上传简历",
+      "cta_upload": "开始体验",
       "cta_notion": "导入 Notion",
       "cta_demo": "查看演示",
       "drop_title": "将简历拖放至此",

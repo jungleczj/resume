@@ -5,10 +5,12 @@
     "description": "Capture achievements continuously, generate resumes instantly"
   },
   "nav": {
+    "resumes": "Resumes",
     "workspace": "Workspace",
-    "library": "Library",
+    "achievements": "Achievements",
     "pricing": "Pricing",
     "settings": "Settings",
+    "library": "Library",
     "login": "Sign In",
     "logout": "Sign Out",
     "lang_toggle": "中"
@@ -20,7 +22,7 @@
       "title_highlight": "Resume",
       "title_after": " with AI",
       "subtitle": "Get matched to your dream job with AI-powered resume optimization and job matching. Elevate your career trajectory with data-driven insights.",
-      "cta_upload": "Upload Resume",
+      "cta_upload": "Free Start",
       "cta_notion": "Import from Notion",
       "cta_demo": "See How It Works",
       "drop_title": "Drop your resume here",

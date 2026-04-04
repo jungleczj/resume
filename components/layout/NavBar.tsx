@@ -8,14 +8,23 @@ import { cn } from '@/lib/utils'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types/domain'
 
+const NAV_ITEMS = [
+  { key: 'resumes',       href: '/library',    authRequired: false },
+  { key: 'workspace',     href: '/workspace',  authRequired: false },
+  { key: 'achievements',  href: '/library',    authRequired: false },
+  { key: 'pricing',       href: '/pricing',    authRequired: false },
+  { key: 'settings',      href: '/settings',   authRequired: true  },
+] as const
+
 export function NavBar() {
-  const t = useTranslations()
+  const t = useTranslations('nav')
   const locale = useLocale()
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -33,71 +42,70 @@ export function NavBar() {
   }, [])
 
   const isCNFree = !profile || profile.payment_market === 'cn_free'
-
-  const navItems = [
-    { key: 'workspace', href: '/workspace', label: t('nav.workspace'), show: true },
-    { key: 'library', href: '/library', label: t('nav.library'), show: !!user },
-    { key: 'pricing', href: '/pricing', label: t('nav.pricing'), show: !user || !isCNFree },
-    { key: 'settings', href: '/settings', label: t('nav.settings'), show: !!user },
-  ]
-
   const isEN = locale === 'en-US'
 
   const toggleLocale = () => {
-    const next = isEN ? 'zh-CN' : 'en-US'
-    router.replace(pathname, { locale: next })
+    router.replace(pathname, { locale: isEN ? 'zh-CN' : 'en-US' })
+    setMobileMenuOpen(false)
   }
 
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
+    setUserMenuOpen(false)
     router.push('/')
   }
 
+  const visibleItems = NAV_ITEMS.filter(item => {
+    if (item.authRequired && !user) return false
+    return true
+  })
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/60 backdrop-blur-xl border-b border-indigo-500/10 shadow-sm shadow-indigo-500/5">
-      <div className="max-w-screen-2xl mx-auto px-8 h-20 flex items-center">
-        {/* Logo + Nav Links */}
-        <div className="flex items-center gap-8 flex-1">
-          <Link href="/" className="flex-shrink-0">
-            <span className="text-2xl font-extrabold tracking-tighter text-[#4F46E5] font-headline">
-              CareerFlow
-            </span>
-          </Link>
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center">
 
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.filter(i => i.show).map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={cn(
-                    'px-3 py-2 text-sm font-medium font-headline tracking-tight rounded-lg transition-all',
-                    isActive
-                      ? 'text-[#4F46E5] font-bold border-b-2 border-[#4F46E5] rounded-none pb-1'
-                      : 'text-slate-500 hover:text-[#4F46E5] hover:bg-indigo-50/50 rounded-lg'
-                  )}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-          </nav>
+        {/* Logo */}
+        <Link href="/" className="flex-shrink-0 mr-6 md:mr-10" onClick={() => setMobileMenuOpen(false)}>
+          <span className="text-xl md:text-2xl font-extrabold tracking-tighter text-[#3525cd] font-headline">
+            CareerFlow
+          </span>
+        </Link>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center gap-1 flex-1">
+          {visibleItems.map(item => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={cn(
+                  'px-3 py-2 text-sm font-medium font-headline tracking-tight transition-all',
+                  isActive
+                    ? 'text-[#3525cd] font-semibold border-b-2 border-[#3525cd] pb-1.5 rounded-none'
+                    : 'text-slate-500 hover:text-[#3525cd] hover:bg-indigo-50/60 rounded-lg'
+                )}
+              >
+                {t(item.key as keyof typeof t)}
+              </Link>
+            )
+          })}
         </div>
 
-        {/* Right: Language + User */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Language pill */}
+        {/* Desktop Right: Language + User */}
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0 ml-auto">
+          {/* Language toggle */}
           <button
             onClick={toggleLocale}
-            className="flex items-center gap-1.5 bg-surface-container-high rounded-full px-3 py-1.5 hover:bg-surface-container-highest transition-colors"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5 transition-colors"
+            aria-label="Toggle language"
           >
-            <span className="material-symbols-outlined text-sm text-on-surface-variant">language</span>
+            <span className="material-symbols-outlined text-sm text-slate-500">language</span>
             <div className="flex items-center text-[10px] font-bold font-headline tracking-tighter">
-              <span className={cn(isEN ? 'text-primary' : 'text-on-surface-variant hover:text-primary cursor-pointer transition-colors')}>EN</span>
-              <span className="mx-1 text-outline-variant/50">|</span>
-              <span className={cn(!isEN ? 'text-primary' : 'text-on-surface-variant hover:text-primary cursor-pointer transition-colors')}>中</span>
+              <span className={cn(isEN ? 'text-[#3525cd]' : 'text-slate-400')}>EN</span>
+              <span className="mx-1 text-slate-300">|</span>
+              <span className={cn(!isEN ? 'text-[#3525cd]' : 'text-slate-400')}>中</span>
             </div>
           </button>
 
@@ -106,37 +114,43 @@ export function NavBar() {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(v => !v)}
-                className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border-2 border-white shadow-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
+                className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm hover:ring-2 hover:ring-[#3525cd]/20 transition-all"
+                aria-label="User menu"
               >
-                <span className="material-symbols-outlined text-on-surface-variant text-lg">person</span>
+                <span className="material-symbols-outlined text-slate-500 text-lg">person</span>
               </button>
 
               {userMenuOpen && (
                 <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setUserMenuOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-outline-variant/20 rounded-2xl shadow-xl z-20 py-1 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-outline-variant/10">
-                      <p className="text-xs text-on-surface-variant truncate">{user.email}</p>
+                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200/60 rounded-2xl shadow-xl z-20 py-1 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
                       {profile && (
                         <span className={cn(
                           'inline-block text-[10px] px-2 py-0.5 rounded-full mt-1 font-bold',
                           isCNFree
-                            ? 'bg-surface-container text-on-surface-variant'
-                            : 'bg-primary/10 text-primary'
+                            ? 'bg-slate-100 text-slate-500'
+                            : 'bg-[#3525cd]/10 text-[#3525cd]'
                         )}>
-                          {isCNFree ? '免费版' : 'Pro'}
+                          {isCNFree ? (isEN ? 'Free' : '免费版') : 'Pro'}
                         </span>
                       )}
                     </div>
+                    <Link
+                      href="/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-base text-slate-400">settings</span>
+                      {t('settings')}
+                    </Link>
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-base text-on-surface-variant">logout</span>
-                      {t('nav.logout')}
+                      <span className="material-symbols-outlined text-base text-slate-400">logout</span>
+                      {t('logout')}
                     </button>
                   </div>
                 </>
@@ -145,13 +159,79 @@ export function NavBar() {
           ) : (
             <Link
               href="/login"
-              className="px-5 py-2 bg-primary text-on-primary text-sm font-bold font-headline rounded-full hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/20"
+              className="px-5 py-2 bg-[#3525cd] text-white text-sm font-bold font-headline rounded-full hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-[#3525cd]/20"
             >
-              {t('nav.login')}
+              {t('login')}
             </Link>
           )}
         </div>
+
+        {/* Mobile: Right controls */}
+        <div className="md:hidden flex items-center gap-2 ml-auto">
+          <button
+            onClick={toggleLocale}
+            className="text-[10px] font-bold font-headline text-slate-500 bg-slate-100 rounded-full px-2.5 py-1"
+          >
+            {isEN ? '中' : 'EN'}
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(v => !v)}
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            <span className="material-symbols-outlined text-slate-600">
+              {mobileMenuOpen ? 'close' : 'menu'}
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-lg">
+          <div className="px-4 py-3 space-y-1">
+            {visibleItems.map(item => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={cn(
+                    'block px-4 py-3 rounded-xl text-sm font-medium font-headline transition-all',
+                    isActive
+                      ? 'bg-[#3525cd]/8 text-[#3525cd] font-semibold'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  )}
+                >
+                  {t(item.key as keyof typeof t)}
+                </Link>
+              )
+            })}
+            <div className="pt-2 border-t border-slate-100">
+              {user ? (
+                <>
+                  <p className="px-4 py-2 text-xs text-slate-400 truncate">{user.email}</p>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-3 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    {t('logout')}
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 mx-2 py-3 bg-[#3525cd] text-white text-sm font-bold font-headline rounded-full"
+                >
+                  {t('login')}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }
