@@ -12,32 +12,32 @@ const queue = new PQueue({ concurrency: 3 })
 
 const MODEL_CHAINS: Record<AITask, string[]> = {
   resume_beautify: [
+    'qwen-long',
     'deepseek-chat',
     'gpt-4o-mini',
-    'qwen-long',
     'claude-sonnet-4-20250514'
   ],
   jd_parse: [
+    'qwen-turbo',
     'deepseek-chat',
     'gpt-4o-mini',
-    'qwen-turbo',
     'claude-haiku-4-5-20251001'
   ],
   achievement_extract: [
+    'qwen-long',
     'deepseek-chat',
     'gpt-4o-mini',
-    'qwen-long',
     'claude-sonnet-4-20250514'
   ],
   achievement_match: [
+    'qwen-turbo',
     'deepseek-chat',
     'gpt-4o-mini',
-    'qwen-turbo',
     'claude-haiku-4-5-20251001'
   ]
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_TIMEOUT_MS = 60_000
 
 // ── Provider clients ─────────────────────────────────────────────────────────
 
