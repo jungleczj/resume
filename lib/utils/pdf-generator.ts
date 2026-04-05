@@ -117,8 +117,12 @@ export async function generatePDF(data: PDFData): Promise<Blob> {
       }
 
       // ── Date range (right-aligned) ──
-      const endLabel = exp.end_year ?? (data.lang === 'zh' ? '至今' : 'Present')
-      const dateStr = `${exp.start_year ?? ''} – ${endLabel}`
+      const endLabel = exp.is_current
+        ? (data.lang === 'zh' ? '至今' : 'Present')
+        : exp.end_year ? String(exp.end_year) : ''
+      const dateStr = exp.start_year
+        ? `${exp.start_year}${endLabel ? ` – ${endLabel}` : ''}`
+        : endLabel
       const dateWidth = regularFont.widthOfTextAtSize(dateStr, 9)
       page.drawText(dateStr, {
         x: PAGE_WIDTH - MARGIN - dateWidth,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -10,12 +10,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing anonymous_id or user_id' }, { status: 400 })
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
-  // Get most recent upload for this session
   const query = supabase
     .from('resume_uploads')
-    .select('id, parse_status, parse_error, created_at')
+    .select('id, parse_status, parse_error, parsed_data, photo_extracted_path, created_at')
     .order('created_at', { ascending: false })
     .limit(1)
 
@@ -31,5 +30,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status: 'not_found' })
   }
 
-  return NextResponse.json({ status: data[0].parse_status, error: data[0].parse_error })
+  return NextResponse.json({
+    status: data[0].parse_status,
+    error: data[0].parse_error,
+    parsed_data: data[0].parsed_data ?? null,
+    photo_extracted_path: data[0].photo_extracted_path ?? null
+  })
 }

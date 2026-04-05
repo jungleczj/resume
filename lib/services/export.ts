@@ -28,15 +28,15 @@ export async function exportResume(
 
   const blob = format === 'pdf'
     ? await generatePDF({
-        name: '张伟',
-        contact: { email: 'example@email.com', phone: '+86 138 0000 0000' },
+        name: '',
+        contact: { email: '', phone: '' },
         experiences: experiences || [],
         showPhoto: version.show_photo,
         lang: version.template_key === 'en' ? 'en' : 'zh'
       })
     : await generateDOCX({
-        name: '张伟',
-        contact: { email: 'example@email.com', phone: '+86 138 0000 0000' },
+        name: '',
+        contact: { email: '', phone: '' },
         experiences: experiences || [],
         lang: version.template_key === 'en' ? 'en' : 'zh'
       })

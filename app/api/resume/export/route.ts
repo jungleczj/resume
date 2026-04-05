@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         .single()
       if (profile) {
         lang = profile.resume_lang_preference === 'en' ? 'en' : 'zh'
-        phone = profile.phone ?? ''
+        phone = (profile as Record<string, unknown>).phone as string ?? ''
       }
 
       const { data: authData } = await supabase.auth.getUser()
@@ -59,6 +59,27 @@ export async function POST(req: NextRequest) {
           ?? (authData.user.user_metadata?.name as string | undefined)
           ?? ''
       }
+    }
+
+    // Fall back to parsed_data for name/contact (covers anonymous users & F1 flow)
+    const uploadQuery = supabase
+      .from('resume_uploads')
+      .select('parsed_data')
+      .eq('parse_status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const { data: uploadRows } = user_id
+      ? await uploadQuery.eq('user_id', user_id)
+      : await uploadQuery.eq('anonymous_id', anonymous_id)
+
+    const parsedInfo = (uploadRows?.[0]?.parsed_data as Record<string, unknown> | null)
+      ?.personal_info as Record<string, string | null> | null | undefined
+
+    if (parsedInfo) {
+      if (!name && parsedInfo.name) name = parsedInfo.name
+      if (!email && parsedInfo.email) email = parsedInfo.email
+      if (!phone && parsedInfo.phone) phone = parsedInfo.phone
     }
 
     // Load experiences + confirmed achievements

@@ -1,7 +1,7 @@
 // Core domain types for CareerFlow
 
 export type PaymentMarket = 'cn_free' | 'en_paid'
-export type ResumeLang = 'zh' | 'en'
+export type ResumeLang = 'zh' | 'en' | 'bilingual'
 export type AchievementStatus = 'draft' | 'confirmed' | 'ignored'
 export type AchievementTier = 1 | 2 | 3
 export type AchievementSource = 'upload' | 'notion' | 'manual'
@@ -144,7 +144,34 @@ export interface AICallOptions {
 }
 
 // Resume beautify output
+
+export interface ResumePersonalInfo {
+  name: string
+  email: string | null
+  phone: string | null
+  location: string | null
+  linkedin: string | null
+  website: string | null
+  summary: string | null
+}
+
+export interface ResumeEducation {
+  school: string
+  degree: string | null
+  major: string | null
+  start_year: number | null
+  end_year: number | null
+}
+
+export interface ResumeSkillGroup {
+  category: string
+  items: string[]
+}
+
 export interface BeautifyOutput {
+  personal_info: ResumePersonalInfo
+  education: ResumeEducation[]
+  skills: ResumeSkillGroup[]
   experiences: BeautifyExperience[]
 }
 
@@ -153,6 +180,7 @@ export interface BeautifyExperience {
   job_title: string
   start_year: number | null
   end_year: number | null
+  is_current: boolean
   achievements: BeautifyAchievement[]
 }
 
