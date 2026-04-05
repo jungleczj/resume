@@ -32,7 +32,10 @@ export interface WorkExperience {
   job_title: string
   industry: string | null
   start_year: number | null
+  start_month: number | null
   end_year: number | null
+  end_month: number | null
+  original_date_text: string | null
   is_current: boolean
   sort_order: number
   created_at: string
@@ -152,7 +155,10 @@ export interface BeautifyExperience {
   company: string
   job_title: string
   start_year: number | null
+  start_month: number | null
   end_year: number | null
+  end_month: number | null
+  original_date_text: string | null
   achievements: BeautifyAchievement[]
 }
 

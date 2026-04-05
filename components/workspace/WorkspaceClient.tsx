@@ -12,6 +12,7 @@ import { Link, usePathname } from '@/lib/i18n/navigation'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 import type { WorkExperience, Profile, ResumeVersion } from '@/lib/types/domain'
+import type { ResumeInfo } from '@/store/workspace'
 
 interface WorkspaceClientProps {
   experiences: WorkExperience[]
@@ -44,6 +45,7 @@ export function WorkspaceClient({
     setUserId,
     setProfile,
     setEditorJson,
+    setResumeInfo,
     editorJson
   } = useWorkspaceStore()
 
@@ -52,6 +54,11 @@ export function WorkspaceClient({
   const [parseStatus, setParseStatus] = useState<
     'pending' | 'processing' | 'completed' | 'failed' | 'not_found'
   >(experiences.length > 0 ? 'completed' : 'pending')
+
+  // Separate state for overlay visibility to ensure it disappears when parsing completes
+  const [showParsingOverlay, setShowParsingOverlay] = useState(
+    experiences.length === 0 ? true : false
+  )
 
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportFormat, setExportFormat] = useState<'pdf' | 'docx'>('pdf')
@@ -97,6 +104,18 @@ export function WorkspaceClient({
     if (data) setExperiences(data)
   }, [anonymousId, userId, setExperiences])
 
+  const refreshResumeInfo = useCallback(async () => {
+    const params = new URLSearchParams()
+    if (userId) params.set('user_id', userId)
+    else params.set('anonymous_id', anonymousId)
+    const res = await fetch(`/api/resume/upload-info?${params}`)
+    if (!res.ok) return
+    const { data } = await res.json()
+    if (data?.parsedInfo) {
+      setResumeInfo(data.parsedInfo as ResumeInfo)
+    }
+  }, [anonymousId, userId, setResumeInfo])
+
   useEffect(() => {
     if (parseStatus === 'completed') return
     let attempts = 0
@@ -105,7 +124,9 @@ export function WorkspaceClient({
       const status = await pollParseStatus()
       if (status === 'completed') {
         clearInterval(interval)
+        setShowParsingOverlay(false)
         await refreshExperiences()
+        await refreshResumeInfo()
       } else if (status === 'failed' || attempts >= 30) {
         clearInterval(interval)
       }
@@ -162,8 +183,6 @@ export function WorkspaceClient({
     if (version.editor_json) setEditorJson(version.editor_json)
   }
 
-  const isParsing = parseStatus === 'pending' || parseStatus === 'processing'
-
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-surface">
       {/* Top nav bar — matches glassmorphism NavBar */}
@@ -210,13 +229,25 @@ export function WorkspaceClient({
 
         {/* Main content area */}
         <div className="flex flex-1 overflow-hidden relative">
-          {/* Parse overlay */}
-          {isParsing && (
+          {/* Parse overlay - auto-dismisses when parse completes */}
+          {showParsingOverlay && (
             <div className="absolute inset-0 z-20 bg-surface/85 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              <div className="relative">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold text-primary">100%</span>
+                </div>
+              </div>
               <div className="text-center">
                 <p className="text-sm font-semibold text-on-surface font-headline">AI 正在提炼成就...</p>
                 <p className="text-xs text-on-surface-variant mt-1">通常需要 10–30 秒，请稍候</p>
+              </div>
+              {/* Auto-progress bar that completes */}
+              <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden mt-2">
+                <div 
+                  className="h-full bg-primary transition-all duration-1000 ease-out"
+                  style={{ width: '100%' }}
+                />
               </div>
             </div>
           )}

@@ -13,7 +13,7 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
   const t = useTranslations()
   const locale = useLocale()
   const isZH = locale === 'zh-CN'
-  const { editorJson, showPhoto, photoPath, resumeLang, experiences } =
+  const { editorJson, showPhoto, photoPath, resumeLang, experiences, resumeInfo } =
     useWorkspaceStore()
 
   // Flatten confirmed achievements grouped by experience
@@ -40,12 +40,18 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="font-display text-2xl font-bold text-gray-900">
-              张 伟
+              {resumeInfo?.name || (isZH ? '未识别姓名' : 'Name not detected')}
             </h1>
-            <div className="flex gap-3 mt-1 text-sm text-gray-500">
-              <span>example@email.com</span>
-              <span>+86 138 0000 0000</span>
-              <span>linkedin.com/in/example</span>
+            <div className="flex flex-wrap gap-3 mt-1 text-sm text-gray-500">
+              {resumeInfo?.email && <span>{resumeInfo.email}</span>}
+              {resumeInfo?.phone && <span>{resumeInfo.phone}</span>}
+              {resumeInfo?.location && <span>{resumeInfo.location}</span>}
+              {resumeInfo?.linkedin && (
+                <span className="text-blue-600">{resumeInfo.linkedin}</span>
+              )}
+              {resumeInfo?.website && (
+                <span className="text-blue-600">{resumeInfo.website}</span>
+              )}
             </div>
           </div>
 
@@ -94,8 +100,16 @@ export function ResumePreview({ anonymousId, userId }: ResumePreviewProps) {
                     </span>
                   </div>
                   <span className="text-xs text-gray-400">
-                    {exp.start_year}
-                    {exp.end_year ? ` – ${exp.end_year}` : ` – ${t('workspace.resume_preview.present')}`}
+                    {exp.original_date_text || (
+                      <>
+                        {exp.start_month ? `${exp.start_year}.${exp.start_month.toString().padStart(2, '0')}` : exp.start_year}
+                        {' – '}
+                        {exp.end_year 
+                          ? (exp.end_month ? `${exp.end_year}.${exp.end_month.toString().padStart(2, '0')}` : `${exp.end_year}`) 
+                          : t('workspace.resume_preview.present')
+                        }
+                      </>
+                    )}
                   </span>
                 </div>
                 <ul className="space-y-1 mt-1.5">

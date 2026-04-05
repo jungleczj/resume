@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import type { WorkExperience, Achievement, ResumeLang, Profile } from '@/lib/types/domain'
 
+export interface ResumeInfo {
+  name: string | null
+  email: string | null
+  phone: string | null
+  location: string | null
+  linkedin: string | null
+  website: string | null
+}
+
 interface WorkspaceState {
   // Layout
   splitRatio: number
@@ -31,6 +40,10 @@ interface WorkspaceState {
   // Resume editor JSON (TipTap)
   editorJson: object
   setEditorJson: (json: object) => void
+
+  // Resume info (parsed from upload)
+  resumeInfo: ResumeInfo | null
+  setResumeInfo: (info: ResumeInfo | null) => void
 
   // Identity
   anonymousId: string
@@ -66,6 +79,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
   editorJson: {},
   setEditorJson: (json) => set({ editorJson: json }),
+
+  resumeInfo: null,
+  setResumeInfo: (info) => set({ resumeInfo: info }),
 
   anonymousId: '',
   setAnonymousId: (id) => set({ anonymousId: id }),
