@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CareerFlow Workspace | Precision Architect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#4f46e5",
+                        "surface-container-highest": "#e4e1ee",
+                        "tertiary-fixed-dim": "#ffb695",
+                        "on-background": "#1b1b24",
+                        "surface-bright": "#fcf8ff",
+                        "on-primary-container": "#dad7ff",
+                        "on-error-container": "#93000a",
+                        "surface-dim": "#dcd8e5",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#eae6f4",
+                        "on-surface-variant": "#464555",
+                        "on-secondary-container": "#454386",
+                        "tertiary-fixed": "#ffdbcc",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c7c4d8",
+                        "on-tertiary-fixed": "#351000",
+                        "on-tertiary-container": "#ffd2be",
+                        "surface-container-low": "#f5f2ff",
+                        "inverse-on-surface": "#f3effc",
+                        "inverse-primary": "#c3c0ff",
+                        "on-secondary-fixed-variant": "#413f82",
+                        "surface-container": "#f0ecf9",
+                        "tertiary-container": "#a44100",
+                        "tertiary": "#7e3000",
+                        "primary-fixed": "#e2dfff",
+                        "on-secondary-fixed": "#140f54",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1b1b24",
+                        "surface-variant": "#e4e1ee",
+                        "background": "#fcf8ff",
+                        "secondary-fixed-dim": "#c3c0ff",
+                        "secondary-container": "#b6b4ff",
+                        "on-tertiary-fixed-variant": "#7b2f00",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-tint": "#4d44e3",
+                        "primary": "#3525cd",
+                        "outline": "#777587",
+                        "inverse-surface": "#302f39",
+                        "on-primary-fixed": "#0f0069",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#e2dfff",
+                        "surface": "#fcf8ff",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary": "#ffffff",
+                        "secondary": "#58579b",
+                        "error-container": "#ffdad6"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl border-b border-slate-100/50 dark:border-slate-800/50 shadow-sm shadow-indigo-500/5">
+<div class="flex justify-between items-center w-full px-8 h-20 max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-bold tracking-tighter text-indigo-700 dark:text-indigo-400">CareerFlow</span>
+<nav class="hidden md:flex items-center gap-8 font-manrope tracking-tight"><a class="text-indigo-600 dark:text-indigo-400 font-bold border-b-2 border-indigo-600 dark:border-indigo-400 pb-1" href="#">Workspace</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" href="#">Library</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" href="#">Pricing</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors" href="#">Settings</a></nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all duration-200">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg transition-all duration-200">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-slate-100 transition-colors group">
+<span class="material-symbols-outlined text-sm text-slate-500 group-hover:text-indigo-600">language</span>
+<span class="text-[10px] font-bold tracking-tighter text-slate-600 dark:text-slate-400">
+<span class="text-indigo-600">EN</span> | <span class="hover:text-indigo-600 cursor-pointer">中</span>
+</span>
+</button><div class="ml-2 w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-100 dark:border-indigo-900/50 cursor-pointer active:scale-95 transition-transform duration-150 ease-in-out">
+<img alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNxWPcA3QATd2DS7LzwW-ZGvXrCqbBstEj32OWCheQSJbAbPBe7yg65pWu0bFJ5iQo-9oVlFYrTDTheFGLLR9Wz9xfDscB60m_-Nu7oPmK7wT4QLdTS-5KB90iMdRjH7Zs96ltYci7V04jt2tBnSBUX9f--1hpWlr5fXkW0kMHmXDYUm2yhc-MxxQLR0MUNkYsbyQ1d1AUG5JLoawGFCnG-xk4VeebMSSNeoOhkSSVbCqVME0eKWXKbbUeqbEwI-Z0TXHZON54kOUn"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-20 bottom-0 flex flex-col py-8 px-4 bg-slate-50 dark:bg-slate-950 w-20 md:w-64 z-40 transition-all duration-300">
+<div class="space-y-2 flex-1">
+<a class="bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 rounded-xl shadow-sm px-4 py-3 flex items-center gap-3 font-manrope text-xs uppercase tracking-widest font-bold translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="hidden md:block">Workspace</span>
+</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-indigo-400 px-4 py-3 flex items-center gap-3 font-manrope text-xs uppercase tracking-widest font-bold transition-all" href="#">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="hidden md:block">Achievements</span>
+</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-indigo-400 px-4 py-3 flex items-center gap-3 font-manrope text-xs uppercase tracking-widest font-bold transition-all" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="hidden md:block">Drafts</span>
+</a>
+<a class="text-slate-400 dark:text-slate-500 hover:text-indigo-400 px-4 py-3 flex items-center gap-3 font-manrope text-xs uppercase tracking-widest font-bold transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="hidden md:block">Settings</span>
+</a>
+</div>
+<div class="mt-auto p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/10 dark:to-indigo-900/20 rounded-2xl hidden md:block">
+<p class="text-[10px] font-bold text-primary uppercase tracking-tighter mb-1">CareerFlow AI</p>
+<p class="text-on-surface font-headline font-bold text-sm mb-3">Upgrade to Pro</p>
+<button class="w-full py-2 bg-on-surface text-surface text-xs font-bold rounded-lg hover:bg-primary transition-colors">Go Premium</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-20 md:ml-64 pt-20 h-screen overflow-hidden flex flex-col md:flex-row bg-surface">
+<!-- Left Column (Inputs & Library) -->
+<div class="w-full md:w-[40%] flex flex-col h-full bg-surface-container-low border-r border-outline-variant/10">
+<!-- Top 40%: JD Paste Area -->
+<section class="h-[40%] p-6 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h2 class="font-headline text-lg font-bold text-on-surface">JD Matching System</h2>
+<span class="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-2 py-0.5 rounded-full">AI Precision</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<textarea class="w-full flex-1 p-4 text-sm bg-transparent border-none focus:ring-0 placeholder:text-slate-400 resize-none font-body leading-relaxed" placeholder="Paste the target JD to instantly align your achievements with specific market demands."></textarea>
+<div class="p-4 bg-surface-container-high/50 flex justify-between items-center">
+<span class="text-[10px] text-on-surface-variant font-medium">Scanning for: Metrics, Keywords, Tech Stack</span>
+<button class="px-5 py-2 bg-primary text-white rounded-full text-xs font-bold hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center gap-2"><span class="material-symbols-outlined text-sm">bolt</span> Sync with JD</button>
+</div>
+</div>
+</section>
+<!-- Bottom 60%: Achievement Library -->
+<section class="h-[60%] flex flex-col bg-surface-container-high/30 rounded-t-[2.5rem] p-6 shadow-inner">
+<div class="flex items-center gap-6 mb-6">
+<button class="font-headline text-sm font-extrabold text-primary relative pb-2 after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-primary after:rounded-full">Achievement Library</button>
+<button class="font-headline text-sm font-bold text-slate-400 hover:text-on-surface transition-colors pb-2">Drafts</button>
+</div>
+<div class="relative mb-6">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest rounded-full text-xs border-none focus:ring-2 focus:ring-primary/20 shadow-sm" placeholder="Search achievements..." type="text"/>
+</div>
+<div class="flex-1 overflow-y-auto no-scrollbar space-y-3">
+<!-- Achievement Card 1 -->
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary/20 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+<div class="flex items-start gap-3">
+<div class="mt-1 flex-shrink-0 w-8 h-8 rounded-lg bg-tertiary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant text-sm" style="font-variation-settings: 'FILL' 1;">insights</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface leading-snug">Increased user retention by 24% through the implementation of a gamified onboarding sequence and AI-driven personalized emails.</p>
+<div class="mt-2 flex gap-2">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Retention</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Growth</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Achievement Card 2 -->
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary/20 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+<div class="flex items-start gap-3">
+<div class="mt-1 flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-indigo-600 text-sm" style="font-variation-settings: 'FILL' 1;">code</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface leading-snug">Orchestrated the migration of legacy architecture to a microservices model, reducing server response times by 140ms.</p>
+<div class="mt-2 flex gap-2">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Backend</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Performance</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Achievement Card 3 -->
+<div class="group bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary/20 hover:shadow-md transition-all cursor-grab active:cursor-grabbing">
+<div class="flex items-start gap-3">
+<div class="mt-1 flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-600 text-sm" style="font-variation-settings: 'FILL' 1;">attach_money</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-medium text-on-surface leading-snug">Saved $45k annually by optimizing cloud infrastructure and deprecating redundant third-party API subscriptions.</p>
+<div class="mt-2 flex gap-2">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Optimization</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Budget</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column (Resume Editor) -->
+<div class="w-full md:w-[60%] h-full flex flex-col bg-surface-container-lowest">
+<!-- Resume Preview Toolbar -->
+<div class="w-full px-8 py-4 bg-white border-b border-outline-variant/10 flex items-center justify-between z-30">
+<div class="flex items-center gap-6">
+<!-- Language Selector -->
+<div class="relative group">
+<button class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200">
+                        English ▼
+                    </button>
+<!-- Simple dropdown mockup -->
+<div class="absolute left-0 top-full mt-1 hidden group-hover:block bg-white border border-slate-200 shadow-lg rounded-lg overflow-hidden w-32">
+<button class="w-full text-left px-4 py-2 text-xs hover:bg-indigo-50">中文 ▼</button>
+<button class="w-full text-left px-4 py-2 text-xs hover:bg-indigo-50">English ▼</button>
+<button class="w-full text-left px-4 py-2 text-xs hover:bg-indigo-50">中英双语 ▼</button>
+</div>
+</div>
+<!-- Photo Toggle -->
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-lg">photo_camera</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+<span class="ms-2 text-xs font-bold text-slate-600">Show Photo</span>
+</label>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200">
+<span class="material-symbols-outlined text-base">history</span>
+                    Version History
+                </button>
+<div class="h-4 w-[1px] bg-slate-200 mx-1"></div>
+<button class="flex items-center gap-2 px-6 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200">
+                    Export ▼
+                </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-8 md:p-12 bg-surface-container-lowest">
+<div class="max-w-3xl mx-auto">
+<!-- Editor Meta -->
+<div class="flex justify-between items-center mb-8">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auto-saved 2m ago</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-1.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-sm">zoom_in</span>
+</button>
+<button class="p-1.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-sm">print</span>
+</button>
+</div>
+</div>
+<!-- Resume Preview Paper -->
+<div class="bg-white p-12 shadow-[0_32px_64px_-16px_rgba(27,27,36,0.06)] rounded-sm border border-outline-variant/10">
+<!-- Header -->
+<header class="flex flex-row-reverse justify-between items-start mb-10">
+<div class="w-24 h-24 rounded-full overflow-hidden bg-slate-100 ring-4 ring-slate-50">
+<img alt="Alex Chen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6OCddiVmTFQV9nMPibtDNz0EEK8igCzP6P-vhg6EaLkdYv6O9acTdQ1uHGuYXi3ZQAfLamCY6fPgRHY9FjUIt5EP4mI29Ttpc-OJ5eB7LR1fTqXHPoWvzcIYPwI_7F4caFObEMR1UE7c-UsfURVAuXARi_ebCt6Ha3823POSM3qpynQzeshnJVAtqIBZLKXeaKhkV89DjJKXI1s6jZRzztDB5blPhg221tBz3iNRqCAgNQU28mRagfL7R_zRsHcUH6Vgv1mZk0V6o"/>
+</div>
+<div class="flex-1 pr-12">
+<h1 class="font-headline text-4xl font-extrabold text-on-surface tracking-tighter mb-2" contenteditable="true">Alex Chen</h1>
+<p class="text-indigo-600 font-headline font-bold text-lg tracking-tight mb-4" contenteditable="true">Senior Growth Architect</p>
+<div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">mail</span> alex.chen@example.com</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">phone</span> +1 (555) 012-3456</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> San Francisco, CA</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">link</span> linkedin.com/in/alexchen</span>
+</div>
+</div>
+</header>
+<!-- Summary -->
+<section class="mb-10">
+<h3 class="font-headline text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 mb-4">Executive Summary</h3>
+<p class="text-sm text-on-surface leading-relaxed" contenteditable="true">
+                            Dynamic Growth Architect with 8+ years of experience building scalable customer acquisition engines. Proven track record of increasing ARR by 40% through data-driven experimentation and high-performance cross-functional leadership. Expert in leveraging AI to automate marketing workflows and optimize lifecycle retention.
+                        </p>
+</section>
+<!-- Work Experience -->
+<section class="mb-10">
+<h3 class="font-headline text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400 border-b border-slate-100 pb-2 mb-6">Experience</h3>
+<div class="relative pl-4 space-y-8 before:content-[''] before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[1px] before:bg-slate-100">
+<!-- Job 1 -->
+<div class="relative">
+<div class="absolute -left-[20px] top-1.5 w-[9px] h-[9px] rounded-full bg-indigo-600 border-2 border-white ring-2 ring-indigo-500/10"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-headline font-bold text-on-surface text-base" contenteditable="true">Director of Product Growth</h4>
+<p class="text-indigo-600 text-xs font-bold" contenteditable="true">TechStream Global</p>
+</div>
+<span class="text-[10px] font-bold text-slate-400" contenteditable="true">JAN 2021 — PRESENT</span>
+</div>
+<ul class="space-y-3 mt-4">
+<li class="flex items-start gap-3 group relative">
+<div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="High Confidence Match"></div>
+<p class="text-sm text-on-surface leading-relaxed flex-1" contenteditable="true">Led a multidisciplinary team of 14 to launch "GrowthEngine," an internal AI tool that predicted churn with 92% accuracy.</p>
+<button class="opacity-0 group-hover:opacity-100 absolute -right-8 top-0 p-1 bg-slate-100 rounded-full transition-opacity">
+<span class="material-symbols-outlined text-xs text-indigo-600">auto_fix</span>
+</button>
+</li>
+<li class="flex items-start gap-3 group relative">
+<div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Medium Confidence Match"></div>
+<p class="text-sm text-on-surface leading-relaxed flex-1" contenteditable="true">Scaled weekly active users (WAU) from 450k to 1.2M within 14 months through aggressive SEO and influencer partnerships.</p>
+<button class="opacity-0 group-hover:opacity-100 absolute -right-8 top-0 p-1 bg-slate-100 rounded-full transition-opacity">
+<span class="material-symbols-outlined text-xs text-indigo-600">auto_fix</span>
+</button>
+</li>
+</ul>
+</div>
+<!-- Job 2 -->
+<div class="relative">
+<div class="absolute -left-[20px] top-1.5 w-[9px] h-[9px] rounded-full bg-slate-300 border-2 border-white"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-headline font-bold text-on-surface text-base" contenteditable="true">Senior Growth Manager</h4>
+<p class="text-indigo-600 text-xs font-bold" contenteditable="true">Inbound Flow</p>
+</div>
+<span class="text-[10px] font-bold text-slate-400" contenteditable="true">MAY 2017 — DEC 2020</span>
+</div>
+<ul class="space-y-3 mt-4">
+<li class="flex items-start gap-3 group relative">
+<div class="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+<p class="text-sm text-on-surface leading-relaxed flex-1" contenteditable="true">Reduced Customer Acquisition Cost (CAC) by 35% through restructuring of Facebook and Google Ads bid management strategy.</p>
+</li>
+</ul>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<!-- Floating AI Panel -->
+<div class="fixed bottom-8 right-8 flex flex-col items-end gap-3 z-50">
+<div class="bg-on-surface text-surface px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm animate-in fade-in slide-in-from-bottom-4">
+<div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-indigo-200 opacity-70 mb-0.5">JD Match Score</p>
+<div class="flex items-center gap-3">
+<span class="font-headline text-2xl font-extrabold tracking-tighter">84<span class="text-xs opacity-50">/100</span></span>
+<div class="flex-1 h-1 w-24 bg-surface-container-high/20 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 w-[84%]"></div>
+</div>
+</div>
+</div>
+</div>
+<button class="group flex items-center gap-3 px-6 py-4 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white rounded-full font-bold shadow-xl shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all"><span class="material-symbols-outlined group-hover:rotate-12 transition-transform">auto_awesome</span> Optimize for this JD</button>
+</div>
+</div>
+</main>
+</body></html>

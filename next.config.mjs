@@ -4,6 +4,7 @@ const withNextIntl = createNextIntlPlugin('./lib/i18n/request.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  cacheHandler: undefined,
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000']

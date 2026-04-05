@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Upload Resume | CareerFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-container": "#454386",
+              "on-error-container": "#93000a",
+              "primary-fixed-dim": "#c3c0ff",
+              "on-error": "#ffffff",
+              "inverse-surface": "#302f39",
+              "on-tertiary-container": "#ffd2be",
+              "tertiary": "#7e3000",
+              "primary-fixed": "#e2dfff",
+              "surface-variant": "#e4e1ee",
+              "background": "#fcf8ff",
+              "secondary": "#58579b",
+              "on-surface": "#1b1b24",
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed-dim": "#ffb695",
+              "surface-tint": "#4d44e3",
+              "on-primary-container": "#dad7ff",
+              "surface-container-low": "#f5f2ff",
+              "secondary-fixed-dim": "#c3c0ff",
+              "secondary-fixed": "#e2dfff",
+              "on-secondary": "#ffffff",
+              "on-surface-variant": "#464555",
+              "surface-container-highest": "#e4e1ee",
+              "on-primary-fixed-variant": "#3323cc",
+              "surface-container-high": "#eae6f4",
+              "on-tertiary-fixed-variant": "#7b2f00",
+              "error-container": "#ffdad6",
+              "error": "#ba1a1a",
+              "surface": "#fcf8ff",
+              "primary-container": "#4f46e5",
+              "outline-variant": "#c7c4d8",
+              "on-primary-fixed": "#0f0069",
+              "on-primary": "#ffffff",
+              "primary": "#3525cd",
+              "on-secondary-fixed-variant": "#413f82",
+              "tertiary-fixed": "#ffdbcc",
+              "inverse-on-surface": "#f3effc",
+              "tertiary-container": "#a44100",
+              "surface-container-lowest": "#ffffff",
+              "on-background": "#1b1b24",
+              "secondary-container": "#b6b4ff",
+              "surface-bright": "#fcf8ff",
+              "on-secondary-fixed": "#140f54",
+              "surface-dim": "#dcd8e5",
+              "surface-container": "#f0ecf9",
+              "on-tertiary-fixed": "#351000",
+              "outline": "#777587",
+              "inverse-primary": "#c3c0ff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- Shared TopAppBar Component -->
+<header class="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl border-b border-indigo-500/10 shadow-sm shadow-indigo-500/5">
+<div class="flex items-center w-full px-8 h-16 max-w-screen-2xl mx-auto">
+<!-- Brand Logo -->
+<div class="flex items-center gap-8">
+<span class="text-2xl font-extrabold tracking-tighter text-[#4F46E5] dark:text-indigo-500 font-manrope">CareerFlow</span>
+<!-- Navigation Links (Hidden on Mobile) -->
+<nav class="hidden md:flex items-center gap-6 mx-auto"><a class="text-[#4F46E5] font-bold border-b-2 border-[#4F46E5] pb-1 font-manrope text-sm tracking-tight" href="#">Workspace</a><a class="text-slate-500 dark:text-slate-400 hover:text-[#4F46E5] font-manrope text-sm font-medium tracking-tight hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 rounded-lg transition-all px-3 py-2" href="#">Library</a><a class="text-slate-500 dark:text-slate-400 hover:text-[#4F46E5] font-manrope text-sm font-medium tracking-tight hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 rounded-lg transition-all px-3 py-2" href="#">Pricing</a><a class="text-slate-500 dark:text-slate-400 hover:text-[#4F46E5] font-manrope text-sm font-medium tracking-tight hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 rounded-lg transition-all px-3 py-2" href="#">Settings</a></nav>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4"><div class="flex items-center gap-2"><div class="flex items-center gap-1 bg-surface-container-high rounded-full px-3 py-1 mr-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">language</span>
+<div class="flex items-center text-[10px] font-bold font-manrope tracking-tighter">
+<span class="text-primary">EN</span>
+<span class="mx-1 text-outline-variant/50">|</span>
+<span class="text-on-surface-variant hover:text-primary cursor-pointer transition-colors">中</span>
+</div>
+</div>
+<div class="ml-2 w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border-2 border-white shadow-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRxQddJ5tdeks7MaqI2VMnNrsaqbx08Fhy9OfhFNOh3LkvQ2naCeT5E59bmYUe2851A3d0QwvndUIrxYmVjV5vhIr-yeAzvMpML2dONA_6mcOJfMJPF4iYOuFZj5AxI6_kRGhqReYjBqtvk3Ii5jRDWgirlXbq2Eprfkn_HiqZBSu7O-eru5piV8g8zsymaJ5DTA7RYy2KrFkSuJJLV6nyMolmLu5W7B5vAMG7DbEgLMx09YZxTrjXZBnLIPaGPD7TMYOLrAZfc5PG"/>
+</div>
+</div></div>
+</div>
+</header>
+<main class="pt-24 pb-16 px-6 max-w-[1024px] mx-auto">
+<!-- Hero Section -->
+<section class="mb-12">
+<h1 class="text-5xl font-extrabold text-on-surface tracking-tight mb-4">Upload Resume</h1>
+<p class="text-body-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                Let our AI analyze your career history. We'll extract your skills and experience to craft the perfect narrative for your next role.
+            </p>
+</section>
+<!-- Main Upload Area -->
+<div class="relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary to-primary-container rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+<div class="relative bg-surface-container-lowest rounded-3xl p-12 flex flex-col items-center justify-center text-center transition-all duration-300">
+<!-- Drag and Drop Zone -->
+<div class="w-full max-w-2xl border-2 border-dashed border-outline-variant/50 hover:border-primary/50 transition-colors rounded-2xl p-10 flex flex-col items-center group/drop">
+<div class="w-16 h-16 mb-6 rounded-2xl bg-primary-container/10 flex items-center justify-center text-primary group-hover/drop:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">cloud_upload</span>
+</div>
+<h3 class="text-2xl font-bold text-on-surface mb-2">Drop your resume here</h3>
+<p class="text-on-surface-variant mb-8">or click to browse through your local files</p>
+<div class="flex flex-col sm:flex-row gap-4">
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-8 py-3 rounded-full font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all flex items-center gap-2">
+<span>Choose File</span>
+<span class="material-symbols-outlined text-lg">attach_file</span>
+</button>
+<button class="px-8 py-3 rounded-full font-semibold border border-outline-variant hover:bg-surface-container-high transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">description</span>
+<span>Import from Notion</span>
+</button>
+</div>
+<p class="mt-8 text-xs font-medium uppercase tracking-widest text-outline">Supported formats: PDF or DOCX, max 10MB</p>
+</div>
+<!-- Hidden Input -->
+<input accept=".pdf,.docx" class="hidden" id="resume-upload" type="file"/>
+</div>
+</div>
+<!-- Progress Indicator (Contextual) -->
+<div class="mt-8 flex items-center gap-4 bg-surface-container-low p-4 rounded-2xl border border-outline-variant/10">
+<div class="w-10 h-10 rounded-full bg-tertiary-container/10 flex items-center justify-center text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined text-xl">auto_awesome</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-sm font-semibold text-on-surface">AI Extraction Ready</span>
+<span class="text-xs font-bold text-tertiary">98% Match Rate</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-tertiary to-tertiary-container w-0 transition-all duration-1000 ease-out" style="width: 0%;"></div>
+</div>
+</div>
+</div>
+<!-- Recent Uploads Section -->
+<section class="mt-20">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-2xl font-bold text-on-surface">Your Resumes</h2>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant transition-all">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container-high text-primary transition-all">
+<span class="material-symbols-outlined">list</span>
+</button>
+</div>
+</div>
+<!-- Empty State -->
+<!-- Note: This is commented out to show the list state as well, but would be toggled in logic -->
+<!-- 
+            <div class="bg-surface-container-low rounded-3xl p-16 flex flex-col items-center text-center">
+                <span class="material-symbols-outlined text-6xl text-outline-variant mb-4">folder_open</span>
+                <p class="text-on-surface-variant font-medium">No resumes yet. Upload one to get started!</p>
+            </div> 
+            -->
+<!-- List of Resumes -->
+<div class="space-y-4">
+<!-- Resume Item 1 -->
+<div class="group flex items-center bg-surface-container-lowest p-5 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/5 transition-all border border-transparent hover:border-primary/5">
+<div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary-container group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex-1 ml-4">
+<h4 class="font-bold text-on-surface leading-tight">Senior_Product_Designer_2024.pdf</h4>
+<p class="text-xs font-medium text-on-surface-variant uppercase tracking-wider mt-1">Uploaded Oct 12, 2023 • 2.4 MB</p>
+</div>
+<div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant" title="View">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant" title="Download">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+<div class="h-6 w-px bg-outline-variant/30 mx-1"></div>
+<button class="p-2 rounded-full hover:bg-error-container/20 text-error" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</div>
+<!-- Resume Item 2 -->
+<div class="group flex items-center bg-surface-container-lowest p-5 rounded-2xl hover:shadow-xl hover:shadow-indigo-500/5 transition-all border border-transparent hover:border-primary/5">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container/10 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">article</span>
+</div>
+<div class="flex-1 ml-4">
+<h4 class="font-bold text-on-surface leading-tight">Marketing_Lead_Draft_v2.docx</h4>
+<p class="text-xs font-medium text-on-surface-variant uppercase tracking-wider mt-1">Uploaded Sep 28, 2023 • 1.1 MB</p>
+</div>
+<div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-xl">visibility</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined text-xl">download</span>
+</button>
+<div class="h-6 w-px bg-outline-variant/30 mx-1"></div>
+<button class="p-2 rounded-full hover:bg-error-container/20 text-error">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Secondary Guidance Section (Bento Grid Style) -->
+<section class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-gradient-to-br from-primary-container to-primary p-10 rounded-3xl text-white relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="text-3xl font-extrabold mb-4 leading-tight">Analyze your Resume with AI</h3>
+<p class="text-primary-fixed-dim text-lg mb-8 max-w-md">Our advanced models compare your resume against 50k+ job descriptions to give you real-time feedback.</p>
+<button class="bg-white text-primary px-6 py-2.5 rounded-full font-bold text-sm hover:bg-primary-fixed transition-colors">Try Deep Scan</button>
+</div>
+<div class="absolute top-0 right-0 w-64 h-64 opacity-20 transform translate-x-12 -translate-y-12 group-hover:scale-110 transition-transform duration-700">
+<span class="material-symbols-outlined text-[12rem]">query_stats</span>
+</div>
+</div>
+<div class="bg-surface-container-high p-8 rounded-3xl flex flex-col justify-between border border-outline-variant/20">
+<div>
+<div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary mb-6">
+<span class="material-symbols-outlined">lightbulb</span>
+</div>
+<h4 class="text-xl font-bold mb-2">Pro Tip</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">PDF format ensures your layout stays perfect across all applicant tracking systems (ATS).</p>
+</div>
+<a class="text-sm font-bold text-primary flex items-center gap-1 mt-4 group" href="#">
+                    Learn more 
+                    <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+</section>
+</main>
+<!-- Success Modal Simulation (Hidden) -->
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-md z-[100] hidden items-center justify-center p-6">
+<div class="bg-surface-container-lowest rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl">
+<div class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-8">
+<span class="material-symbols-outlined text-5xl">check_circle</span>
+</div>
+<h2 class="text-3xl font-extrabold mb-4">Resume Analyzed!</h2>
+<p class="text-on-surface-variant mb-8 leading-relaxed">We've successfully extracted 12 skills and 3 key projects from your file. Ready to proceed?</p>
+<button class="w-full bg-primary text-white py-4 rounded-2xl font-bold text-lg hover:shadow-lg shadow-primary/20 transition-all">Continue to Step 2</button>
+</div>
+</div>
+</body></html>

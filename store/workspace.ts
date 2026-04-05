@@ -1,26 +1,23 @@
 import { create } from 'zustand'
-import type { WorkExperience, Achievement, ResumeLang, Profile } from '@/lib/types/domain'
+import type { WorkExperience, ResumeLang, Profile, ResumePersonalInfo, ResumeEducation, ResumeSkillGroup } from '@/lib/types/domain'
 
 interface WorkspaceState {
-  // Layout
   splitRatio: number
   setSplitRatio: (ratio: number) => void
 
-  // Resume settings
   resumeLang: ResumeLang
   setResumeLang: (lang: ResumeLang) => void
   showPhoto: boolean
   togglePhoto: () => void
+  setShowPhoto: (v: boolean) => void
   photoPath: string | null
   setPhotoPath: (path: string | null) => void
 
-  // JD
   jdText: string
   setJdText: (text: string) => void
   isGenerating: boolean
   setIsGenerating: (v: boolean) => void
 
-  // Achievements
   experiences: WorkExperience[]
   setExperiences: (exps: WorkExperience[]) => void
   activeTab: 'library' | 'drafts'
@@ -28,11 +25,15 @@ interface WorkspaceState {
   searchQuery: string
   setSearchQuery: (q: string) => void
 
-  // Resume editor JSON (TipTap)
   editorJson: object
   setEditorJson: (json: object) => void
 
-  // Identity
+  // Parsed resume profile (personal info, education, skills)
+  resumePersonalInfo: ResumePersonalInfo | null
+  resumeEducation: ResumeEducation[]
+  resumeSkills: ResumeSkillGroup[]
+  setResumeProfile: (info: ResumePersonalInfo | null, education: ResumeEducation[], skills: ResumeSkillGroup[]) => void
+
   anonymousId: string
   setAnonymousId: (id: string) => void
   userId: string | null
@@ -49,6 +50,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setResumeLang: (lang) => set({ resumeLang: lang }),
   showPhoto: false,
   togglePhoto: () => set((s) => ({ showPhoto: !s.showPhoto })),
+  setShowPhoto: (v) => set({ showPhoto: v }),
   photoPath: null,
   setPhotoPath: (path) => set({ photoPath: path }),
 
@@ -66,6 +68,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
 
   editorJson: {},
   setEditorJson: (json) => set({ editorJson: json }),
+
+  resumePersonalInfo: null,
+  resumeEducation: [],
+  resumeSkills: [],
+  setResumeProfile: (info, education, skills) =>
+    set({ resumePersonalInfo: info, resumeEducation: education, resumeSkills: skills }),
 
   anonymousId: '',
   setAnonymousId: (id) => set({ anonymousId: id }),

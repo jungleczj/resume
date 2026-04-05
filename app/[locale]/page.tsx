@@ -1,64 +1,15 @@
 'use client'
 
-import { useRef, useState } from 'react'
 import { useRouter } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
-import { trackEvent } from '@/lib/analytics'
 import { NavBar } from '@/components/layout/NavBar'
-import { Loader2 } from 'lucide-react'
-
-function getAnonymousId(): string {
-  let id = localStorage.getItem('cf_anonymous_id')
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem('cf_anonymous_id', id)
-  }
-  return id
-}
 
 export default function LandingPage() {
   const router = useRouter()
   const t = useTranslations('landing')
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const handleUploadClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploadError(null)
-    setUploading(true)
-    const anonymousId = getAnonymousId()
-
-    await trackEvent('f1_upload_started', {
-      file_type: file.type,
-      file_size: file.size,
-      anonymous_id: anonymousId
-    })
-
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('anonymous_id', anonymousId)
-
-      const res = await fetch('/api/resume/upload', {
-        method: 'POST',
-        body: formData
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Upload failed')
-
-      const id = data.data?.anonymous_id ?? anonymousId
-      router.push(`/workspace?anonymous_id=${id}`)
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
-      setUploading(false)
-    }
+    router.push('/upload')
   }
 
   const testimonials = [
@@ -106,10 +57,8 @@ export default function LandingPage() {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={handleUploadClick}
-                    disabled={uploading}
-                    className="bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white px-8 py-4 rounded-full font-headline font-bold text-base shadow-lg shadow-[#3525cd]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white px-8 py-4 rounded-full font-headline font-bold text-base shadow-lg shadow-[#3525cd]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2"
                   >
-                    {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
                     {t('hero.cta_upload')}
                   </button>
                   <button className="bg-[#eae6f4] text-[#1b1b24] px-8 py-4 rounded-full font-headline font-bold text-base hover:bg-[#e4e1ee] transition-all flex items-center justify-center gap-2">
@@ -117,16 +66,6 @@ export default function LandingPage() {
                     {t('hero.cta_demo')}
                   </button>
                 </div>
-                {uploadError && (
-                  <p className="text-sm text-red-500 mt-2">{uploadError}</p>
-                )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.docx,.doc"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
               </div>
               <div className="lg:col-span-5 relative">
                 <div className="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-indigo-200/50">
@@ -239,10 +178,8 @@ export default function LandingPage() {
             <div className="mt-20 text-center">
               <button
                 onClick={handleUploadClick}
-                disabled={uploading}
-                className="bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white px-10 py-4 rounded-full font-headline font-bold text-lg hover:shadow-xl transition-all disabled:opacity-60 flex items-center gap-2 mx-auto"
+                className="bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white px-10 py-4 rounded-full font-headline font-bold text-lg hover:shadow-xl transition-all flex items-center gap-2 mx-auto"
               >
-                {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t('how_it_works.cta')}
               </button>
             </div>

@@ -2,18 +2,16 @@
 
 import { useTranslations } from 'next-intl'
 import { useWorkspaceStore } from '@/store/workspace'
-import { Search, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackEvent } from '@/lib/analytics'
 import type { Achievement, AchievementTier } from '@/lib/types/domain'
 
-const TIER_COLORS: Record<AchievementTier, string> = {
-  1: 'bg-green-500',
-  2: 'bg-yellow-500',
-  3: 'bg-red-400'
+// Icon per tier to visually distinguish, matching Stitch icon style
+const TIER_ICONS: Record<AchievementTier, { icon: string; bg: string; color: string }> = {
+  1: { icon: 'insights',      bg: 'bg-tertiary-container/10', color: 'text-on-tertiary-fixed-variant' },
+  2: { icon: 'code',          bg: 'bg-indigo-100',            color: 'text-indigo-600' },
+  3: { icon: 'attach_money',  bg: 'bg-emerald-100',           color: 'text-emerald-600' },
 }
-
-// Tier labels resolved at render time via i18n (see AchievementCard)
 
 export function AchievementPanel() {
   const t = useTranslations()
@@ -26,19 +24,14 @@ export function AchievementPanel() {
     anonymousId
   } = useWorkspaceStore()
 
-  // Flatten and filter achievements
-  const allAchievements = experiences.flatMap(
-    (exp) => exp.achievements ?? []
-  )
+  const allAchievements = experiences.flatMap((exp) => exp.achievements ?? [])
 
   const filtered = allAchievements.filter((a) => {
     if (activeTab === 'drafts') return a.status === 'draft'
     if (activeTab === 'library') return a.status === 'confirmed'
     return true
   }).filter((a) =>
-    searchQuery
-      ? a.text.toLowerCase().includes(searchQuery.toLowerCase())
-      : true
+    searchQuery ? a.text.toLowerCase().includes(searchQuery.toLowerCase()) : true
   )
 
   const handleDragStart = (e: React.DragEvent, achievement: Achievement) => {
@@ -52,18 +45,18 @@ export function AchievementPanel() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <section className="flex-1 flex flex-col bg-surface-container-high/30 rounded-t-[2.5rem] p-6 shadow-inner overflow-hidden">
       {/* Tabs */}
-      <div className="flex border-b border-gray-100">
+      <div className="flex items-center gap-6 mb-6">
         {(['library', 'drafts'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              'flex-1 py-2 text-xs font-medium transition-colors',
+              'font-headline text-sm font-bold pb-2 relative transition-colors',
               activeTab === tab
-                ? 'text-brand border-b-2 border-brand'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-primary font-extrabold after:content-[\'\'] after:absolute after:bottom-0 after:left-0 after:w-full after:h-1 after:bg-primary after:rounded-full'
+                : 'text-slate-400 hover:text-on-surface'
             )}
           >
             {t(`workspace.achievement_panel.tabs.${tab}`)}
@@ -72,23 +65,21 @@ export function AchievementPanel() {
       </div>
 
       {/* Search */}
-      <div className="px-3 py-2 border-b border-gray-100">
-        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1.5">
-          <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('workspace.achievement_panel.search_placeholder')}
-            className="flex-1 bg-transparent text-xs text-gray-700 placeholder-gray-400 focus:outline-none"
-          />
-        </div>
+      <div className="relative mb-6">
+        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={t('workspace.achievement_panel.search_placeholder')}
+          className="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest rounded-full text-xs border-none focus:ring-2 focus:ring-primary/20 shadow-sm focus:outline-none"
+        />
       </div>
 
-      {/* Achievement list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1.5">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto space-y-3" style={{ scrollbarWidth: 'none' }}>
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-xs text-gray-400">
+          <div className="text-center py-8 text-xs text-slate-400">
             {t('workspace.achievement_panel.empty_state')}
           </div>
         ) : (
@@ -101,14 +92,7 @@ export function AchievementPanel() {
           ))
         )}
       </div>
-
-      {/* Drag hint */}
-      <div className="px-3 py-1.5 border-t border-gray-100">
-        <p className="text-xs text-gray-400 text-center">
-          {t('workspace.achievement_panel.drag_hint')}
-        </p>
-      </div>
-    </div>
+    </section>
   )
 }
 
@@ -119,31 +103,35 @@ function AchievementCard({
   achievement: Achievement
   onDragStart: (e: React.DragEvent, a: Achievement) => void
 }) {
-  const t = useTranslations()
-  const tierKey = `workspace.achievement_panel.tier_labels.tier${achievement.tier}` as const
+  const tier = (achievement.tier as AchievementTier) ?? 3
+  const { icon, bg, color } = TIER_ICONS[tier]
 
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, achievement)}
-      className="flex items-start gap-2 p-2.5 bg-white border border-gray-100 rounded-lg cursor-grab hover:border-brand hover:shadow-sm active:cursor-grabbing transition-all group"
+      className="group bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-transparent hover:border-primary/20 hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
     >
-      {/* Tier indicator */}
-      <div
-        className={cn(
-          'w-2 h-2 rounded-full flex-shrink-0 mt-1',
-          TIER_COLORS[achievement.tier as AchievementTier]
-        )}
-        title={t(tierKey)}
-      />
-
-      {/* Text */}
-      <p className="flex-1 text-xs text-gray-700 leading-relaxed">
-        {achievement.text}
-      </p>
-
-      {/* Drag handle */}
-      <GripVertical className="w-3.5 h-3.5 text-gray-300 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-start gap-3">
+        <div className={cn('mt-1 flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center', bg)}>
+          <span
+            className={cn('material-symbols-outlined text-sm', color)}
+            style={{ fontVariationSettings: "'FILL' 1" }}
+          >
+            {icon}
+          </span>
+        </div>
+        <div className="flex-1">
+          <p className="text-xs font-medium text-on-surface leading-snug">
+            {achievement.text}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <span className="px-2 py-0.5 bg-surface-container-high rounded text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+              {tier === 1 ? 'Impact' : tier === 2 ? 'Growth' : 'Experience'}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
