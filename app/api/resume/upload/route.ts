@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import * as https from 'node:https'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { trackEvent } from '@/lib/analytics'
 import { logError } from '@/lib/error-logger'
+import { checkRateLimit } from '@/lib/rate-limit'
+
+// Disable Next.js fetch deduplication/caching — binary storage uploads break with it
+export const dynamic = 'force-dynamic'
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -26,6 +31,76 @@ function isValidFileMagic(bytes: Uint8Array, mimeType: string): boolean {
   return false
 }
 
+/**
+ * Upload a Buffer to Supabase Storage using Node.js's native https module.
+ * This bypasses Next.js's patched globalThis.fetch (which breaks binary uploads
+ * in the RSC bundle context on Windows/Node 18+ with undici).
+ */
+function uploadToStorageNative(
+  filePath: string,
+  buffer: Buffer,
+  contentType: string,
+  upsert = false,
+): Promise<void> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const host = new URL(supabaseUrl).hostname
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: host,
+        path: `/storage/v1/object/resumes/${filePath}`,
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': contentType,
+          'Content-Length': buffer.length,
+          'x-upsert': upsert ? 'true' : 'false',
+        },
+      },
+      (res) => {
+        const chunks: Buffer[] = []
+        res.on('data', (c: Buffer) => chunks.push(c))
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf8')
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            resolve()
+          } else {
+            const msg = `Storage HTTP ${res.statusCode ?? 'no-status'}: ${body || '(empty body)'}`
+            console.error('[upload:native] storage error detail:', msg)
+            reject(new Error(msg))
+          }
+        })
+      }
+    )
+    req.on('error', (err) => {
+      console.error('[upload:native] network error:', err.message)
+      reject(err)
+    })
+    req.write(buffer)
+    req.end()
+  })
+}
+
+/**
+ * Upload via Supabase JS SDK — simpler path, used as fallback if native fails.
+ * The SDK handles auth headers internally.
+ */
+async function uploadToStorageSDK(
+  filePath: string,
+  buffer: Buffer,
+  contentType: string,
+  upsert = false,
+): Promise<void> {
+  const { createServiceClient } = await import('@/lib/supabase/service')
+  const supabase = createServiceClient()
+  const { error } = await supabase.storage
+    .from('resumes')
+    .upload(filePath, buffer, { contentType, upsert })
+  if (error) throw new Error(`SDK upload: ${error.message}`)
+}
+
 /** Serialize a full error chain (including .cause) to a loggable string */
 function serializeError(err: unknown): string {
   if (!(err instanceof Error)) return String(err)
@@ -38,6 +113,24 @@ function serializeError(err: unknown): string {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate limit: 10 uploads per IP per hour
+  const rlKey = `upload:${req.headers.get('x-forwarded-for') ?? 'local'}`
+  const { allowed, remaining, resetAt } = await checkRateLimit(rlKey, 10, 3600)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: '请求过于频繁，请稍后重试' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(resetAt),
+          'Retry-After': String(resetAt - Math.floor(Date.now() / 1000))
+        }
+      }
+    )
+  }
+  void remaining // used in headers if needed; suppress unused-var warning
+
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File | null
@@ -80,24 +173,37 @@ export async function POST(req: NextRequest) {
 
     console.log('[upload] uploading to storage:', filePath, 'size:', fileBuffer.length)
 
-    // Retry up to 3 times — Windows/Node.js 18+ native fetch (undici) can fail
-    // on first attempt with ECONNRESET or TLS issues when reaching external HTTPS services
+    // Strategy: try native node:https (2 attempts) then SDK fallback (1 attempt).
+    // Native bypasses undici; SDK is simpler and used if native consistently fails.
     let storageError: Error | null = null
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const { error } = await supabase.storage
-        .from('resumes')
-        .upload(filePath, fileBuffer, { contentType: file.type, upsert: attempt > 1 })
-      if (!error) { storageError = null; break }
-      storageError = error as unknown as Error
-      const detail = serializeError(error)
-      console.warn(`[upload] storage attempt ${attempt}/3 failed:\n`, detail)
-      if (attempt < 3) await new Promise(r => setTimeout(r, 800 * attempt))
+    let uploaded = false
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await uploadToStorageNative(filePath, fileBuffer, file.type, attempt > 1)
+        uploaded = true
+        break
+      } catch (err) {
+        storageError = err instanceof Error ? err : new Error(String(err))
+        console.warn(`[upload] native attempt ${attempt}/2 failed:`, storageError.message)
+        if (attempt < 2) await new Promise(r => setTimeout(r, 600))
+      }
     }
 
-    if (storageError) {
-      const detail = serializeError(storageError)
-      console.error('[upload] storage error full chain:\n', detail)
-      throw new Error(`Storage error: ${(storageError as { message?: string }).message ?? storageError}`)
+    if (!uploaded) {
+      console.warn('[upload] native failed, trying SDK fallback')
+      try {
+        await uploadToStorageSDK(filePath, fileBuffer, file.type, true)
+        uploaded = true
+        storageError = null
+      } catch (err) {
+        storageError = err instanceof Error ? err : new Error(String(err))
+        console.error('[upload] SDK fallback also failed:', storageError.message)
+      }
+    }
+
+    if (!uploaded || storageError) {
+      throw new Error(`Storage upload failed: ${storageError?.message ?? 'unknown'}`)
     }
 
     console.log('[upload] storage upload OK, inserting DB record')
@@ -149,7 +255,9 @@ export async function POST(req: NextRequest) {
       success: true,
       data: {
         upload_id: uploadRecord.id,
-        anonymous_id: anonId
+        anonymous_id: anonId,
+        file_path: filePath,
+        file_type: file.type
       }
     })
   } catch (error) {

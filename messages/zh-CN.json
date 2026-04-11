@@ -100,7 +100,10 @@
     "privacy": "隐私政策",
     "legal_and": "和",
     "terms": "服务条款",
-    "social_proof": "已有 12,000+ 职场人加入"
+    "social_proof": "已有 12,000+ 职场人加入",
+    "sent_title": "邮件已发送！",
+    "sent_body": "登录链接已发送至 {email}，请点击邮件中的链接登录。",
+    "sent_retry": "重新发送"
   },
   "workspace": {
     "toolbar": {
@@ -109,13 +112,16 @@
       "history": "版本历史",
       "language": "语言",
       "photo": "照片",
-      "save": "保存"
+      "save": "保存",
+      "show_photo": "显示照片"
     },
     "jd_panel": {
       "title": "职位描述（可选）",
       "placeholder": "粘贴职位描述，AI 将匹配最相关的成就...\n\n不粘贴也可以，直接从成就库拖入你想展示的亮点",
       "char_limit": "最多 5000 字",
-      "generate_btn": "生成定制简历"
+      "generate_btn": "生成简历（通用版）",
+      "generate_btn_custom": "生成定制简历",
+      "truncated_warning": "内容已截断至 5000 字上限"
     },
     "achievement_panel": {
       "tabs": {
@@ -129,7 +135,11 @@
         "tier3": "基础经历"
       },
       "empty_state": "暂无成就，上传简历或连接 Notion 开始积累",
-      "drag_hint": "拖入右侧简历"
+      "drag_hint": "拖入右侧简历",
+      "bulk_confirm": "全部确认",
+      "bulk_ignore": "全部忽略",
+      "select_all": "全选",
+      "draft_selected": "已选 {count} 条"
     },
     "resume_preview": {
       "generating": "成就正在生成中...",
@@ -137,7 +147,23 @@
       "experience_title": "工作经历",
       "present": "至今",
       "photo_upload": "点击上传照片",
-      "copy_notice": "仅供预览，内容受保护"
+      "copy_notice": "仅供预览，内容受保护",
+      "certifications": "证书与资质",
+      "spoken_languages": "语言能力",
+      "awards": "荣誉与奖项",
+      "publications": "学术成果",
+      "proficiency": {
+        "elementary": "初级",
+        "limited_working": "日常沟通",
+        "professional_working": "工作交流",
+        "full_professional": "流利",
+        "native_bilingual": "母语"
+      }
+    },
+    "draft_recovery": {
+      "message": "检测到上次会话未保存的编辑",
+      "restore": "恢复",
+      "dismiss": "放弃"
     }
   },
   "library": {
@@ -221,20 +247,35 @@
     "modal_title": "导出简历",
     "free_badge": "免费导出",
     "download_btn": "立即下载",
+    "format_label": "格式",
+    "plan_label": "套餐",
+    "plan_one_time": "单次导出",
+    "plan_one_time_desc": "下载这份简历一次",
+    "plan_monthly": "月度订阅",
+    "plan_monthly_desc": "无限导出 + Notion 同步 + 历史版本",
+    "plan_yearly": "年度订阅",
+    "plan_yearly_desc": "最优惠，省 30% 以上",
+    "plan_recommended": "推荐",
+    "pay_now": "立即支付",
+    "pay_secure": "安全加密，支付成功后立即下载",
     "formats": {
       "pdf": "PDF 格式",
       "docx": "Word 格式"
     },
     "photo_toggle": "显示照片",
     "export_btn": "导出",
-    "processing": "生成中...",
-    "paywall": {
-      "title": "解锁导出功能",
-      "subtitle": "升级 Pro 版，无限次导出",
-      "features": ["无限次 PDF/Word 导出", "多种精美模板", "优先 AI 处理", "版本历史保存"],
-      "upgrade_btn": "升级 Pro",
-      "later": "稍后"
-    }
+    "processing": "生成中..."
+  },
+  "payment_success": {
+    "verifying_title": "正在确认支付...",
+    "verifying_subtitle": "稍等片刻，正在核实交易信息",
+    "generating_title": "正在生成简历文件...",
+    "generating_subtitle": "文件就绪后将自动开始下载",
+    "ready_title": "简历已就绪！",
+    "ready_subtitle": "下载应已自动开始，如未开始请点击下方按钮",
+    "download_btn": "下载 {format}",
+    "back_to_workspace": "返回工作台",
+    "error_title": "出现了一个问题"
   },
   "notifications": {
     "upload_success": "简历已上传，正在提炼成就...",

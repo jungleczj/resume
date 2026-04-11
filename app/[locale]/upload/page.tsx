@@ -63,6 +63,17 @@ export default function UploadPage() {
       setProgressWidth(100)
 
       const id = data.data?.anonymous_id ?? anonymousId
+      
+      // Save upload info for ResumeWithOriginalFormat to load original resume
+      if (data.data?.file_path) {
+        localStorage.setItem('cf_last_upload', JSON.stringify({
+          filePath: data.data.file_path,
+          fileType: data.data.file_type,
+          uploadId: data.data.upload_id,
+          anonymousId: id
+        }))
+      }
+      
       await trackEvent('f1_upload_completed', { anonymous_id: id })
 
       router.push(`/workspace?anonymous_id=${id}`)

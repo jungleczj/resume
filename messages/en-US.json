@@ -100,7 +100,10 @@
     "privacy": "Privacy Policy",
     "legal_and": "and",
     "terms": "Terms of Service",
-    "social_proof": "Joined by 12,000+ Professionals"
+    "social_proof": "Joined by 12,000+ Professionals",
+    "sent_title": "Check your email!",
+    "sent_body": "We sent a magic link to {email}. Click it to sign in.",
+    "sent_retry": "Try a different email"
   },
   "workspace": {
     "toolbar": {
@@ -109,13 +112,16 @@
       "history": "History",
       "language": "Language",
       "photo": "Photo",
-      "save": "Save"
+      "save": "Save",
+      "show_photo": "Show Photo"
     },
     "jd_panel": {
       "title": "Job Description (Optional)",
       "placeholder": "Paste job description here, AI will match your most relevant achievements...\n\nOr skip this and drag achievements directly from your library",
       "char_limit": "Max 5000 characters",
-      "generate_btn": "Generate Tailored Resume"
+      "generate_btn": "Generate Resume (Generic)",
+      "generate_btn_custom": "Generate Tailored Resume",
+      "truncated_warning": "Content trimmed to 5000-character limit"
     },
     "achievement_panel": {
       "tabs": {
@@ -129,7 +135,11 @@
         "tier3": "Core Experience"
       },
       "empty_state": "No achievements yet. Upload a resume or connect Notion to get started",
-      "drag_hint": "Drag to resume"
+      "drag_hint": "Drag to resume",
+      "bulk_confirm": "Confirm All",
+      "bulk_ignore": "Ignore All",
+      "select_all": "Select All",
+      "draft_selected": "{count} selected"
     },
     "resume_preview": {
       "generating": "Generating achievements...",
@@ -137,7 +147,23 @@
       "experience_title": "Work Experience",
       "present": "Present",
       "photo_upload": "Click to upload",
-      "copy_notice": "Preview only — content cannot be copied"
+      "copy_notice": "Preview only — content cannot be copied",
+      "certifications": "Certifications",
+      "spoken_languages": "Languages",
+      "awards": "Honors & Awards",
+      "publications": "Publications",
+      "proficiency": {
+        "elementary": "Elementary",
+        "limited_working": "Limited Working",
+        "professional_working": "Professional",
+        "full_professional": "Full Professional",
+        "native_bilingual": "Native"
+      }
+    },
+    "draft_recovery": {
+      "message": "Unsaved edits found from your last session",
+      "restore": "Restore",
+      "dismiss": "Discard"
     }
   },
   "library": {
@@ -221,20 +247,35 @@
     "modal_title": "Export Resume",
     "free_badge": "Free Export",
     "download_btn": "Download Now",
+    "format_label": "Format",
+    "plan_label": "Plan",
+    "plan_one_time": "Single Export",
+    "plan_one_time_desc": "Download this resume once",
+    "plan_monthly": "Monthly Plan",
+    "plan_monthly_desc": "Unlimited exports + Notion sync + history",
+    "plan_yearly": "Yearly Plan",
+    "plan_yearly_desc": "Best value — save over 30%",
+    "plan_recommended": "Recommended",
+    "pay_now": "Pay Now",
+    "pay_secure": "Secure payment, download immediately after",
     "formats": {
       "pdf": "PDF",
       "docx": "Word"
     },
     "photo_toggle": "Include Photo",
     "export_btn": "Export",
-    "processing": "Generating...",
-    "paywall": {
-      "title": "Ready to Export",
-      "subtitle": "Upgrade to Pro to download your resume",
-      "features": ["Unlimited PDF & Word exports", "Premium templates", "Priority AI processing", "Version history"],
-      "upgrade_btn": "Upgrade to Pro",
-      "later": "Maybe Later"
-    }
+    "processing": "Generating..."
+  },
+  "payment_success": {
+    "verifying_title": "Verifying your payment...",
+    "verifying_subtitle": "Just a moment while we confirm your transaction",
+    "generating_title": "Preparing your resume...",
+    "generating_subtitle": "Your file will download automatically in seconds",
+    "ready_title": "Your resume is ready!",
+    "ready_subtitle": "Download should start automatically. Click below if not.",
+    "download_btn": "Download {format}",
+    "back_to_workspace": "Back to workspace",
+    "error_title": "Something went wrong"
   },
   "notifications": {
     "upload_success": "Resume uploaded, extracting achievements...",

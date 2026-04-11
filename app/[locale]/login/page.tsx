@@ -11,23 +11,41 @@ export default function LoginPage() {
   const t = useTranslations('login')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
 
   const handleGoogleLogin = async () => {
     trackEvent('login_google_clicked', {})
     const supabase = createClient()
+    const anonId = typeof window !== 'undefined' ? localStorage.getItem('cf_anonymous_id') : null
+    const callbackUrl = new URL('/auth/callback', window.location.origin)
+    if (anonId) callbackUrl.searchParams.set('anonymous_id', anonId)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl.toString() }
     })
   }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email.trim()) return
     setLoading(true)
+    setEmailError(null)
     trackEvent('login_email_submitted', {})
     const supabase = createClient()
-    await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+    const anonId = typeof window !== 'undefined' ? localStorage.getItem('cf_anonymous_id') : null
+    const callbackUrl = new URL('/auth/callback', window.location.origin)
+    if (anonId) callbackUrl.searchParams.set('anonymous_id', anonId)
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: callbackUrl.toString() }
+    })
     setLoading(false)
+    if (error) {
+      setEmailError(error.message)
+    } else {
+      setSent(true)
+    }
   }
 
   return (
@@ -69,27 +87,48 @@ export default function LoginPage() {
             <span className="mx-4 text-xs font-bold tracking-widest text-[#464555]/60 uppercase">{t('or')}</span>
             <div className="flex-grow border-t border-[#c7c4d8]/20"></div>
           </div>
-          {/* Email Form */}
-          <form className="space-y-6" onSubmit={handleEmailLogin}>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-[#464555] px-1" htmlFor="email">{t('email_label')}</label>
-              <input
-                className="w-full px-6 py-4 rounded-xl bg-[#eae6f4] border-none focus:ring-2 focus:ring-[#3525cd]/40 focus:bg-white transition-all text-[#1b1b24] placeholder:text-[#464555]/50"
-                id="email"
-                type="email"
-                placeholder={t('email_placeholder')}
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
+          {/* Email Form / Sent Confirmation */}
+          {sent ? (
+            <div className="rounded-2xl bg-[#eae6f4] px-6 py-5 text-center">
+              <div className="text-3xl mb-2">📬</div>
+              <p className="font-bold text-[#1b1b24] mb-1">
+                {t('sent_title')}
+              </p>
+              <p className="text-sm text-[#464555]">
+                {t('sent_body', { email })}
+              </p>
+              <button
+                onClick={() => { setSent(false); setEmail('') }}
+                className="mt-4 text-xs text-[#3525cd] underline hover:opacity-70"
+              >
+                {t('sent_retry')}
+              </button>
             </div>
-            <button
-              className="w-full py-4 px-6 rounded-full bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white font-bold shadow-lg shadow-[#3525cd]/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? t('sending') : t('email_btn')}
-            </button>
-          </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleEmailLogin}>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-[#464555] px-1" htmlFor="email">{t('email_label')}</label>
+                <input
+                  className="w-full px-6 py-4 rounded-xl bg-[#eae6f4] border-none focus:ring-2 focus:ring-[#3525cd]/40 focus:bg-white transition-all text-[#1b1b24] placeholder:text-[#464555]/50"
+                  id="email"
+                  type="email"
+                  placeholder={t('email_placeholder')}
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                />
+              </div>
+              {emailError && (
+                <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{emailError}</p>
+              )}
+              <button
+                className="w-full py-4 px-6 rounded-full bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white font-bold shadow-lg shadow-[#3525cd]/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
+                type="submit"
+                disabled={loading || !email.trim()}
+              >
+                {loading ? t('sending') : t('email_btn')}
+              </button>
+            </form>
+          )}
           <footer className="mt-8 text-center lg:text-left">
             <p className="text-xs text-[#464555] leading-relaxed">
               {t('legal_prefix')}{' '}

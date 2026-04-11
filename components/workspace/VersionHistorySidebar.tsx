@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { X, Search, Clock, RotateCcw, Eye, Loader2 } from 'lucide-react'
+import { X, Search, Clock, RotateCcw, Eye, Loader2, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { trackEvent } from '@/lib/analytics'
 import type { ResumeVersion } from '@/lib/types/domain'
 
 interface VersionHistorySidebarProps {
@@ -16,6 +17,33 @@ interface VersionHistorySidebarProps {
 }
 
 type DateGroup = 'today' | 'yesterday' | 'this_week' | 'earlier'
+
+// ── Typed editor_json structure ───────────────────────────────────────────────
+interface AchievementNode {
+  type: 'achievement'
+  attrs?: { id?: string; tier?: number }
+  content?: Array<{ type: string; text?: string }>
+}
+interface ExperienceNode {
+  type: 'experience'
+  attrs?: { company?: string; job_title?: string; original_tenure?: string; start_year?: number; end_year?: number; is_current?: boolean }
+  content?: AchievementNode[]
+}
+interface EditorDoc {
+  type: 'doc'
+  content?: ExperienceNode[]
+  meta?: { lang?: string; generated_at?: string }
+}
+
+function parseEditorJson(raw: object): EditorDoc | null {
+  try {
+    const doc = raw as EditorDoc
+    if (doc.type === 'doc') return doc
+    return null
+  } catch {
+    return null
+  }
+}
 
 function getDateGroup(dateStr: string): DateGroup {
   const date = new Date(dateStr)
@@ -34,6 +62,146 @@ function formatTime(dateStr: string): string {
   return d.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+function tierColor(tier?: number): string {
+  if (tier === 1) return 'text-emerald-600'
+  if (tier === 2) return 'text-amber-500'
+  return 'text-rose-500'
+}
+
+function tierDot(tier?: number): string {
+  if (tier === 1) return 'bg-emerald-500'
+  if (tier === 2) return 'bg-amber-400'
+  return 'bg-rose-400'
+}
+
+const LANG_LABELS: Record<string, string> = { zh: '中文', en: 'English', bilingual: '双语' }
+
+// ── Version summary line ─────────────────────────────────────────────────────
+
+function buildSummary(version: ResumeVersion): string {
+  const doc = parseEditorJson(version.editor_json)
+  const exps = doc?.content ?? []
+  const expCount = exps.length
+  const achCount = exps.reduce((n, e) => n + (e.content?.length ?? 0), 0)
+
+  const lang = version.resume_lang ?? doc?.meta?.lang
+  const langLabel = lang ? (LANG_LABELS[lang] ?? lang) : null
+
+  const parts: string[] = []
+  if (expCount > 0) parts.push(`${expCount}个职位`)
+  if (achCount > 0) parts.push(`${achCount}条成就`)
+  if (langLabel) parts.push(langLabel)
+  if (version.snapshot_jd) parts.push('有JD')
+  if (version.show_photo) parts.push('含照片')
+
+  return parts.join(' · ')
+}
+
+// ── Version preview modal ────────────────────────────────────────────────────
+
+function VersionPreviewModal({
+  version,
+  onClose,
+  onRestore
+}: {
+  version: ResumeVersion
+  onClose: () => void
+  onRestore: () => void
+}) {
+  const doc = parseEditorJson(version.editor_json)
+  const exps = doc?.content ?? []
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-2xl max-h-[85vh] overflow-hidden">
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">
+              {version.snapshot_label || formatTime(version.created_at)}
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {formatTime(version.created_at)} · {buildSummary(version)}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+          {exps.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-8">此版本暂无成就数据</p>
+          ) : (
+            exps.map((exp, ei) => {
+              const tenure = exp.attrs?.original_tenure
+                ?? (exp.attrs?.is_current
+                  ? `${exp.attrs?.start_year ?? ''} — 至今`
+                  : `${exp.attrs?.start_year ?? ''} — ${exp.attrs?.end_year ?? ''}`)
+
+              return (
+                <div key={ei}>
+                  {/* Experience header */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">{exp.attrs?.company}</p>
+                      <p className="text-xs text-gray-500">{exp.attrs?.job_title}</p>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0">{tenure}</span>
+                  </div>
+
+                  {/* Achievement bullets */}
+                  <ul className="space-y-1.5 pl-1">
+                    {(exp.content ?? []).map((ach, ai) => {
+                      const text = ach.content?.find(c => c.type === 'text')?.text ?? ''
+                      return (
+                        <li key={ai} className="flex items-start gap-2 text-xs text-gray-700">
+                          <span className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', tierDot(ach.attrs?.tier))} />
+                          <span className="leading-relaxed">{text}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )
+            })
+          )}
+
+          {version.snapshot_jd && (
+            <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
+              <p className="text-xs font-medium text-indigo-700 mb-1">JD 片段</p>
+              <p className="text-xs text-indigo-600 line-clamp-3">{version.snapshot_jd}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-end gap-2 flex-shrink-0">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            关闭
+          </button>
+          <button
+            onClick={() => { onRestore(); onClose() }}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            <RotateCcw className="w-3 h-3" />
+            恢复此版本
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main sidebar ─────────────────────────────────────────────────────────────
+
 export function VersionHistorySidebar({
   anonymousId,
   userId,
@@ -47,6 +215,22 @@ export function VersionHistorySidebar({
   const [search, setSearch] = useState('')
   const [restoring, setRestoring] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [viewingVersion, setViewingVersion] = useState<ResumeVersion | null>(null)
+
+  const handleRename = useCallback(async (id: string, label: string) => {
+    // Optimistic update
+    setVersions(vs => vs.map(v => v.id === id ? { ...v, snapshot_label: label } : v))
+    try {
+      await fetch(`/api/resume/versions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshot_label: label }),
+      })
+      void trackEvent('version_renamed', { anonymous_id: anonymousId, user_id: userId ?? undefined })
+    } catch {
+      // Optimistic — ignore network errors
+    }
+  }, [anonymousId, userId])
 
   const fetchVersions = useCallback(async () => {
     setLoading(true)
@@ -87,12 +271,26 @@ export function VersionHistorySidebar({
     setRestoring(version.id)
     setConfirmId(null)
     onRestore(version)
+    void trackEvent('version_restored', {
+      anonymous_id: anonymousId,
+      user_id: userId ?? undefined,
+      snapshot_label: version.snapshot_label ?? undefined,
+    })
     setRestoring(null)
     onClose()
   }
 
   return (
     <>
+      {/* Version preview modal */}
+      {viewingVersion && (
+        <VersionPreviewModal
+          version={viewingVersion}
+          onClose={() => setViewingVersion(null)}
+          onRestore={() => handleRestore(viewingVersion)}
+        />
+      )}
+
       {/* Backdrop */}
       {open && (
         <div
@@ -167,10 +365,11 @@ export function VersionHistorySidebar({
                         isCurrent={i === 0 && group === 'today'}
                         isConfirming={confirmId === v.id}
                         isRestoring={restoring === v.id}
-                        onView={() => {/* Preview mode handled separately */}}
+                        onView={() => setViewingVersion(v)}
                         onRestoreClick={() => setConfirmId(v.id)}
                         onConfirmRestore={() => handleRestore(v)}
                         onCancelRestore={() => setConfirmId(null)}
+                        onRename={handleRename}
                         t={t}
                       />
                     ))}
@@ -194,6 +393,7 @@ function VersionCard({
   onRestoreClick,
   onConfirmRestore,
   onCancelRestore,
+  onRename,
   t
 }: {
   version: ResumeVersion
@@ -204,33 +404,111 @@ function VersionCard({
   onRestoreClick: () => void
   onConfirmRestore: () => void
   onCancelRestore: () => void
+  onRename: (id: string, label: string) => void
   t: ReturnType<typeof useTranslations>
 }) {
+  const [editingLabel, setEditingLabel] = useState(false)
+  const [labelDraft, setLabelDraft] = useState(version.snapshot_label ?? '')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const commitRename = () => {
+    const trimmed = labelDraft.trim()
+    if (trimmed && trimmed !== version.snapshot_label) {
+      onRename(version.id, trimmed)
+    }
+    setEditingLabel(false)
+  }
+
+  const summary = buildSummary(version)
+
+  // Tier breakdown for visual indicator
+  const doc = parseEditorJson(version.editor_json)
+  const allAchs = (doc?.content ?? []).flatMap(e => e.content ?? [])
+  const t1 = allAchs.filter(a => a.attrs?.tier === 1).length
+  const t2 = allAchs.filter(a => a.attrs?.tier === 2).length
+  const t3 = allAchs.filter(a => (a.attrs?.tier ?? 3) === 3).length
+
   return (
     <div className={cn(
       'p-3 rounded-xl border transition-colors',
-      isCurrent ? 'border-brand bg-brand-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+      isCurrent ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'
     )}>
-      <div className="flex items-start justify-between mb-1.5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-gray-800">
-              {version.snapshot_label || formatTime(version.created_at)}
-            </span>
+      <div className="flex items-start justify-between mb-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {editingLabel ? (
+              <input
+                ref={inputRef}
+                autoFocus
+                value={labelDraft}
+                onChange={e => setLabelDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') commitRename()
+                  if (e.key === 'Escape') { setLabelDraft(version.snapshot_label ?? ''); setEditingLabel(false) }
+                }}
+                className="text-xs font-semibold text-gray-800 border-b border-indigo-400 bg-transparent outline-none min-w-0 flex-1 max-w-[160px]"
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <span
+                className="text-xs font-semibold text-gray-800 truncate cursor-text"
+                onDoubleClick={() => { setLabelDraft(version.snapshot_label ?? formatTime(version.created_at)); setEditingLabel(true) }}
+                title="双击重命名"
+              >
+                {version.snapshot_label || formatTime(version.created_at)}
+              </span>
+            )}
             {isCurrent && (
-              <span className="text-xs bg-brand text-white px-1.5 py-0.5 rounded-full">
+              <span className="text-[10px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">
                 {t('version_history.current')}
               </span>
             )}
+            {version.is_auto_save === false && (
+              <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                手动保存
+              </span>
+            )}
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">{formatTime(version.created_at)}</p>
-          {version.snapshot_jd && (
-            <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[220px]">
-              · {version.snapshot_jd.slice(0, 40)}...
-            </p>
-          )}
+          <p className="text-[11px] text-gray-400 mt-0.5">{formatTime(version.created_at)}</p>
         </div>
       </div>
+
+      {/* Summary line */}
+      {summary && (
+        <p className="text-[11px] text-gray-500 mb-1.5 leading-relaxed">{summary}</p>
+      )}
+
+      {/* Tier dots */}
+      {allAchs.length > 0 && (
+        <div className="flex items-center gap-2 mb-2">
+          {t1 > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-emerald-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+              {t1}
+            </span>
+          )}
+          {t2 > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-amber-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+              {t2}
+            </span>
+          )}
+          {t3 > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-rose-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" />
+              {t3}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* JD snippet */}
+      {version.snapshot_jd && (
+        <p className="text-[10px] text-indigo-500 mb-2 truncate">
+          JD: {version.snapshot_jd.slice(0, 50)}
+        </p>
+      )}
 
       {isConfirming ? (
         <div className="mt-2">
@@ -239,7 +517,7 @@ function VersionCard({
             <button
               onClick={onConfirmRestore}
               disabled={isRestoring}
-              className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-xs font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60 transition-colors"
             >
               {isRestoring && <Loader2 className="w-3 h-3 animate-spin" />}
               {t('version_history.restore_yes')}
@@ -253,7 +531,7 @@ function VersionCard({
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-2 mt-1">
           <button
             onClick={onView}
             className="flex items-center gap-1 px-2.5 py-1 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -264,12 +542,18 @@ function VersionCard({
           {!isCurrent && (
             <button
               onClick={onRestoreClick}
-              className="flex items-center gap-1 px-2.5 py-1 text-xs text-brand border border-brand rounded-lg hover:bg-brand-50 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1 text-xs text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
               {t('version_history.restore')}
             </button>
           )}
+          <button
+            onClick={onView}
+            className="ml-auto text-gray-300 hover:text-gray-500 transition-colors"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

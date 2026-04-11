@@ -33,18 +33,24 @@ export async function middleware(request: NextRequest) {
 
   // Route guard: CN free users cannot access /pricing → redirect to /workspace
   // CRITICAL: uses payment_market, not geo.country
+  // Uses cf_market cookie (set in /auth/callback) to avoid a DB round-trip per request.
   const pathname = request.nextUrl.pathname
   const isPricingRoute = pathname.match(/\/(?:zh-CN|en-US)?\/pricing/) ||
     pathname === '/pricing'
 
   if (isPricingRoute && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('payment_market')
-      .eq('id', user.id)
-      .single()
+    // Prefer cookie (fast path, set on login); fall back to DB only if cookie missing
+    let market = request.cookies.get('cf_market')?.value
+    if (!market) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('payment_market')
+        .eq('id', user.id)
+        .single()
+      market = profile?.payment_market ?? undefined
+    }
 
-    if (profile?.payment_market === 'cn_free') {
+    if (market === 'cn_free') {
       // Extract locale from pathname to preserve it in the redirect
       const localeMatch = pathname.match(/^\/(zh-CN|en-US)/)
       const locale = localeMatch ? localeMatch[1] : 'zh-CN'
@@ -57,5 +63,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)']
+  // Exclude auth callback from i18n middleware — it must stay at /auth/callback (no locale prefix)
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|auth).*)']
 }

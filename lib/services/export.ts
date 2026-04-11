@@ -31,6 +31,8 @@ export async function exportResume(
         name: '',
         contact: { email: '', phone: '' },
         experiences: experiences || [],
+        education: [],
+        skills: [],
         showPhoto: version.show_photo,
         lang: version.template_key === 'en' ? 'en' : 'zh'
       })
@@ -38,6 +40,9 @@ export async function exportResume(
         name: '',
         contact: { email: '', phone: '' },
         experiences: experiences || [],
+        education: [],
+        skills: [],
+        showPhoto: version.show_photo,
         lang: version.template_key === 'en' ? 'en' : 'zh'
       })
 
