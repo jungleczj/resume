@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { useWorkspaceStore } from '@/store/workspace'
 import { WorkspaceToolbar } from './WorkspaceToolbar'
 import { JDPanel } from './JDPanel'
@@ -8,14 +9,15 @@ import { AchievementPanel } from './AchievementPanel'
 import { ResumePreview } from './ResumePreview'
 import { ExportModal } from './ExportModal'
 import { VersionHistorySidebar } from './VersionHistorySidebar'
-import { Link, usePathname } from '@/lib/i18n/navigation'
+import { PIIBanner } from './PIIBanner'
+import { Link } from '@/lib/i18n/navigation'
 import { trackEvent } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
-import type { WorkExperience, Profile, ResumeVersion, ResumePersonalInfo, ResumeEducation, ResumeSkillGroup } from '@/lib/types/domain'
+import type { WorkExperience, Profile, ResumeVersion, ResumePersonalInfo, ResumeEducation, ResumeSkillGroup, Certification, SpokenLanguage, Award, Publication } from '@/lib/types/domain'
 
 interface WorkspaceClientProps {
-  experiences: WorkExperience[]
+  initialExperiences: WorkExperience[]
   anonymousId: string
   userId: string | null
   profile: Profile | null
@@ -27,6 +29,9 @@ interface WorkspaceClientProps {
     skills: ResumeSkillGroup[]
   } | null
   initialPhotoPath?: string | null
+  uploadFilePath?: string | null
+  uploadFileType?: string | null
+  uploadId?: string
 }
 
 const SIDEBAR_ITEMS = [
@@ -37,14 +42,17 @@ const SIDEBAR_ITEMS = [
 ]
 
 export function WorkspaceClient({
-  experiences,
+  initialExperiences,
   anonymousId,
   userId,
   profile,
   locale: _locale,
   initialParseStatus,
   initialParsedData,
-  initialPhotoPath
+  initialPhotoPath,
+  uploadFilePath,
+  uploadFileType,
+  uploadId,
 }: WorkspaceClientProps) {
   const {
     setExperiences,
@@ -60,12 +68,27 @@ export function WorkspaceClient({
     setEditorJson,
     editorJson,
     jdText,
-    setResumeProfile
+    setResumeProfile,
+    setResumeSections,
+    resumeEducation,
+    resumeSkills,
+    setUploadFile,
+    resumePersonalInfo,
+    experiences: storeExperiences,
+    setIsGenerating,
+    isGenerating,
+    saveVersion,
+    setTranslatedTexts,
+    clearTranslatedTexts,
+    applyTranslatedProfile,
+    restoreVersion,
+    splitRatio,
+    setSplitRatio,
+    verticalSplitRatio,
+    setVerticalSplitRatio,
   } = useWorkspaceStore()
 
-  const pathname = usePathname()
-
-  const derivedInitialStatus = initialParseStatus ?? (experiences.length > 0 ? 'completed' : 'pending')
+  const derivedInitialStatus = initialParseStatus ?? (initialExperiences.length > 0 ? 'completed' : 'pending')
   const [parseStatus, setParseStatus] = useState<
     'pending' | 'processing' | 'completed' | 'failed' | 'not_found'
   >(derivedInitialStatus)
@@ -74,33 +97,115 @@ export function WorkspaceClient({
   const [parseProgress, setParseProgress] = useState(derivedInitialStatus === 'completed' ? 100 : 0)
   const [showProgressBar, setShowProgressBar] = useState(derivedInitialStatus !== 'completed')
 
+  const t = useTranslations()
+  const [draftRecoveryAvailable, setDraftRecoveryAvailable] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportFormat, setExportFormat] = useState<'pdf' | 'docx'>('pdf')
   const [showHistory, setShowHistory] = useState(false)
   const [langDropdownOpen, setLangDropdownOpen] = useState(false)
+  const [savedRecently, setSavedRecently] = useState(false)
+  const layer3TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // ── Resizable panel dividers ──────────────────────────────────────────────
+  const mainRef = useRef<HTMLDivElement>(null)
+  const leftRef = useRef<HTMLDivElement>(null)
+  const [isDraggingH, setIsDraggingH] = useState(false)
+  const [isDraggingV, setIsDraggingV] = useState(false)
+
+  const onHDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDraggingH(true)
+    const onMove = (ev: MouseEvent) => {
+      if (!mainRef.current) return
+      const rect = mainRef.current.getBoundingClientRect()
+      const ratio = Math.min(0.65, Math.max(0.25, (ev.clientX - rect.left) / rect.width))
+      setSplitRatio(ratio)
+    }
+    const onUp = () => {
+      setIsDraggingH(false)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [setSplitRatio])
+
+  const onVDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDraggingV(true)
+    const onMove = (ev: MouseEvent) => {
+      if (!leftRef.current) return
+      const rect = leftRef.current.getBoundingClientRect()
+      const ratio = Math.min(0.75, Math.max(0.20, (ev.clientY - rect.top) / rect.height))
+      setVerticalSplitRatio(ratio)
+    }
+    const onUp = () => {
+      setIsDraggingV(false)
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [setVerticalSplitRatio])
 
   // Init store
   useEffect(() => {
     setAnonymousId(anonymousId)
     setUserId(userId)
     setProfile(profile)
-    setExperiences(experiences)
+    setExperiences(initialExperiences)
     if (profile) {
       setResumeLang(profile.resume_lang_preference)
-      if (profile.payment_market === 'cn_free' && !showPhoto) togglePhoto()
     }
+
+    // Photo toggle: restore from localStorage first, then fall back to market default
+    const savedPhoto = localStorage.getItem(`cf_photo_${anonymousId}`)
+    if (savedPhoto !== null) {
+      setShowPhoto(savedPhoto === 'true')
+    } else if (profile?.payment_market === 'cn_free') {
+      setShowPhoto(true)
+    }
+
     // Populate parsed resume data if already available from server
     if (initialParsedData) {
+      const pd = initialParsedData as Record<string, unknown>
       setResumeProfile(
-        initialParsedData.personal_info ?? null,
-        initialParsedData.education ?? [],
-        initialParsedData.skills ?? []
+        (pd.personal_info as ResumePersonalInfo) ?? null,
+        (pd.education as ResumeEducation[]) ?? [],
+        (pd.skills as ResumeSkillGroup[]) ?? []
+      )
+      setResumeSections(
+        (pd.certifications as Certification[]) ?? [],
+        (pd.spoken_languages as SpokenLanguage[]) ?? [],
+        (pd.awards as Award[]) ?? [],
+        (pd.publications as Publication[]) ?? []
       )
     }
+
     // Auto-enable photo if one was extracted
     if (initialPhotoPath) {
       setPhotoPath(initialPhotoPath)
       setShowPhoto(true)
+    }
+
+    // Store original file info for preview
+    if (uploadFilePath && uploadFileType) {
+      setUploadFile(uploadFilePath, uploadFileType)
+    }
+
+    // Crash recovery: check for recent unsaved edits in localStorage
+    if (initialParseStatus === 'completed') {
+      try {
+        const raw = localStorage.getItem(`cf_draft_${anonymousId}`)
+        if (raw) {
+          const draft = JSON.parse(raw) as { resumePersonalInfo?: unknown; savedAt?: number }
+          const age = Date.now() - (draft.savedAt ?? 0)
+          // Show recovery if draft is < 2 hours old and has content
+          if (age < 2 * 60 * 60 * 1000 && draft.resumePersonalInfo) {
+            setDraftRecoveryAvailable(true)
+          }
+        }
+      } catch { /* ignore malformed draft */ }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -155,13 +260,19 @@ export function WorkspaceClient({
           setParseProgress(100)
           await refreshExperiences()
 
-          // Load personal info, education, skills into store
+          // Load personal info, education, skills + Fortune 500 sections into store
           if (data.parsed_data) {
-            const pd = data.parsed_data
+            const pd = data.parsed_data as Record<string, unknown>
             setResumeProfile(
-              pd.personal_info ?? null,
-              pd.education ?? [],
-              pd.skills ?? []
+              (pd.personal_info as ResumePersonalInfo) ?? null,
+              (pd.education as ResumeEducation[]) ?? [],
+              (pd.skills as ResumeSkillGroup[]) ?? []
+            )
+            setResumeSections(
+              (pd.certifications as Certification[]) ?? [],
+              (pd.spoken_languages as SpokenLanguage[]) ?? [],
+              (pd.awards as Award[]) ?? [],
+              (pd.publications as Publication[]) ?? []
             )
           }
 
@@ -195,9 +306,132 @@ export function WorkspaceClient({
     return () => window.removeEventListener('cf:history', handleHistory)
   }, [])
 
+  // ── Layer 2: localStorage auto-save (debounced 500ms) ──────────────────────
+  // Persists resumePersonalInfo + experiences to localStorage on any change.
+  // Key: cf_draft_{anonymousId}
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!anonymousId) return
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(() => {
+      try {
+        const draft = { resumePersonalInfo, experiences: storeExperiences, savedAt: Date.now() }
+        localStorage.setItem(`cf_draft_${anonymousId}`, JSON.stringify(draft))
+      } catch {
+        // Quota exceeded or private browsing — ignore
+      }
+    }, 500)
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+  }, [resumePersonalInfo, storeExperiences, anonymousId])
+
+  // ── Layer 3: Supabase auto-save (debounced 3s) ────────────────────────────
+  // Only fires after parse is fully complete — saves empty snapshots during
+  // the parse phase are useless and pollute version history.
+  useEffect(() => {
+    if (!anonymousId && !userId) return
+    // Do not auto-save while resume is still being parsed
+    if (parseStatus !== 'completed') return
+    // Do not save if there's no real content yet
+    const hasContent = !!resumePersonalInfo || storeExperiences.some(e =>
+      (e.achievements ?? []).some(a => a.status === 'confirmed')
+    )
+    if (!hasContent) return
+
+    if (layer3TimerRef.current) clearTimeout(layer3TimerRef.current)
+    layer3TimerRef.current = setTimeout(() => {
+      saveVersion()
+    }, 3000)
+    return () => {
+      if (layer3TimerRef.current) clearTimeout(layer3TimerRef.current)
+    }
+  }, [resumePersonalInfo, storeExperiences, parseStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Language-change triggers regeneration when confirmed achievements exist ─
+  // Track the previous lang so we only fire on actual changes (not initial mount).
+  const prevResumeLangRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const prev = prevResumeLangRef.current
+    prevResumeLangRef.current = resumeLang
+
+    // Skip on initial mount
+    if (prev === null) return
+    // Skip if lang didn't actually change
+    if (prev === resumeLang) return
+    // Only regenerate if there's at least one confirmed achievement
+    const hasConfirmed = storeExperiences.some((exp) =>
+      (exp.achievements ?? []).some((a) => a.status === 'confirmed')
+    )
+    if (!hasConfirmed) return
+    // Don't queue a second generation if one is already in flight
+    if (isGenerating) return
+
+    const triggerRegen = async () => {
+      // Switching back to Chinese — clear translations and re-confirm from DB
+      if (resumeLang === 'zh') {
+        clearTranslatedTexts()
+        setIsGenerating(false)
+        return
+      }
+
+      setIsGenerating(true)
+      try {
+        const res = await fetch('/api/resume/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jd_text: jdText,
+            anonymous_id: anonymousId,
+            user_id: userId,
+            resume_lang: resumeLang,
+            // Include profile data so the API can translate it too
+            personal_info: resumePersonalInfo,
+            education: resumeEducation,
+            skills: resumeSkills,
+          }),
+        })
+        if (!res.ok) return
+        const { data } = await res.json()
+        if (data?.editor_json) setEditorJson(data.editor_json)
+        // Apply translated achievement texts to the preview
+        if (data?.translated_achievements?.length) {
+          const map: Record<string, string> = {}
+          for (const item of data.translated_achievements as { id: string; text: string }[]) {
+            map[item.id] = item.text
+          }
+          setTranslatedTexts(map)
+        }
+        // Apply translated profile (personal info, education, skills)
+        if (data?.translated_personal_info || data?.translated_education?.length || data?.translated_skills?.length) {
+          applyTranslatedProfile(
+            (data.translated_personal_info as ResumePersonalInfo) ?? null,
+            (data.translated_education as ResumeEducation[]) ?? [],
+            (data.translated_skills as ResumeSkillGroup[]) ?? []
+          )
+        }
+        trackEvent('resume_generated', {
+          anonymous_id: anonymousId,
+          has_jd: jdText.length > 0,
+          resume_lang: resumeLang,
+          trigger: 'lang_change',
+        })
+      } catch {
+        // Network error — silently skip
+      } finally {
+        setIsGenerating(false)
+      }
+    }
+
+    triggerRegen()
+  }, [resumeLang]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRestoreVersion = (version: ResumeVersion) => {
-    if (version.editor_json) setEditorJson(version.editor_json)
+    if (version.editor_json) {
+      restoreVersion(version.editor_json, version.resume_lang, version.show_photo)
+    }
   }
 
   const handleExport = async (format: 'pdf' | 'docx' = 'pdf') => {
@@ -217,11 +451,35 @@ export function WorkspaceClient({
   }
 
   const handlePhotoToggle = () => {
+    const nextState = !showPhoto
     togglePhoto()
+    try { localStorage.setItem(`cf_photo_${anonymousId}`, String(nextState)) } catch { /* quota */ }
     trackEvent('photo_toggled', {
       anonymous_id: anonymousId,
-      state: !showPhoto ? 'on' : 'off'
+      state: nextState ? 'on' : 'off'
     })
+  }
+
+  const handleDraftRestore = () => {
+    try {
+      const raw = localStorage.getItem(`cf_draft_${anonymousId}`)
+      if (!raw) return
+      const draft = JSON.parse(raw) as { resumePersonalInfo?: ResumePersonalInfo | null; experiences?: WorkExperience[] }
+      if (draft.resumePersonalInfo) {
+        setResumeProfile(draft.resumePersonalInfo, resumeEducation, resumeSkills)
+      }
+      if (draft.experiences?.length) {
+        setExperiences(draft.experiences)
+      }
+    } catch { /* ignore */ }
+    setDraftRecoveryAvailable(false)
+  }
+
+  const handleManualSave = async () => {
+    if (savedRecently) return
+    setSavedRecently(true)
+    await saveVersion(`Manual save ${new Date().toLocaleTimeString()}`)
+    setTimeout(() => setSavedRecently(false), 2000)
   }
 
   const langLabels: Record<string, string> = { zh: '中文', en: 'English', bilingual: '双语' }
@@ -231,99 +489,161 @@ export function WorkspaceClient({
       {/* Top nav bar */}
       <WorkspaceToolbar anonymousId={anonymousId} userId={userId} profile={profile} />
 
+      {/* PII detection notice — only shown when resume contains sensitive data */}
+      <PIIBanner uploadId={uploadId} anonymousId={anonymousId} userId={userId} />
+
+      {/* Crash recovery banner */}
+      {draftRecoveryAvailable && (
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-amber-50 border-b border-amber-200 text-xs z-20 flex-shrink-0">
+          <span className="material-symbols-outlined text-amber-500 text-base flex-shrink-0">restore_page</span>
+          <span className="text-amber-800 font-medium flex-1">{t('workspace.draft_recovery.message')}</span>
+          <button
+            onClick={handleDraftRestore}
+            className="px-3 py-1 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors"
+          >
+            {t('workspace.draft_recovery.restore')}
+          </button>
+          <button
+            onClick={() => {
+              setDraftRecoveryAvailable(false)
+              try { localStorage.removeItem(`cf_draft_${anonymousId}`) } catch { /* ignore */ }
+            }}
+            className="px-3 py-1 text-amber-700 hover:bg-amber-100 rounded-lg font-bold transition-colors"
+          >
+            {t('workspace.draft_recovery.dismiss')}
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
-        <aside className="hidden md:flex flex-col flex-shrink-0 w-20 md:w-64 bg-slate-50 py-8 px-4 z-10">
-          <div className="space-y-2 flex-1">
-            {SIDEBAR_ITEMS.map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href.split('?')[0] + '/')
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-xs uppercase tracking-widest font-bold font-headline',
-                    isActive
-                      ? 'bg-white text-indigo-600 shadow-sm translate-x-1'
-                      : 'text-slate-400 hover:text-indigo-400'
-                  )}
-                >
-                  <span className="material-symbols-outlined">{item.icon}</span>
-                  <span className="hidden md:block">{item.key.charAt(0).toUpperCase() + item.key.slice(1)}</span>
-                </Link>
-              )
-            })}
+        {/* Main content: left inputs + right resume */}
+        <main
+          ref={mainRef}
+          className={cn(
+            'flex flex-1 overflow-hidden flex-row bg-surface relative',
+            (isDraggingH || isDraggingV) && 'select-none'
+          )}
+        >
+          {/* Left column: JD + achievements */}
+          <div
+            ref={leftRef}
+            style={{ width: `${splitRatio * 100}%` }}
+            className="flex flex-col h-full bg-surface-container-low flex-shrink-0"
+          >
+            {/* JD panel (resizable height) */}
+            <div style={{ height: `${verticalSplitRatio * 100}%` }} className="flex-shrink-0 min-h-0 overflow-hidden">
+              <JDPanel />
+            </div>
+
+            {/* Vertical divider (JD ↔ Achievement) */}
+            <div
+              onMouseDown={onVDividerMouseDown}
+              className={cn(
+                'h-1.5 flex-shrink-0 cursor-row-resize group relative flex items-center justify-center transition-colors',
+                isDraggingV ? 'bg-primary/30' : 'bg-outline-variant/10 hover:bg-primary/20'
+              )}
+            >
+              <div className="w-8 h-[3px] rounded-full bg-slate-300 group-hover:bg-primary/50 transition-colors" />
+            </div>
+
+            {/* Achievement panel (takes remaining height) */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <AchievementPanel />
+            </div>
           </div>
 
-          {(!profile || profile.payment_market === 'cn_free') && (
-            <div className="mt-auto p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-2xl hidden md:block">
-              <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mb-1">CareerFlow AI</p>
-              <p className="text-on-surface font-headline font-bold text-sm mb-3">Upgrade to Pro</p>
-              <Link
-                href="/pricing"
-                className="block w-full py-2 bg-on-surface text-surface text-xs font-bold rounded-lg hover:bg-primary transition-colors text-center"
-              >
-                Go Premium
-              </Link>
-            </div>
-          )}
-        </aside>
-
-        {/* Main content: left inputs + right resume */}
-        <main className="flex flex-1 overflow-hidden flex-col md:flex-row bg-surface relative">
-
-          {/* Left column: JD + achievements */}
-          <div className="w-full md:w-[40%] flex flex-col h-full bg-surface-container-low border-r border-outline-variant/10">
-            <JDPanel />
-            <AchievementPanel />
+          {/* Horizontal divider (left ↔ right) */}
+          <div
+            onMouseDown={onHDividerMouseDown}
+            className={cn(
+              'w-1.5 flex-shrink-0 cursor-col-resize group relative flex flex-col items-center justify-center transition-colors h-full',
+              isDraggingH ? 'bg-primary/30' : 'bg-outline-variant/10 hover:bg-primary/20'
+            )}
+          >
+            <div className="h-8 w-[3px] rounded-full bg-slate-300 group-hover:bg-primary/50 transition-colors" />
           </div>
 
           {/* Right column: resume preview */}
-          <div className="w-full md:w-[60%] h-full flex flex-col bg-surface-container-lowest">
+          <div className="flex-1 h-full flex flex-col bg-surface-container-lowest overflow-hidden">
+
             {/* Resume sub-toolbar */}
             <div className="w-full px-8 py-4 bg-white border-b border-outline-variant/10 flex items-center justify-between z-30 flex-shrink-0">
               <div className="flex items-center gap-6">
-                {/* Language selector */}
-                <div className="relative">
-                  <button
-                    onClick={() => setLangDropdownOpen(v => !v)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
-                  >
-                    {langLabels[resumeLang] ?? 'Language'} ▼
-                  </button>
-                  {langDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setLangDropdownOpen(false)} />
-                      <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg overflow-hidden w-32 z-20">
-                        {(['zh', 'en', 'bilingual'] as const).map(lang => (
-                          <button
-                            key={lang}
-                            onClick={() => { setResumeLang(lang); setLangDropdownOpen(false) }}
-                            className={cn(
-                              'w-full text-left px-4 py-2 text-xs hover:bg-indigo-50',
-                              resumeLang === lang && 'text-indigo-600 font-bold'
-                            )}
-                          >
-                            {langLabels[lang]}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                {/* Language selector — EN market: fixed label; CN market: dropdown */}
+                {profile?.payment_market === 'en_paid' ? (
+                  <span className="px-3 py-1.5 text-xs font-bold text-slate-500 border border-slate-200 rounded-lg cursor-default select-none">
+                    English
+                  </span>
+                ) : (
+                  <div className="relative">
+                    <button
+                      onClick={() => setLangDropdownOpen(v => !v)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
+                    >
+                      {langLabels[resumeLang] ?? 'Language'} ▼
+                    </button>
+                    {langDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setLangDropdownOpen(false)} />
+                        <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 shadow-lg rounded-lg overflow-hidden w-32 z-20">
+                          {(['zh', 'en', 'bilingual'] as const).map(lang => (
+                            <button
+                              key={lang}
+                              onClick={() => { setResumeLang(lang); setLangDropdownOpen(false) }}
+                              className={cn(
+                                'w-full text-left px-4 py-2 text-xs hover:bg-indigo-50',
+                                resumeLang === lang && 'text-indigo-600 font-bold'
+                              )}
+                            >
+                              {langLabels[lang]}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Photo toggle */}
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-slate-400 text-lg">photo_camera</span>
-                  <label className="relative inline-flex items-center cursor-pointer" onClick={handlePhotoToggle}>
-                    <input readOnly type="checkbox" checked={showPhoto} className="sr-only peer" />
-                    <div className="w-9 h-5 bg-slate-200 peer-checked:bg-indigo-600 rounded-full relative after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full" />
-                    <span className="ms-2 text-xs font-bold text-slate-600">Show Photo</span>
-                  </label>
+                  <button 
+                    onClick={handlePhotoToggle}
+                    className="relative inline-flex items-center cursor-pointer bg-transparent border-none p-0"
+                  >
+                    <div 
+                      className={`w-9 h-5 rounded-full relative transition-all ${
+                        showPhoto ? 'bg-indigo-600' : 'bg-slate-200'
+                      }`}
+                    >
+                      <div 
+                        className={`absolute top-[2px] w-4 h-4 bg-white border rounded-full transition-all ${
+                          showPhoto ? 'left-[20px]' : 'left-[2px]'
+                        }`} 
+                      />
+                    </div>
+                    <span className="ms-2 text-xs font-bold text-slate-600">{t('workspace.toolbar.show_photo')}</span>
+                  </button>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
+                {/* Save button */}
+                <button
+                  onClick={handleManualSave}
+                  disabled={savedRecently}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all border',
+                    savedRecently
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-200 cursor-default'
+                      : 'text-slate-600 hover:bg-slate-50 border-slate-200'
+                  )}
+                >
+                  <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: savedRecently ? "'FILL' 1" : "'FILL' 0" }}>
+                    {savedRecently ? 'check_circle' : 'save'}
+                  </span>
+                  {savedRecently ? 'Saved' : 'Save'}
+                </button>
                 <button
                   onClick={() => setShowHistory(v => !v)}
                   className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
@@ -341,46 +661,25 @@ export function WorkspaceClient({
               </div>
             </div>
 
-            {/* Resume content */}
-            <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-surface-container-lowest">
-              <div className="max-w-3xl mx-auto">
-                {/* Editor meta */}
-                <div className="flex justify-between items-center mb-8">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Auto-saved</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <button className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors">
-                      <span className="material-symbols-outlined text-sm">zoom_in</span>
-                    </button>
-                    <button className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 transition-colors">
-                      <span className="material-symbols-outlined text-sm">print</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Resume paper */}
-                <div className="bg-white shadow-[0_32px_64px_-16px_rgba(27,27,36,0.06)] rounded-sm border border-outline-variant/10">
-                  <ResumePreview anonymousId={anonymousId} userId={userId} />
-                </div>
-              </div>
+            {/* Template resume preview — editable, copy-protected */}
+            <div className="flex-1 overflow-auto relative">
+              <ResumePreview />
             </div>
           </div>
-
-          {/* Version history sidebar */}
-          <VersionHistorySidebar
-            anonymousId={anonymousId}
-            userId={userId}
-            currentJson={editorJson}
-            open={showHistory}
-            onClose={() => setShowHistory(false)}
-            onRestore={handleRestoreVersion}
-          />
         </main>
+
+        {/* Version history sidebar */}
+        <VersionHistorySidebar
+          anonymousId={anonymousId}
+          userId={userId}
+          currentJson={editorJson}
+          open={showHistory}
+          onClose={() => setShowHistory(false)}
+          onRestore={handleRestoreVersion}
+        />
       </div>
 
-      {/* Parse progress bar — bottom-right, only visible while parsing */}
+      {/* Parse progress bar */}
       {showProgressBar && (
         <div className="fixed bottom-8 right-8 z-50 w-72 bg-on-surface text-surface px-5 py-4 rounded-2xl shadow-2xl">
           {parseStatus === 'failed' ? (
@@ -388,10 +687,7 @@ export function WorkspaceClient({
               <span className="material-symbols-outlined text-red-400 text-lg flex-shrink-0">error_outline</span>
               <div className="flex-1">
                 <p className="text-xs font-bold mb-1">解析失败</p>
-                <Link
-                  href="/upload"
-                  className="text-[11px] text-indigo-300 hover:text-indigo-200 underline"
-                >
+                <Link href="/upload" className="text-[11px] text-indigo-300 hover:text-indigo-200 underline">
                   返回重新上传
                 </Link>
               </div>

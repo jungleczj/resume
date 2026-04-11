@@ -9,11 +9,10 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types/domain'
 
 const NAV_ITEMS = [
-  { key: 'resumes',       href: '/library',    authRequired: false },
-  { key: 'workspace',     href: '/workspace',  authRequired: false },
-  { key: 'achievements',  href: '/library',    authRequired: false },
-  { key: 'pricing',       href: '/pricing',    authRequired: false },
-  { key: 'settings',      href: '/settings',   authRequired: true  },
+  { key: 'workspace',    href: '/workspace', authRequired: false },
+  { key: 'achievements', href: '/library',   authRequired: false },
+  { key: 'pricing',      href: '/pricing',   authRequired: false },
+  { key: 'settings',     href: '/settings',  authRequired: true  },
 ] as const
 
 export function NavBar() {
@@ -114,10 +113,20 @@ export function NavBar() {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(v => !v)}
-                className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm hover:ring-2 hover:ring-[#3525cd]/20 transition-all"
+                className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center border-2 border-white shadow-sm hover:ring-2 hover:ring-[#3525cd]/20 transition-all overflow-hidden"
                 aria-label="User menu"
               >
-                <span className="material-symbols-outlined text-slate-500 text-lg">person</span>
+                {user.user_metadata?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.user_metadata.avatar_url as string}
+                    alt="avatar"
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-slate-500 text-lg">person</span>
+                )}
               </button>
 
               {userMenuOpen && (

@@ -17,6 +17,18 @@ const MODEL_CHAINS: Record<AITask, string[]> = {
     'gpt-4o-mini',
     'claude-sonnet-4-20250514'
   ],
+  resume_structure_extract: [
+    'qwen-long',
+    'deepseek-chat',
+    'gpt-4o-mini',
+    'claude-sonnet-4-20250514'
+  ],
+  resume_achievement_beautify: [
+    'qwen-turbo',
+    'deepseek-chat',
+    'gpt-4o-mini',
+    'claude-haiku-4-5-20251001'
+  ],
   jd_parse: [
     'qwen-turbo',
     'deepseek-chat',
@@ -33,6 +45,16 @@ const MODEL_CHAINS: Record<AITask, string[]> = {
     'qwen-turbo',
     'deepseek-chat',
     'gpt-4o-mini',
+    'claude-haiku-4-5-20251001'
+  ],
+  resume_translate: [
+    'qwen-turbo',
+    'deepseek-chat',
+    'claude-haiku-4-5-20251001'
+  ],
+  resume_profile_translate: [
+    'qwen-turbo',
+    'deepseek-chat',
     'claude-haiku-4-5-20251001'
   ]
 }
