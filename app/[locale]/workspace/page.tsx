@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { WorkspaceClient } from '@/components/workspace/WorkspaceClient'
 import { redirect } from '@/lib/i18n/navigation'
+import { headers } from 'next/headers'
 
 interface WorkspacePageProps {
   params: Promise<{ locale: string }>
@@ -14,6 +15,10 @@ export default async function WorkspacePage({
 }: WorkspacePageProps) {
   const { locale } = await params
   const { anonymous_id } = await searchParams
+
+  // T-S02-4: read geo country forwarded by middleware
+  const headersList = await headers()
+  const geoCountry = headersList.get('x-geo-country')
 
   console.log('[workspace:page] === START ===')
   console.log('[workspace:page] anonymous_id:', anonymous_id)
@@ -119,6 +124,7 @@ export default async function WorkspacePage({
       uploadFilePath={uploadFilePath}
       uploadFileType={uploadFileType}
       uploadId={uploadId ?? undefined}
+      geoCountry={geoCountry}
     />
   )
 }

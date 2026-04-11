@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { trackEvent } from '@/lib/analytics'
+import { getPaywallConfig } from '@/lib/services/paywall'
 
 /**
  * POST /api/payment/create-session
@@ -27,23 +28,10 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     const anonymousId = req.cookies.get('anonymous_id')?.value ?? crypto.randomUUID()
 
-    // Get price from paywall_settings
+    // Get price via Redis → DB → static fallback (three-tier)
+    const prices = await getPaywallConfig()
+    const amount = prices[plan_type as keyof typeof prices] ?? prices.one_time
     const dbPlanType = plan_type === 'one_time' ? 'per_export' : plan_type
-    const { data: priceSetting } = await supabase
-      .from('paywall_settings')
-      .select('price_usd')
-      .eq('market', 'en_paid')
-      .eq('plan_type', dbPlanType)
-      .eq('is_active', true)
-      .maybeSingle()
-
-    // Default prices from PRD: one_time=$4.99, monthly=$9.9, yearly=$79
-    const defaultPrices: Record<string, number> = {
-      one_time: 4.99,
-      monthly: 9.9,
-      yearly: 79
-    }
-    const amount = priceSetting?.price_usd ?? defaultPrices[plan_type]
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3005'
     const successUrl = `${appUrl}/payment/success?format=${format}&anon_id=${anonymousId}&plan=${plan_type}`

@@ -25,6 +25,8 @@ export type PubStatus = 'published' | 'accepted' | 'under_review' | 'preprint' |
 export interface Profile {
   id: string
   payment_market: PaymentMarket
+  /** true once user explicitly confirmed market in MarketConfirmModal (write-once) */
+  payment_market_confirmed: boolean
   signup_geo_country: string | null
   resume_lang_preference: ResumeLang
   photo_path: string | null

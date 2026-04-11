@@ -8,12 +8,23 @@ import { cn } from '@/lib/utils'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types/domain'
 
-const NAV_ITEMS = [
-  { key: 'workspace',    href: '/workspace', authRequired: false },
-  { key: 'achievements', href: '/library',   authRequired: false },
-  { key: 'pricing',      href: '/pricing',   authRequired: false },
-  { key: 'settings',     href: '/settings',  authRequired: true  },
-] as const
+type NavKey = 'workspace' | 'achievements' | 'pricing' | 'settings'
+
+interface NavItem {
+  key: NavKey
+  /** href when logged in */
+  hrefAuth: string
+  /** href when not logged in — null means hide item */
+  hrefGuest: string | null
+  authRequired: boolean
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { key: 'workspace',    hrefAuth: '/upload',   hrefGuest: '/',    authRequired: false },
+  { key: 'achievements', hrefAuth: '/library',  hrefGuest: '/',    authRequired: false },
+  { key: 'pricing',      hrefAuth: '/pricing',  hrefGuest: '/pricing', authRequired: false },
+  { key: 'settings',     hrefAuth: '/settings', hrefGuest: null,   authRequired: true  },
+]
 
 export function NavBar() {
   const t = useTranslations('nav')
@@ -24,6 +35,7 @@ export function NavBar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [lastWorkspaceUrl, setLastWorkspaceUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -38,6 +50,11 @@ export function NavBar() {
         setProfile(p)
       }
     })
+
+    // Restore last workspace URL from localStorage
+    // WorkspaceClient saves this on mount so the nav can link directly back
+    const saved = localStorage.getItem('cf_last_workspace')
+    if (saved) setLastWorkspaceUrl(saved)
   }, [])
 
   const isCNFree = !profile || profile.payment_market === 'cn_free'
@@ -55,8 +72,17 @@ export function NavBar() {
     router.push('/')
   }
 
+  // Resolve href for a nav item based on auth state
+  const resolveHref = (item: NavItem): string | null => {
+    if (!user) return item.hrefGuest
+    // Workspace: use last visited workspace URL if available, otherwise upload
+    if (item.key === 'workspace' && lastWorkspaceUrl) return lastWorkspaceUrl
+    return item.hrefAuth
+  }
+
   const visibleItems = NAV_ITEMS.filter(item => {
     if (item.authRequired && !user) return false
+    if (!user && item.hrefGuest === null) return false
     return true
   })
 
@@ -74,11 +100,14 @@ export function NavBar() {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1 flex-1">
           {visibleItems.map(item => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            const href = resolveHref(item)
+            if (!href) return null
+            const isActive = pathname === (item.hrefAuth || item.hrefGuest) ||
+              pathname.startsWith((item.hrefAuth || '') + '/')
             return (
               <Link
                 key={item.key}
-                href={item.href}
+                href={href}
                 className={cn(
                   'px-3 py-2 text-sm font-medium font-headline tracking-tight transition-all',
                   isActive
@@ -86,7 +115,7 @@ export function NavBar() {
                     : 'text-slate-500 hover:text-[#3525cd] hover:bg-indigo-50/60 rounded-lg'
                 )}
               >
-                {t(item.key as keyof typeof t)}
+                {t(item.key)}
               </Link>
             )
           })}
@@ -200,11 +229,14 @@ export function NavBar() {
         <div className="md:hidden bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-lg">
           <div className="px-4 py-3 space-y-1">
             {visibleItems.map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              const href = resolveHref(item)
+              if (!href) return null
+              const isActive = pathname === (item.hrefAuth || item.hrefGuest) ||
+                pathname.startsWith((item.hrefAuth || '') + '/')
               return (
                 <Link
                   key={item.key}
-                  href={item.href}
+                  href={href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     'block px-4 py-3 rounded-xl text-sm font-medium font-headline transition-all',
@@ -213,7 +245,7 @@ export function NavBar() {
                       : 'text-slate-600 hover:bg-slate-50'
                   )}
                 >
-                  {t(item.key as keyof typeof t)}
+                  {t(item.key)}
                 </Link>
               )
             })}

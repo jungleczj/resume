@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Read(//home/administrator/careerflow/**)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl -s http://localhost:3000)",
+      "WebFetch(domain:contribution.usercontent.google.com)",
+      "Read(//c/Users/Administrator/.claude/skills/playwright-skill/**)",
+      "Bash(npm run:*)",
+      "Bash(node run.js /tmp/playwright-download-stitch.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://vasrwebrkczkgczecpti.supabase.co/storage/v1/bucket\" --max-time 5)",
+      "Bash(node -e ':*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

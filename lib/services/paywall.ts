@@ -1,18 +1,61 @@
 import { createClient } from '@/lib/supabase/server'
+import { EN_PRICE_DEFAULTS, PAYWALL_DEFAULTS, REDIS_PAYWALL_KEY, REDIS_TTL_SECONDS } from '@/lib/config/paywall_defaults'
 import type { PaymentMarket } from '@/lib/types/domain'
 
-/**
- * Returns current pricing from paywall_settings table.
- * Falls back to hardcoded defaults if DB is unavailable.
- * CRITICAL: These prices are for EN market only — CN is always free.
- */
-export async function getPaywallPrices(): Promise<{
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface PaywallPrices {
   one_time: number
   monthly: number
   yearly: number
-}> {
-  const defaults = { one_time: 4.99, monthly: 9.9, yearly: 79 }
+}
 
+// ── Redis helper (optional — same pattern as lib/rate-limit.ts) ───────────────
+
+interface RedisClient {
+  get(key: string): Promise<string | null>
+  set(key: string, value: string, opts: { ex: number }): Promise<unknown>
+  del(key: string): Promise<unknown>
+}
+
+let _redis: RedisClient | null = null
+
+async function getRedis(): Promise<RedisClient | null> {
+  if (_redis) return _redis
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null
+  try {
+    // @ts-ignore — optional peer dependency
+    const mod = require('@upstash/redis') as { Redis: { fromEnv(): RedisClient } }
+    _redis = mod.Redis.fromEnv()
+    return _redis
+  } catch {
+    return null
+  }
+}
+
+// ── getPaywallConfig: Redis → DB → static fallback ────────────────────────────
+
+/**
+ * Returns current EN-market paywall prices.
+ * Three-tier resolution: Redis (60s TTL) → Supabase DB → static defaults.
+ * CN market is always free — callers should check payment_market first.
+ */
+export async function getPaywallConfig(): Promise<PaywallPrices> {
+  // Tier 1: Redis cache
+  const redis = await getRedis()
+  if (redis) {
+    try {
+      const cached = await redis.get(REDIS_PAYWALL_KEY)
+      if (cached) {
+        return JSON.parse(cached) as PaywallPrices
+      }
+    } catch {
+      // Redis miss / error — fall through to DB
+    }
+  }
+
+  // Tier 2: Supabase DB
+  let prices: PaywallPrices | null = null
   try {
     const supabase = await createClient()
     const { data } = await supabase
@@ -21,23 +64,38 @@ export async function getPaywallPrices(): Promise<{
       .eq('market', 'en_paid')
       .eq('is_active', true)
 
-    if (!data?.length) return defaults
-
-    const result = { ...defaults }
-    for (const row of data) {
-      if (row.plan_type === 'per_export' || row.plan_type === 'one_time') {
-        result.one_time = row.price_usd
-      } else if (row.plan_type === 'monthly') {
-        result.monthly = row.price_usd
-      } else if (row.plan_type === 'yearly') {
-        result.yearly = row.price_usd
+    if (data?.length) {
+      prices = { ...EN_PRICE_DEFAULTS }
+      for (const row of data) {
+        if (row.plan_type === 'per_export' || row.plan_type === 'one_time') {
+          prices.one_time = row.price_usd
+        } else if (row.plan_type === 'monthly') {
+          prices.monthly = row.price_usd
+        } else if (row.plan_type === 'yearly') {
+          prices.yearly = row.price_usd
+        }
       }
     }
-    return result
   } catch {
-    return defaults
+    // DB unavailable — fall through to static
   }
+
+  const result = prices ?? EN_PRICE_DEFAULTS
+
+  // Backfill Redis cache
+  if (redis && prices) {
+    try {
+      await redis.set(REDIS_PAYWALL_KEY, JSON.stringify(result), { ex: REDIS_TTL_SECONDS })
+    } catch { /* ignore */ }
+  }
+
+  return result
 }
+
+/** @deprecated Use getPaywallConfig() — this alias exists for backwards compatibility */
+export const getPaywallPrices = getPaywallConfig
+
+// ── shouldShowPaywall ─────────────────────────────────────────────────────────
 
 /**
  * Determines if paywall should trigger for a user.
@@ -65,7 +123,7 @@ export async function shouldShowPaywall(
     .eq('id', userId)
     .single()
 
-  const market = (profile?.payment_market ?? 'cn_free') as PaymentMarket
+  const market = (profile?.payment_market ?? PAYWALL_DEFAULTS.cn_free) as PaymentMarket
 
   // CN free — always allow
   if (market === 'cn_free') {
@@ -91,4 +149,16 @@ export async function shouldShowPaywall(
   }
 
   return { show: true, market }
+}
+
+// ── invalidatePaywallCache ────────────────────────────────────────────────────
+
+/** Called by the Admin API after updating paywall_settings to force immediate propagation */
+export async function invalidatePaywallCache(): Promise<void> {
+  const redis = await getRedis()
+  if (redis) {
+    try {
+      await redis.del(REDIS_PAYWALL_KEY)
+    } catch { /* ignore */ }
+  }
 }

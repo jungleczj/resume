@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     const serviceClient = createServiceClient()
     const { data: profile } = await serviceClient
       .from('profiles')
-      .select('payment_market')
+      .select('payment_market, signup_geo_country')
       .eq('id', user.id)
       .single()
 
@@ -113,15 +113,24 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Track signup for new users (created within the last 60s)
+    // T-S02-4: write signup_geo_country on first registration (only if not yet set)
+    const geoCountry = req.headers.get('x-vercel-ip-country') ?? req.headers.get('x-geo-country')
     const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0
     const isNewUser = Date.now() - createdAt < 60_000
+    if (isNewUser && geoCountry && !profile?.signup_geo_country) {
+      await serviceClient
+        .from('profiles')
+        .update({ signup_geo_country: geoCountry })
+        .eq('id', user.id)
+    }
+
     if (isNewUser) {
       void trackEvent('user_signup', {
         user_id: user.id,
         anonymous_id: anonymousId ?? undefined,
         method: user.app_metadata?.provider ?? 'unknown',
         market: profile?.payment_market ?? undefined,
+        geo_country: geoCountry ?? undefined,
       })
     }
   }

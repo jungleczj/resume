@@ -6,8 +6,22 @@ import { type NextRequest, NextResponse } from 'next/server'
 const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
+  // ── T-S02-4: Extract geo country and forward as a request header ─────────────
+  // Vercel sets x-vercel-ip-country on every request in Node.js runtime.
+  // We copy it to x-geo-country for consistent access in server components and API routes.
+  // IMPORTANT: geo is only used for analytics and UI-language defaults — NEVER for payment.
+  const geoCountry =
+    request.headers.get('x-vercel-ip-country') ??   // Vercel production
+    request.headers.get('x-geo-country') ??          // already forwarded
+    null
+
   // Run i18n middleware first
   const response = intlMiddleware(request)
+
+  // Forward geo country to downstream handlers via request header (mutated response)
+  if (geoCountry && response) {
+    response.headers.set('x-geo-country', geoCountry)
+  }
 
   // Supabase session refresh
   const supabase = createServerClient(

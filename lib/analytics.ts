@@ -10,6 +10,7 @@ export interface EventProperties {
   utm_medium?: string
   utm_campaign?: string
   market?: string
+  geo_country?: string
   [key: string]: unknown
 }
 
@@ -31,7 +32,29 @@ export type EventName =
   | 'ai_model_fallback'
   | 'notion_connected'
   | 'notion_sync_completed'
+  | 'user_signup'
+  | 'market_confirmed'
   | (string & {}) // allow custom events
+
+// T-S02-4: cached geo country from the x-geo-country cookie (set by middleware)
+// Lazy-loaded once per client session.
+let _cachedGeo: string | null | undefined = undefined
+
+function getGeoCountry(): string | null {
+  if (typeof document === 'undefined') return null
+  if (_cachedGeo !== undefined) return _cachedGeo
+  // Try to read from meta tag injected by server component, or fall back to nothing.
+  // The actual value is set by middleware as x-geo-country response header.
+  // WorkspaceClient can call setGeoCountry() after reading from /api/geo.
+  const meta = document.querySelector('meta[name="x-geo-country"]')
+  _cachedGeo = meta?.getAttribute('content') ?? null
+  return _cachedGeo
+}
+
+/** Called by client components that received the geo country from server */
+export function setGeoCountry(country: string | null) {
+  _cachedGeo = country
+}
 
 export async function trackEvent(
   eventName: EventName,
@@ -49,13 +72,15 @@ export async function trackEvent(
     }
 
     // Use a plain anon client for the insert — safe in both client and server contexts.
-    // The browser client's auth session is separate from this insert; we embed user_id explicitly.
     const supabase = isServer
       ? createAnonClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
       : createBrowserClient()
+
+    // T-S02-4: include geo_country in every event
+    const geoCountry = properties.geo_country ?? (isServer ? null : getGeoCountry())
 
     // Fire-and-forget: don't block the caller
     void supabase.from('analytics_events').insert({
@@ -68,7 +93,8 @@ export async function trackEvent(
       utm_source: properties.utm_source ?? getUTMParam('utm_source'),
       utm_medium: properties.utm_medium ?? getUTMParam('utm_medium'),
       utm_campaign: properties.utm_campaign ?? getUTMParam('utm_campaign'),
-      market: properties.market ?? null
+      market: properties.market ?? null,
+      geo_country: geoCountry,
     })
   } catch {
     // Analytics must never break the main flow

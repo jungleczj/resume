@@ -8,8 +8,10 @@ import { JDPanel } from './JDPanel'
 import { AchievementPanel } from './AchievementPanel'
 import { ResumePreview } from './ResumePreview'
 import { ExportModal } from './ExportModal'
+import { MarketConfirmModal } from './MarketConfirmModal'
 import { VersionHistorySidebar } from './VersionHistorySidebar'
 import { PIIBanner } from './PIIBanner'
+import { setGeoCountry } from '@/lib/analytics'
 import { Link } from '@/lib/i18n/navigation'
 import { trackEvent } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
@@ -32,6 +34,8 @@ interface WorkspaceClientProps {
   uploadFilePath?: string | null
   uploadFileType?: string | null
   uploadId?: string
+  /** ISO country code from Vercel geo (middleware) — used for market modal pre-selection only */
+  geoCountry?: string | null
 }
 
 const SIDEBAR_ITEMS = [
@@ -53,6 +57,7 @@ export function WorkspaceClient({
   uploadFilePath,
   uploadFileType,
   uploadId,
+  geoCountry,
 }: WorkspaceClientProps) {
   const {
     setExperiences,
@@ -100,6 +105,10 @@ export function WorkspaceClient({
   const t = useTranslations()
   const [draftRecoveryAvailable, setDraftRecoveryAvailable] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  // T-S02-1: show market confirm modal for authenticated users who haven't confirmed
+  const [showMarketModal, setShowMarketModal] = useState(
+    !!(userId && profile && !profile.payment_market_confirmed)
+  )
   const [exportFormat, setExportFormat] = useState<'pdf' | 'docx'>('pdf')
   const [showHistory, setShowHistory] = useState(false)
   const [langDropdownOpen, setLangDropdownOpen] = useState(false)
@@ -150,6 +159,14 @@ export function WorkspaceClient({
 
   // Init store
   useEffect(() => {
+    // T-S02-4: seed geo country into analytics singleton
+    setGeoCountry(geoCountry ?? null)
+
+    // Save last workspace URL so NavBar can link back to it
+    try {
+      localStorage.setItem('cf_last_workspace', window.location.pathname + window.location.search)
+    } catch { /* quota */ }
+
     setAnonymousId(anonymousId)
     setUserId(userId)
     setProfile(profile)
@@ -361,13 +378,13 @@ export function WorkspaceClient({
     if (prev === null) return
     // Skip if lang didn't actually change
     if (prev === resumeLang) return
-    // Only regenerate if there's at least one confirmed achievement
-    const hasConfirmed = storeExperiences.some((exp) =>
-      (exp.achievements ?? []).some((a) => a.status === 'confirmed')
-    )
-    if (!hasConfirmed) return
     // Don't queue a second generation if one is already in flight
     if (isGenerating) return
+    // Only skip if there's no parsed data at all (nothing to translate)
+    const hasAnyContent = !!resumePersonalInfo || storeExperiences.some((exp) =>
+      (exp.achievements ?? []).length > 0
+    )
+    if (!hasAnyContent) return
 
     const triggerRegen = async () => {
       // Switching back to Chinese — clear translations and re-confirm from DB
@@ -547,7 +564,7 @@ export function WorkspaceClient({
             </div>
 
             {/* Achievement panel (takes remaining height) */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <AchievementPanel />
             </div>
           </div>
@@ -727,6 +744,14 @@ export function WorkspaceClient({
           userId={userId}
           profile={profile}
           onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {/* T-S02-1: Market confirmation modal — shown once for newly registered users */}
+      {showMarketModal && (
+        <MarketConfirmModal
+          geoCountryHint={geoCountry}
+          onConfirmed={() => setShowMarketModal(false)}
         />
       )}
     </div>

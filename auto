@@ -1,0 +1,23 @@
+#!/bin/bash
+SESSION="claude"
+LAST_STATE=""
+
+while true; do
+  output=$(tmux capture-pane -pt $SESSION)
+
+  if echo "$output" | grep -q "limit reached"; then
+    if [ "$LAST_STATE" != "LIMIT" ]; then
+      echo "⏳ Limit reached detected, waiting..."
+
+      LAST_STATE="LIMIT"
+      sleep 600
+
+      echo "🔁 Sending continue..."
+      tmux send-keys -t $SESSION "continue" Enter
+    fi
+  else
+    LAST_STATE="OK"
+  fi
+
+  sleep 10
+done
