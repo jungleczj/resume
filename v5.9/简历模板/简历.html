@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700;900&amp;family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        // Modern Light Palette
+                        "background-cobalt": "#ffffff",
+                        "accent-cobalt": "#2563eb",      // Slightly deeper blue for better contrast on white
+                        "text-main": "#334155",          // Dark slate for body text
+                        "text-bright": "#0f172a",        // Near black for headings
+                        "surface-cobalt": "#f8fafc",     // Lightest gray for cards
+                        "surface-dark": "#f1f5f9",
+                        "border-cobalt": "#e2e8f0",
+                        "primary": "#2563eb",
+                        "on-surface": "#334155"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Noto Serif"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            .material-symbols-outlined {
+                font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            }
+        }
+        body {
+            background-color: #f1f5f9;
+            display: flex;
+            justify-content: center;
+            padding: 40px 0;
+            margin: 0;
+        }
+        .a4-page {
+            width: 210mm;
+            height: 297mm;
+            background: #ffffff;
+            color: #334155;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }.metric-highlight {
+            color: #2563eb;
+            font-weight: 700;
+        }
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        @media print {
+            body {
+                padding: 0;
+                background: none;
+            }
+            .a4-page {
+                box-shadow: none;
+                width: 210mm;
+                height: 297mm;
+            }
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-accent-cobalt/30">
+<div class="a4-page">
+<header class="bg-background-cobalt w-full border-none">
+<div class="flex justify-between items-center px-10 py-6 w-full">
+<div class="flex items-center gap-4">
+<h1 class="font-headline font-black text-accent-cobalt uppercase tracking-widest text-lg">ALEXANDER VANCE</h1>
+</div>
+<div class="flex items-center text-[10px] font-mono text-text-main/50 tracking-widest">
+                DOC_REF: CV_2024_WANG
+            </div>
+</div>
+<div class="bg-accent-cobalt h-[2px] mx-10 opacity-50"></div>
+</header>
+<main class="flex-grow px-10 py-8 flex flex-row gap-10">
+<aside class="w-[32%] flex flex-col gap-8">
+<section class="bg-surface-cobalt p-6 rounded-lg border border-border-cobalt">
+<div class="flex flex-col items-start gap-4">
+<div class="w-24 h-24 rounded-lg bg-background-cobalt overflow-hidden border border-border-cobalt">
+<img class="w-full h-full object-cover grayscale opacity-90" data-alt="Professional executive portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt5f9wJSWtr9EV-mAhx98NtviXr97-U0ZF4FeCWStFJGaPDlmBlUUDsol8YVnjb-KfkI_qM-JuiAMhmBS7Nz_ctYpco3BO8TGpsAEMOrfKYHyEgKQongbt1a7DA3YsLhgBDclY_Hs05qSEm7sqLiiRdN6HoFcz4IGfcGNfqRRDdkUu3_zbeR9-8W1zkjqMRCzuTMWUJyzyqtVVaTTzh9XntvuuPb5-APUX9SV9WXVF7uPNf3K8vvIMqZ5HMpboCgJWGbG_FOZgUlQ"/>
+</div>
+<div>
+<h2 class="font-headline font-bold text-2xl text-accent-cobalt leading-tight">Alex Wang</h2>
+<p class="font-label text-text-main font-semibold tracking-widest uppercase text-[10px] mt-1">Full Stack Engineer</p>
+</div>
+<div class="flex flex-col gap-2 w-full mt-2">
+<div class="flex items-center gap-2 text-text-main/80 text-[11px]">
+<span class="material-symbols-outlined text-sm text-accent-cobalt">mail</span>
+<span>a.wang@tech.io</span>
+</div>
+<div class="flex items-center gap-2 text-text-main/80 text-[11px]">
+<span class="material-symbols-outlined text-sm text-accent-cobalt">call</span>
+<span>+1 (555) 000-1234</span>
+</div>
+<div class="flex items-center gap-2 text-text-main/80 text-[11px]">
+<span class="material-symbols-outlined text-sm text-accent-cobalt">location_on</span>
+<span>San Francisco, CA</span>
+</div>
+<div class="flex items-center gap-2 text-text-main/80 text-[11px]">
+<span class="material-symbols-outlined text-sm text-accent-cobalt">link</span>
+<span>github.com/alexwang-dev</span>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="font-headline font-bold text-sm uppercase tracking-tighter border-l-4 border-accent-cobalt pl-3 text-text-bright">Core Competencies</h3>
+<div class="space-y-3">
+<div>
+<p class="text-[9px] font-bold uppercase tracking-widest text-accent-cobalt/70 mb-1.5">Systems &amp; Architecture</p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">Distributed Systems</span>
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">Kubernetes</span>
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">GraphQL</span>
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">Microservices</span>
+</div>
+</div>
+<div>
+<p class="text-[9px] font-bold uppercase tracking-widest text-accent-cobalt/70 mb-1.5">Frontend Engineering</p>
+<div class="flex flex-wrap gap-1.5">
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">TypeScript</span>
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">React/Next.js</span>
+<span class="px-2 py-0.5 bg-surface-cobalt text-text-main text-[10px] font-medium rounded border border-border-cobalt">TailwindCSS</span>
+</div>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-3">
+<h3 class="font-headline font-bold text-sm uppercase tracking-tighter border-l-4 border-accent-cobalt pl-3 text-text-bright">Awards &amp; Certs</h3>
+<div class="grid grid-cols-1 gap-2">
+<div class="bg-surface-cobalt/50 px-3 py-2 rounded border border-border-cobalt">
+<p class="text-[10px] font-bold text-text-bright">AWS Certified Solutions Architect</p>
+</div>
+<div class="bg-surface-cobalt/50 px-3 py-2 rounded border border-border-cobalt">
+<p class="text-[10px] font-bold text-text-bright">Google Professional Cloud Developer</p>
+</div>
+<div class="bg-surface-cobalt/50 px-3 py-2 rounded border border-border-cobalt">
+<p class="text-[10px] font-bold text-text-bright">Outstanding Contribution Award (2022)</p>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-3">
+<h3 class="font-headline font-bold text-sm uppercase tracking-tighter border-l-4 border-accent-cobalt pl-3 text-text-bright">Languages</h3>
+<div class="grid grid-cols-1 gap-2">
+<div class="bg-surface-cobalt/50 px-3 py-2 rounded border border-border-cobalt">
+<p class="text-[10px] font-bold text-text-bright">English (Native)</p>
+</div>
+<div class="bg-surface-cobalt/50 px-3 py-2 rounded border border-border-cobalt">
+<p class="text-[10px] font-bold text-text-bright">Mandarin (Bilingual)</p>
+</div>
+</div>
+</section>
+</aside>
+<article class="w-[68%] flex flex-col gap-8">
+<section class="bg-surface-cobalt text-text-main p-6 rounded-lg border-l-4 border-accent-cobalt">
+<h3 class="font-headline font-bold text-lg mb-2 text-text-bright">Executive Summary</h3>
+<p class="font-body text-[11px] leading-relaxed">
+                    Full Stack Engineer with <span class="metric-highlight">8+ years</span> of experience specializing in high-scale distributed architectures. Proven track record in migrating legacy monolithic systems to cloud-native microservices, reducing operational costs by <span class="metric-highlight">40%</span>. Committed to rigorous academic principles in software engineering.
+                </p>
+</section>
+<section class="flex flex-col gap-6">
+<h3 class="font-headline font-bold text-xl text-text-bright flex items-center gap-3">
+                    Professional Experience
+                    <span class="h-[1px] flex-grow bg-border-cobalt"></span>
+</h3>
+<div class="relative pl-6 border-l-2 border-accent-cobalt/20 flex flex-col gap-1">
+<div class="absolute -left-[5px] top-1 w-2 h-2 bg-accent-cobalt rounded-full shadow-[0_0_8px_rgba(46,112,255,0.6)]"></div>
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-inter font-bold text-sm text-text-bright">Senior Staff Engineer</h4>
+<p class="text-accent-cobalt font-semibold text-[11px] uppercase tracking-wider">NexGen Analytics Systems</p>
+</div>
+<span class="text-[9px] font-mono bg-surface-cobalt border border-border-cobalt text-text-main px-2 py-0.5 rounded">2020 — PRESENT</span>
+</div>
+<ul class="mt-2 space-y-2 text-[10.5px] text-text-main leading-normal">
+<li class="flex gap-2">
+<span class="text-accent-cobalt font-black">/</span>
+<span>Architected a real-time data processing pipeline using Kafka and Go, handling over <span class="metric-highlight">2.5 billion events</span> per day.</span>
+</li>
+<li class="flex gap-2">
+<span class="text-accent-cobalt font-black">/</span>
+<span>Led a team of <span class="metric-highlight">12 engineers</span> to overhaul the enterprise dashboard, improving Core Web Vitals by <span class="metric-highlight">65%</span>.</span>
+</li>
+</ul>
+</div>
+<div class="relative pl-6 border-l-2 border-accent-cobalt/20 flex flex-col gap-1">
+<div class="absolute -left-[5px] top-1 w-2 h-2 bg-border-cobalt rounded-full"></div>
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-inter font-bold text-sm text-text-bright">Full Stack Developer</h4>
+<p class="text-accent-cobalt font-semibold text-[11px] uppercase tracking-wider">Horizon Fintech Solutions</p>
+</div>
+<span class="text-[9px] font-mono bg-surface-cobalt border border-border-cobalt text-text-main px-2 py-0.5 rounded">2017 — 2020</span>
+</div>
+<ul class="mt-2 space-y-2 text-[10.5px] text-text-main leading-normal">
+<li class="flex gap-2">
+<span class="text-accent-cobalt font-black">/</span>
+<span>Developed secure payment gateways using Node.js and PostgreSQL, ensuring PCI-DSS compliance.</span>
+</li>
+<li class="flex gap-2">
+<span class="text-accent-cobalt font-black">/</span>
+<span>Optimized database queries, resulting in a <span class="metric-highlight">50% reduction</span> in API response times.</span>
+</li>
+</ul>
+</div>
+</section>
+<section class="flex flex-col gap-6">
+<h3 class="font-headline font-bold text-xl text-text-bright flex items-center gap-3">
+                    Academic Background
+                    <span class="h-[1px] flex-grow bg-border-cobalt"></span>
+</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-cobalt p-4 rounded-lg border border-border-cobalt border-b-2 border-b-accent-cobalt">
+<p class="text-[8px] font-bold uppercase tracking-widest text-accent-cobalt mb-1">Master of Science</p>
+<h4 class="font-bold text-[12px] text-text-bright">Computer Science</h4>
+<p class="text-[10px] text-text-main">Stanford University</p>
+<p class="text-[9px] mt-1 font-mono text-text-main/60">GPA: <span class="text-accent-cobalt">3.9/4.0</span> • 2013-2015</p>
+</div>
+<div class="bg-surface-cobalt p-4 rounded-lg border border-border-cobalt border-b-2 border-b-text-main/20">
+<p class="text-[8px] font-bold uppercase tracking-widest text-accent-cobalt mb-1">Bachelor of Engineering</p>
+<h4 class="font-bold text-[12px] text-text-bright">Software Engineering</h4>
+<p class="text-[10px] text-text-main">Tsinghua University</p>
+<p class="text-[9px] mt-1 font-mono text-text-main/60">Honors Program • 2009-2013</p>
+</div>
+</div>
+</section>
+<section class="flex flex-col gap-4">
+<h3 class="font-headline font-bold text-sm uppercase tracking-tighter text-text-bright">Publications &amp; Research</h3>
+<div class="space-y-2">
+<div class="flex gap-3 p-2 hover:bg-surface-cobalt transition-colors rounded border border-transparent hover:border-border-cobalt group">
+<span class="material-symbols-outlined text-accent-cobalt text-sm group-hover:scale-110 transition-transform">description</span>
+<div>
+<p class="text-[10px] font-bold text-text-bright">"Latency Optimization in Geo-Distributed Actor Systems"</p>
+<p class="text-[9px] text-text-main italic">Journal of Cloud Computing, 2019</p>
+</div>
+</div>
+</div>
+</section>
+</article>
+</main>
+<footer class="w-full px-10 py-6 border-t border-border-cobalt text-center">
+<p class="text-[9px] text-text-main/40 font-mono tracking-widest uppercase">Generated via Professional Portfolio System v2.4 • 2024</p>
+</footer>
+</div>
+</body></html>
