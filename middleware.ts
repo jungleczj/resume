@@ -7,69 +7,66 @@ const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
   // ── T-S02-4: Extract geo country and forward as a request header ─────────────
-  // Vercel sets x-vercel-ip-country on every request in Node.js runtime.
-  // We copy it to x-geo-country for consistent access in server components and API routes.
-  // IMPORTANT: geo is only used for analytics and UI-language defaults — NEVER for payment.
   const geoCountry =
-    request.headers.get('x-vercel-ip-country') ??   // Vercel production
-    request.headers.get('x-geo-country') ??          // already forwarded
+    request.headers.get('x-vercel-ip-country') ??
+    request.headers.get('x-geo-country') ??
     null
 
-  // Run i18n middleware first
+  // Run i18n middleware first — always safe, no network calls
   const response = intlMiddleware(request)
 
-  // Forward geo country to downstream handlers via request header (mutated response)
   if (geoCountry && response) {
     response.headers.set('x-geo-country', geoCountry)
   }
 
-  // Supabase session refresh
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            if (response) {
-              response.cookies.set(name, value, options)
-            }
-          })
-        }
-      }
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Route guard: CN free users cannot access /pricing → redirect to /workspace
-  // CRITICAL: uses payment_market, not geo.country
-  // Uses cf_market cookie (set in /auth/callback) to avoid a DB round-trip per request.
+  // ── Route guard: /pricing → redirect cn_free users to /workspace ──────────
+  // Only runs Supabase when the user is on a pricing page.
   const pathname = request.nextUrl.pathname
-  const isPricingRoute = pathname.match(/\/(?:zh-CN|en-US)?\/pricing/) ||
+  const isPricingRoute = /\/(?:zh-CN|en-US)?\/pricing(?:\/|$)/.test(pathname) ||
     pathname === '/pricing'
 
-  if (isPricingRoute && user) {
-    // Prefer cookie (fast path, set on login); fall back to DB only if cookie missing
-    let market = request.cookies.get('cf_market')?.value
-    if (!market) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('payment_market')
-        .eq('id', user.id)
-        .single()
-      market = profile?.payment_market ?? undefined
-    }
+  if (isPricingRoute) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (market === 'cn_free') {
-      // Extract locale from pathname to preserve it in the redirect
-      const localeMatch = pathname.match(/^\/(zh-CN|en-US)/)
-      const locale = localeMatch ? localeMatch[1] : 'zh-CN'
-      const workspaceUrl = new URL(`/${locale}/workspace`, request.url)
-      return NextResponse.redirect(workspaceUrl)
+    if (supabaseUrl && supabaseAnonKey) {
+      try {
+        const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response?.cookies.set(name, value, options)
+              })
+            }
+          }
+        })
+
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+          // Prefer cookie (fast path, set on login); fall back to DB only if cookie missing
+          let market = request.cookies.get('cf_market')?.value
+          if (!market) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('payment_market')
+              .eq('id', user.id)
+              .single()
+            market = profile?.payment_market ?? undefined
+          }
+
+          if (market === 'cn_free') {
+            const localeMatch = pathname.match(/^\/(zh-CN|en-US)/)
+            const locale = localeMatch ? localeMatch[1] : 'zh-CN'
+            return NextResponse.redirect(new URL(`/${locale}/workspace`, request.url))
+          }
+        }
+      } catch {
+        // Never crash the middleware — serve the pricing page as-is on any error
+      }
     }
   }
 

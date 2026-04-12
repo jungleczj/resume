@@ -10,11 +10,7 @@ const nextConfig = {
   // which is undefined in the Edge runtime. Marking these external forces Next.js to
   // require() them natively in the Node.js API route runtime instead of bundling them.
   serverExternalPackages: ['pdf-parse', 'mammoth', 'pdf-lib', '@pdf-lib/fontkit'],
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000']
-    }
-  },
+  experimental: {},
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // pdfjs-dist uses canvas in Node.js (server) context only; ignore in browser
