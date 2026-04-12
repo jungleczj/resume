@@ -1,14 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { trackEvent } from '@/lib/analytics'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const t = useTranslations('login')
+  const searchParams = useSearchParams()
+  const nextPath = searchParams.get('next') ?? '/library'
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -20,6 +23,7 @@ export default function LoginPage() {
     const anonId = typeof window !== 'undefined' ? localStorage.getItem('cf_anonymous_id') : null
     const callbackUrl = new URL('/auth/callback', window.location.origin)
     if (anonId) callbackUrl.searchParams.set('anonymous_id', anonId)
+    callbackUrl.searchParams.set('next', nextPath)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: callbackUrl.toString() }
@@ -36,6 +40,7 @@ export default function LoginPage() {
     const anonId = typeof window !== 'undefined' ? localStorage.getItem('cf_anonymous_id') : null
     const callbackUrl = new URL('/auth/callback', window.location.origin)
     if (anonId) callbackUrl.searchParams.set('anonymous_id', anonId)
+    callbackUrl.searchParams.set('next', nextPath)
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: callbackUrl.toString() }
@@ -269,5 +274,13 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   )
 }

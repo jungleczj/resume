@@ -15,6 +15,7 @@
 
 import { useState } from 'react'
 import { useRouter } from '@/lib/i18n/navigation'
+import { useTranslations } from 'next-intl'
 import { Globe, MapPin, Loader2 } from 'lucide-react'
 import { useWorkspaceStore } from '@/store/workspace'
 
@@ -26,6 +27,7 @@ interface MarketConfirmModalProps {
 
 export function MarketConfirmModal({ geoCountryHint, onConfirmed }: MarketConfirmModalProps) {
   const router = useRouter()
+  const t = useTranslations('market_confirm')
   const setProfile = useWorkspaceStore(s => s.setProfile)
   const profile = useWorkspaceStore(s => s.profile)
 
@@ -77,9 +79,9 @@ export function MarketConfirmModal({ geoCountryHint, onConfirmed }: MarketConfir
           <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-3">
             <Globe className="w-6 h-6 text-indigo-600" />
           </div>
-          <h2 className="text-base font-bold text-gray-900 mb-1">您在哪个地区？</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-1">{t('title')}</h2>
           <p className="text-xs text-gray-500 leading-relaxed">
-            这将决定您的使用方案。国内用户完全免费，海外用户按次付费。
+            {t('subtitle')}
           </p>
         </div>
 
@@ -96,10 +98,10 @@ export function MarketConfirmModal({ geoCountryHint, onConfirmed }: MarketConfir
             <MapPin className={`w-5 h-5 mt-0.5 flex-shrink-0 ${selected === 'cn_free' ? 'text-indigo-600' : 'text-gray-400'}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-900">中国大陆</span>
-                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">完全免费</span>
+                <span className="text-sm font-bold text-gray-900">{t('cn_name')}</span>
+                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">{t('cn_badge')}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-0.5">无限制使用所有功能，无月度配额</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t('cn_desc')}</p>
             </div>
           </button>
 
@@ -113,8 +115,8 @@ export function MarketConfirmModal({ geoCountryHint, onConfirmed }: MarketConfir
           >
             <Globe className={`w-5 h-5 mt-0.5 flex-shrink-0 ${selected === 'en_paid' ? 'text-indigo-600' : 'text-gray-400'}`} />
             <div className="flex-1 min-w-0">
-              <span className="text-sm font-bold text-gray-900">Other regions / 其他地区</span>
-              <p className="text-xs text-gray-500 mt-0.5">从 $4.99/次 起，可订阅无限导出</p>
+              <span className="text-sm font-bold text-gray-900">{t('intl_name')}</span>
+              <p className="text-xs text-gray-500 mt-0.5">{t('intl_desc')}</p>
             </div>
           </button>
         </div>
@@ -132,13 +134,13 @@ export function MarketConfirmModal({ geoCountryHint, onConfirmed }: MarketConfir
             className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-colors"
           >
             {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />保存中...</>
+              <><Loader2 className="w-4 h-4 animate-spin" />{t('saving')}</>
             ) : (
-              '确认并继续'
+              t('confirm')
             )}
           </button>
           <p className="text-center text-[11px] text-gray-400 mt-3">
-            选择后可在设置页修改 · 不影响现有数据
+            {t('footer')}
           </p>
         </div>
       </div>

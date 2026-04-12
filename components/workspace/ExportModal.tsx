@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations, useLocale } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { X, FileText, Download, Loader2, Check, LogIn } from 'lucide-react'
 import { trackEvent } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
@@ -34,7 +34,6 @@ export function ExportModal({
   onClose
 }: ExportModalProps) {
   const t = useTranslations()
-  const locale = useLocale()
   const router = useRouter()
 
   // Pull the current in-session resume state from the store
@@ -119,6 +118,13 @@ export function ExportModal({
           }
         })
       })
+
+      if (res.status === 402) {
+        // Server-side paywall check fired (access revoked or state mismatch)
+        // Drop back into the plan-selector UI instead of showing an error
+        setHasAccess(false)
+        return
+      }
 
       if (!res.ok) {
         const data = await res.json() as { error?: string }
@@ -216,12 +222,10 @@ export function ExportModal({
               <Check className="w-6 h-6 text-green-500" />
             </div>
             <h3 className="text-sm font-semibold text-gray-900 mb-1">
-              {locale === 'en-US' ? 'Resume downloaded!' : '简历已下载！'}
+              {t('export.post_download_title')}
             </h3>
             <p className="text-xs text-gray-500 mb-5 leading-relaxed">
-              {locale === 'en-US'
-                ? 'Sign in to save your resume and achievements for future use.'
-                : '登录后可永久保存您的简历和成就记录，下次无需重新上传。'}
+              {t('export.post_download_body')}
             </p>
             <button
               onClick={() => {
@@ -231,13 +235,13 @@ export function ExportModal({
               className="w-full flex items-center justify-center gap-2 py-3 bg-[#3525cd] text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity mb-2"
             >
               <LogIn className="w-4 h-4" />
-              {locale === 'en-US' ? 'Sign in to save' : '登录保存'}
+              {t('export.sign_in_to_save')}
             </button>
             <button
               onClick={onClose}
               className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
-              {locale === 'en-US' ? 'Maybe later' : '稍后再说'}
+              {t('export.maybe_later')}
             </button>
           </div>
         ) : (

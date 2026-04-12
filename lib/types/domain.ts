@@ -184,6 +184,7 @@ export type AITask =
   | 'achievement_match'
   | 'resume_translate'
   | 'resume_profile_translate'
+  | 'resume_summary_generate'
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant'

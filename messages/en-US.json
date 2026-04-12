@@ -113,6 +113,7 @@
       "language": "Language",
       "photo": "Photo",
       "save": "Save",
+      "saved": "Saved",
       "show_photo": "Show Photo"
     },
     "jd_panel": {
@@ -121,7 +122,9 @@
       "char_limit": "Max 5000 characters",
       "generate_btn": "Generate Resume (Generic)",
       "generate_btn_custom": "Generate Tailored Resume",
-      "truncated_warning": "Content trimmed to 5000-character limit"
+      "truncated_warning": "Content trimmed to 5000-character limit",
+      "snapshot_jd_label": "JD Tailored",
+      "snapshot_generic_label": "Generic"
     },
     "achievement_panel": {
       "tabs": {
@@ -164,19 +167,71 @@
       "message": "Unsaved edits found from your last session",
       "restore": "Restore",
       "dismiss": "Discard"
-    }
+    },
+    "photo_detected": {
+      "message": "A photo was detected in your resume. Would you like to include it?",
+      "use": "Use photo",
+      "ignore": "Skip"
+    },
+    "resume_lang": {
+      "zh": "Chinese",
+      "en": "English Only",
+      "bilingual": "Chinese + English"
+    },
+    "parse_progress": {
+      "processing": "AI is extracting achievements...",
+      "completed": "Extraction complete",
+      "failed": "Parse failed",
+      "retry": "Back to upload"
+    },
+    "version_history": {
+      "close": "Close",
+      "restore": "Restore this version",
+      "rename_hint": "Double-click to rename",
+      "manual_save": "Manual save",
+      "no_data": "No achievement data in this version",
+      "jd_excerpt": "JD Excerpt",
+      "present": "Present",
+      "positions": "{count} positions",
+      "achievements_count": "{count} achievements",
+      "has_jd": "With JD",
+      "has_photo": "With Photo"
+    },
+    "pii_banner": "Personal sensitive information (e.g. phone number, address) was detected in your resume. AI processing will use this content — please be aware."
   },
   "library": {
     "title": "Achievement Library",
     "subtitle": "Your career highlights, organized and ready",
-    "search_placeholder": "Search achievements...",
+    "sidebar_title": "Library",
+    "count_total": "{count} records",
+    "search_placeholder": "Search achievements or company...",
     "filter_all": "All",
-    "filter_tier1": "Key Highlights",
-    "filter_tier2": "Major Wins",
-    "filter_tier3": "Core Experience",
-    "empty_state": "No achievements yet. Head to the workspace to upload your resume",
+    "filter_confirmed": "Confirmed",
+    "filter_draft": "Draft",
+    "filter_ignored": "Ignored",
+    "stat_all": "All Achievements",
+    "stat_confirmed": "Confirmed",
+    "stat_draft": "Pending Review",
+    "stat_ignored": "Ignored",
+    "tier_quantified": "Quantified",
+    "tier_incomplete": "Needs Data",
+    "tier_descriptive": "Descriptive",
+    "status_confirmed": "Confirmed",
+    "status_draft": "Draft",
+    "status_ignored": "Ignored",
+    "col_description": "Achievement",
+    "col_company": "Company / Role",
+    "col_tier": "Tier",
+    "col_status": "Status",
+    "col_actions": "Actions",
+    "loading": "Loading...",
+    "empty_state": "No achievements yet. Upload a resume and AI will extract your highlights automatically.",
+    "empty_search": "No matching achievements",
     "go_workspace": "Go to Workspace",
+    "count_display": "Showing {filtered} / {total}",
     "achievement_count": "{count} achievements",
+    "action_confirm": "Confirm",
+    "action_ignore": "Ignore",
     "tier_badge": {
       "1": "T1",
       "2": "T2",
@@ -264,7 +319,23 @@
     },
     "photo_toggle": "Include Photo",
     "export_btn": "Export",
-    "processing": "Generating..."
+    "processing": "Generating...",
+    "post_download_title": "Resume downloaded!",
+    "post_download_body": "Sign in to save your resume and achievements for future use.",
+    "sign_in_to_save": "Sign in to save",
+    "maybe_later": "Maybe later"
+  },
+  "market_confirm": {
+    "title": "Which region are you in?",
+    "subtitle": "This determines your plan. Users in China get full access free; international users pay per export.",
+    "cn_name": "Mainland China",
+    "cn_badge": "Completely Free",
+    "cn_desc": "Full access, no monthly quota",
+    "intl_name": "Other regions / 其他地区",
+    "intl_desc": "From $4.99/export, subscribe for unlimited",
+    "saving": "Saving...",
+    "confirm": "Confirm & Continue",
+    "footer": "Can be changed in Settings later · No data impact"
   },
   "payment_success": {
     "verifying_title": "Verifying your payment...",

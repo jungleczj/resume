@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
         .in('status', ['active', 'grace'])
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (sub) {
         const now = new Date()

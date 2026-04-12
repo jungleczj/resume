@@ -21,6 +21,11 @@ export function JDPanel() {
     restoreVersion,
     setTranslatedTexts,
     saveVersion,
+    resumePersonalInfo,
+    resumeEducation,
+    resumeSkills,
+    applyTranslatedProfile,
+    updatePersonalInfoField,
   } = useWorkspaceStore()
 
   const [truncated, setTruncated] = useState(false)
@@ -45,6 +50,7 @@ export function JDPanel() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
+      // Always pass profile data so the backend can generate a summary
       const res = await fetch('/api/resume/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +58,10 @@ export function JDPanel() {
           jd_text: jdText,
           anonymous_id: anonymousId,
           user_id: userId,
-          resume_lang: resumeLang
+          resume_lang: resumeLang,
+          personal_info: resumePersonalInfo,
+          education: resumeEducation,
+          skills: resumeSkills,
         })
       })
       if (!res.ok) throw new Error('Generation failed')
@@ -65,11 +74,24 @@ export function JDPanel() {
         }
         setTranslatedTexts(map)
       }
+      // Apply translated profile data (name, education, skills) if returned
+      if (data?.translated_personal_info || data?.translated_education?.length || data?.translated_skills?.length) {
+        applyTranslatedProfile(
+          (data.translated_personal_info as import('@/lib/types/domain').ResumePersonalInfo) ?? null,
+          (data.translated_education as import('@/lib/types/domain').ResumeEducation[]) ?? [],
+          (data.translated_skills as import('@/lib/types/domain').ResumeSkillGroup[]) ?? []
+        )
+      }
+      // Populate summary with AI-generated version (always refresh on generate)
+      if (data?.generated_summary && typeof data.generated_summary === 'string') {
+        updatePersonalInfoField('summary', data.generated_summary)
+      }
       if (data?.warning_message) console.warn('[generate]', data.warning_message)
       // Auto-save a version snapshot after each generation
+      const timeStr = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
       const label = jdText.trim().length > 0
-        ? `JD定制 · ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-        : `通用版 · ${new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
+        ? `${t('workspace.jd_panel.snapshot_jd_label')} · ${timeStr}`
+        : `${t('workspace.jd_panel.snapshot_generic_label')} · ${timeStr}`
       void saveVersion(label)
       trackEvent('resume_generated', {
         anonymous_id: anonymousId,

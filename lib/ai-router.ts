@@ -56,6 +56,12 @@ const MODEL_CHAINS: Record<AITask, string[]> = {
     'qwen-turbo',
     'deepseek-chat',
     'claude-haiku-4-5-20251001'
+  ],
+  resume_summary_generate: [
+    'qwen-long',
+    'deepseek-chat',
+    'gpt-4o-mini',
+    'claude-sonnet-4-20250514'
   ]
 }
 
@@ -99,7 +105,10 @@ function getProviderForModel(model: string): 'deepseek' | 'openai' | 'qianwen' |
   return 'qianwen'
 }
 
-async function callModel(model: string, messages: AIMessage[]): Promise<string> {
+// Tasks that return plain text (not JSON)
+const PLAIN_TEXT_TASKS = new Set<AITask>(['resume_summary_generate'])
+
+async function callModel(model: string, messages: AIMessage[], task: AITask): Promise<string> {
   const provider = getProviderForModel(model)
 
   let client: OpenAI
@@ -113,7 +122,7 @@ async function callModel(model: string, messages: AIMessage[]): Promise<string> 
   const response = await client.chat.completions.create({
     model,
     messages,
-    response_format: { type: 'json_object' },
+    ...(!PLAIN_TEXT_TASKS.has(task) ? { response_format: { type: 'json_object' } } : {}),
     ...(provider === 'claude' ? { max_tokens: 4096 } : {})
   })
 
@@ -143,7 +152,7 @@ export async function callAI(
     try {
       console.log(`[ai-router] calling model: ${model} (index ${i})`)
       const result = await queue.add(
-        () => callWithTimeout(callModel(model, messages), timeout),
+        () => callWithTimeout(callModel(model, messages, task), timeout),
         { throwOnTimeout: true }
       )
 

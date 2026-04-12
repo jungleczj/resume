@@ -34,6 +34,8 @@ interface WorkspaceClientProps {
   uploadFilePath?: string | null
   uploadFileType?: string | null
   uploadId?: string
+  /** Most recent resume_version snapshot — restored on mount for returning logged-in users */
+  initialVersion?: ResumeVersion | null
   /** ISO country code from Vercel geo (middleware) — used for market modal pre-selection only */
   geoCountry?: string | null
 }
@@ -57,6 +59,7 @@ export function WorkspaceClient({
   uploadFilePath,
   uploadFileType,
   uploadId,
+  initialVersion,
   geoCountry,
 }: WorkspaceClientProps) {
   const {
@@ -77,6 +80,10 @@ export function WorkspaceClient({
     setResumeSections,
     resumeEducation,
     resumeSkills,
+    resumeCertifications,
+    resumeLanguages,
+    resumeAwards,
+    resumePublications,
     setUploadFile,
     resumePersonalInfo,
     experiences: storeExperiences,
@@ -86,6 +93,7 @@ export function WorkspaceClient({
     setTranslatedTexts,
     clearTranslatedTexts,
     applyTranslatedProfile,
+    setTranslatedSections,
     restoreVersion,
     splitRatio,
     setSplitRatio,
@@ -114,6 +122,8 @@ export function WorkspaceClient({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false)
   const [savedRecently, setSavedRecently] = useState(false)
   const layer3TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Photo detection bubble — path of auto-detected photo awaiting user confirmation
+  const [detectedPhotoBubble, setDetectedPhotoBubble] = useState<string | null>(null)
 
   // ── Resizable panel dividers ──────────────────────────────────────────────
   const mainRef = useRef<HTMLDivElement>(null)
@@ -199,15 +209,38 @@ export function WorkspaceClient({
       )
     }
 
-    // Auto-enable photo if one was extracted
+    // Photo extraction: show bubble asking user instead of auto-enabling
     if (initialPhotoPath) {
       setPhotoPath(initialPhotoPath)
-      setShowPhoto(true)
+      try {
+        const decision = localStorage.getItem(`cf_photo_decision_${anonymousId}`)
+        if (decision === '1') {
+          setShowPhoto(true) // previously accepted
+        } else if (decision !== '0') {
+          setDetectedPhotoBubble(initialPhotoPath) // first time — ask user
+        }
+      } catch {
+        setDetectedPhotoBubble(initialPhotoPath)
+      }
     }
 
     // Store original file info for preview
     if (uploadFilePath && uploadFileType) {
       setUploadFile(uploadFilePath, uploadFileType)
+    }
+
+    // Restore the most recent version snapshot for returning logged-in users.
+    // This restores: resume_lang, show_photo, photo_path, and confirmed achievement set.
+    // Must run AFTER setExperiences so restoreVersion can match achievement IDs.
+    if (initialVersion && initialParseStatus === 'completed') {
+      restoreVersion(
+        initialVersion.editor_json,
+        initialVersion.resume_lang,
+        initialVersion.show_photo
+      )
+      if (initialVersion.photo_path) {
+        setPhotoPath(initialVersion.photo_path)
+      }
     }
 
     // Crash recovery: check for recent unsaved edits in localStorage
@@ -293,10 +326,19 @@ export function WorkspaceClient({
             )
           }
 
-          // Auto-enable photo toggle if a photo was extracted
+          // Photo extraction: show bubble asking user instead of auto-enabling
           if (data.photo_extracted_path) {
             setPhotoPath(data.photo_extracted_path)
-            setShowPhoto(true)
+            try {
+              const decision = localStorage.getItem(`cf_photo_decision_${anonymousId}`)
+              if (decision === '1') {
+                setShowPhoto(true)
+              } else if (decision !== '0') {
+                setDetectedPhotoBubble(data.photo_extracted_path as string)
+              }
+            } catch {
+              setDetectedPhotoBubble(data.photo_extracted_path as string)
+            }
           }
 
           // Hide progress bar after brief success flash
@@ -386,34 +428,58 @@ export function WorkspaceClient({
     )
     if (!hasAnyContent) return
 
-    const triggerRegen = async () => {
-      // Switching back to Chinese — clear translations and re-confirm from DB
+    const triggerTranslate = async () => {
+      // Switching back to Chinese — clear all translations, restore originals
       if (resumeLang === 'zh') {
         clearTranslatedTexts()
-        setIsGenerating(false)
         return
       }
 
       setIsGenerating(true)
       try {
-        const res = await fetch('/api/resume/generate', {
+        // Collect confirmed achievement texts from the current store state
+        const confirmedAchs = storeExperiences
+          .flatMap(exp => (exp.achievements ?? []).filter(a => a.status === 'confirmed'))
+          .map(a => ({ id: a.id, text: a.text }))
+
+        // Build minimal translation input for certifications/awards/publications
+        const certsInput = resumeCertifications.map(c => ({
+          name: c.name,
+          issuing_org: c.issuing_org ?? null,
+        }))
+        const awardsInput = resumeAwards.map(a => ({
+          title: a.title,
+          description: a.description ?? null,
+          issuing_org: a.issuing_org ?? null,
+        }))
+        const pubsInput = resumePublications.map(p => ({
+          title: p.title,
+          description: p.description ?? null,
+        }))
+        const langsInput = resumeLanguages.map(l => ({
+          language_name: l.language_name,
+        }))
+
+        const res = await fetch('/api/resume/translate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            jd_text: jdText,
-            anonymous_id: anonymousId,
             user_id: userId,
             resume_lang: resumeLang,
-            // Include profile data so the API can translate it too
+            achievements: confirmedAchs,
             personal_info: resumePersonalInfo,
             education: resumeEducation,
             skills: resumeSkills,
+            certifications: certsInput,
+            awards: awardsInput,
+            publications: pubsInput,
+            spoken_languages: langsInput,
           }),
         })
         if (!res.ok) return
         const { data } = await res.json()
-        if (data?.editor_json) setEditorJson(data.editor_json)
-        // Apply translated achievement texts to the preview
+
+        // Apply translated achievement texts
         if (data?.translated_achievements?.length) {
           const map: Record<string, string> = {}
           for (const item of data.translated_achievements as { id: string; text: string }[]) {
@@ -421,6 +487,7 @@ export function WorkspaceClient({
           }
           setTranslatedTexts(map)
         }
+
         // Apply translated profile (personal info, education, skills)
         if (data?.translated_personal_info || data?.translated_education?.length || data?.translated_skills?.length) {
           applyTranslatedProfile(
@@ -429,20 +496,27 @@ export function WorkspaceClient({
             (data.translated_skills as ResumeSkillGroup[]) ?? []
           )
         }
-        trackEvent('resume_generated', {
+
+        // Apply translated supplemental sections
+        setTranslatedSections(
+          data?.translated_certifications ?? null,
+          data?.translated_awards ?? null,
+          data?.translated_publications ?? null,
+          data?.translated_spoken_languages ?? null,
+        )
+
+        trackEvent('resume_lang_switched', {
           anonymous_id: anonymousId,
-          has_jd: jdText.length > 0,
           resume_lang: resumeLang,
-          trigger: 'lang_change',
         })
       } catch {
-        // Network error — silently skip
+        // Network error — silently skip, preview falls back to original text
       } finally {
         setIsGenerating(false)
       }
     }
 
-    triggerRegen()
+    triggerTranslate()
   }, [resumeLang]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRestoreVersion = (version: ResumeVersion) => {
@@ -499,7 +573,11 @@ export function WorkspaceClient({
     setTimeout(() => setSavedRecently(false), 2000)
   }
 
-  const langLabels: Record<string, string> = { zh: '中文', en: 'English', bilingual: '双语' }
+  const langLabels: Record<string, string> = {
+    zh: t('workspace.resume_lang.zh'),
+    en: t('workspace.resume_lang.en'),
+    bilingual: t('workspace.resume_lang.bilingual'),
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-surface">
@@ -508,6 +586,36 @@ export function WorkspaceClient({
 
       {/* PII detection notice — only shown when resume contains sensitive data */}
       <PIIBanner uploadId={uploadId} anonymousId={anonymousId} userId={userId} />
+
+      {/* Photo detection bubble — shown once when a photo is extracted from the resume */}
+      {detectedPhotoBubble && (
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-indigo-50 border-b border-indigo-200 text-xs z-20 flex-shrink-0">
+          <span className="material-symbols-outlined text-indigo-500 text-base flex-shrink-0">photo_camera</span>
+          <span className="text-indigo-800 font-medium flex-1">
+            {t('workspace.photo_detected.message')}
+          </span>
+          <button
+            onClick={() => {
+              setShowPhoto(true)
+              setDetectedPhotoBubble(null)
+              try { localStorage.setItem(`cf_photo_decision_${anonymousId}`, '1') } catch { /* quota */ }
+              trackEvent('photo_toggled', { anonymous_id: anonymousId, state: 'on', trigger: 'detection_bubble' })
+            }}
+            className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
+          >
+            {t('workspace.photo_detected.use')}
+          </button>
+          <button
+            onClick={() => {
+              setDetectedPhotoBubble(null)
+              try { localStorage.setItem(`cf_photo_decision_${anonymousId}`, '0') } catch { /* quota */ }
+            }}
+            className="px-3 py-1 text-indigo-700 hover:bg-indigo-100 rounded-lg font-bold transition-colors"
+          >
+            {t('workspace.photo_detected.ignore')}
+          </button>
+        </div>
+      )}
 
       {/* Crash recovery banner */}
       {draftRecoveryAvailable && (
@@ -659,21 +767,21 @@ export function WorkspaceClient({
                   <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: savedRecently ? "'FILL' 1" : "'FILL' 0" }}>
                     {savedRecently ? 'check_circle' : 'save'}
                   </span>
-                  {savedRecently ? 'Saved' : 'Save'}
+                  {savedRecently ? t('workspace.toolbar.saved') : t('workspace.toolbar.save')}
                 </button>
                 <button
                   onClick={() => setShowHistory(v => !v)}
                   className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors border border-slate-200"
                 >
                   <span className="material-symbols-outlined text-base">history</span>
-                  Version History
+                  {t('workspace.toolbar.history')}
                 </button>
                 <div className="h-4 w-[1px] bg-slate-200 mx-1" />
                 <button
                   onClick={() => handleExport('pdf')}
                   className="flex items-center gap-2 px-6 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200"
                 >
-                  Export ▼
+                  {t('workspace.toolbar.export')} ▼
                 </button>
               </div>
             </div>
@@ -703,9 +811,9 @@ export function WorkspaceClient({
             <div className="flex items-center gap-3">
               <span className="material-symbols-outlined text-red-400 text-lg flex-shrink-0">error_outline</span>
               <div className="flex-1">
-                <p className="text-xs font-bold mb-1">解析失败</p>
+                <p className="text-xs font-bold mb-1">{t('workspace.parse_progress.failed')}</p>
                 <Link href="/upload" className="text-[11px] text-indigo-300 hover:text-indigo-200 underline">
-                  返回重新上传
+                  {t('workspace.parse_progress.retry')}
                 </Link>
               </div>
             </div>
@@ -721,7 +829,7 @@ export function WorkspaceClient({
                       style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                   )}
                   <span className="text-xs font-bold text-surface/90">
-                    {parseProgress < 100 ? 'AI 正在提炼成就...' : '提炼完成'}
+                    {parseProgress < 100 ? t('workspace.parse_progress.processing') : t('workspace.parse_progress.completed')}
                   </span>
                 </div>
                 <span className="text-[10px] font-bold text-indigo-300">{Math.round(parseProgress)}%</span>

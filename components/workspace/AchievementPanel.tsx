@@ -39,6 +39,7 @@ export function AchievementPanel() {
 
   const listRef = useRef<HTMLDivElement>(null)
   const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+  const [showIgnored, setShowIgnored] = useState(false)
 
   // When activeAchievementId changes (from resume click), ensure library tab is visible then scroll
   useEffect(() => {
@@ -60,16 +61,21 @@ export function AchievementPanel() {
     card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [activeAchievementId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Count drafts for badge
+  // Count drafts and ignored for badges
   const draftCount = experiences
     .flatMap((exp) => exp.achievements ?? [])
     .filter((a) => a.status === 'draft').length
+
+  const ignoredCount = experiences
+    .flatMap((exp) => exp.achievements ?? [])
+    .filter((a) => a.status === 'ignored').length
 
   // Build per-experience groups, filtering by tab and search
   const groups: Array<{ exp: WorkExperience; achievements: Achievement[] }> = experiences
     .map((exp) => {
       const filtered = (exp.achievements ?? [])
         .filter((a) => {
+          if (showIgnored) return a.status === 'ignored'
           if (activeTab === 'drafts') return a.status === 'draft'
           if (activeTab === 'library') return a.status === 'confirmed'
           return true
@@ -129,7 +135,7 @@ export function AchievementPanel() {
 
   return (
     <section
-      className="flex-1 flex flex-col bg-surface-container-high/30 rounded-t-[2.5rem] p-6 shadow-inner overflow-hidden"
+      className="flex-1 min-h-0 flex flex-col bg-surface-container-high/30 rounded-t-[2.5rem] p-6 shadow-inner overflow-hidden"
       onDragOver={dragTooltip ? (e) => setDragTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null) : undefined}
     >
       {/* Drag preview tooltip — follows mouse while dragging */}
@@ -233,7 +239,8 @@ export function AchievementPanel() {
                   <AchievementCard
                     key={achievement.id}
                     achievement={achievement}
-                    isDraftsTab={activeTab === 'drafts'}
+                    isDraftsTab={activeTab === 'drafts' && !showIgnored}
+                    isIgnoredTab={showIgnored}
                     isActive={activeAchievementId === achievement.id}
                     onActivate={(id) => {
                       const nextActive = activeAchievementId === id ? null : id
@@ -257,6 +264,30 @@ export function AchievementPanel() {
             </div>
           ))
         )}
+
+        {/* Ignored achievements toggle — shows at bottom when there are ignored items */}
+        {!showIgnored && ignoredCount > 0 && activeTab !== 'drafts' && (
+          <div className="pt-3 border-t border-slate-100 flex justify-center">
+            <button
+              onClick={() => setShowIgnored(true)}
+              className="text-[10px] text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[13px]">visibility_off</span>
+              {ignoredCount} ignored · Show
+            </button>
+          </div>
+        )}
+        {showIgnored && (
+          <div className="pt-3 border-t border-slate-100 flex justify-center">
+            <button
+              onClick={() => setShowIgnored(false)}
+              className="text-[10px] text-indigo-400 hover:text-indigo-600 flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[13px]">visibility</span>
+              Hide ignored
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )
@@ -265,6 +296,7 @@ export function AchievementPanel() {
 function AchievementCard({
   achievement,
   isDraftsTab,
+  isIgnoredTab,
   isActive,
   onActivate,
   onDragStart,
@@ -275,6 +307,7 @@ function AchievementCard({
 }: {
   achievement: Achievement
   isDraftsTab: boolean
+  isIgnoredTab: boolean
   isActive: boolean
   onActivate: (id: string) => void
   onDragStart: (e: React.DragEvent, a: Achievement) => void
@@ -359,6 +392,17 @@ function AchievementCard({
             )}
           </div>
         </div>
+
+        {/* Recover button — only in ignored view */}
+        {isIgnoredTab && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onConfirm(achievement.id) }}
+            title="Restore to library"
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-emerald-50 text-slate-300 hover:text-emerald-500 transition-colors flex-shrink-0 ml-1"
+          >
+            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 0" }}>undo</span>
+          </button>
+        )}
 
         {/* Draft action buttons: edit / confirm / ignore */}
         {isDraftsTab && (

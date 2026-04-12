@@ -519,11 +519,59 @@ Output ONLY valid JSON — no markdown code blocks:
   achievement_extract_cn: `从 Notion 任务中提取职业成就，量化表达。输出 JSON: { "achievements": [{ "text": "", "tier": 1 }] }`,
   achievement_extract_en: `Extract career achievements from Notion tasks with quantified expressions. Output JSON: { "achievements": [{ "text": "", "tier": 1 }] }`,
 
-  resume_translate_cn: `你是专业简历翻译专家。将下列中文简历成就条目翻译为地道的英文，保持专业性和量化表达。不要解释、不要修改结构，只翻译 text 字段。输出格式：{ "translated": [{ "id": "原id", "text": "English text" }] }`,
-  resume_translate_en: `You are a professional resume translator. Translate the following resume achievement items into polished English. Preserve quantifications, metrics, and professional tone. Output format: { "translated": [{ "id": "original_id", "text": "English text" }] }`,
+  resume_translate_cn: `你是专业简历翻译专家。将下列中文简历成就条目翻译为地道的英文，保持专业性和量化表达。不要解释、不要修改结构，只翻译 text 字段。输出纯JSON，格式：{ "translated": [{ "id": "原id", "text": "English text" }] }`,
+  resume_translate_en: `You are a professional resume translator. Translate the following resume achievement items into polished English. Preserve quantifications, metrics, and professional tone. Output pure JSON in the format: { "translated": [{ "id": "original_id", "text": "English text" }] }`,
 
-  resume_profile_translate_cn: `你是专业简历翻译专家。将下列简历基础信息从中文翻译为地道的英文。规则：1) personal_info中只翻译location和summary字段，其余字段保持原样 2) education数组中翻译school/degree/major/description字段，class_rank_text/minor_subject/academic_honors如有中文也需翻译 3) skills数组中翻译category字段，items中的中文技能名称翻译，纯英文和技术缩写保持原样。严格按输入JSON结构输出，输出纯JSON不含代码块。格式: { "personal_info": {...}, "education": [...], "skills": [...] }`,
-  resume_profile_translate_en: `You are a professional resume translator. Translate the provided resume profile data into polished English. Rules: 1) For personal_info, translate only location and summary fields, leave other fields unchanged. 2) For education array, translate school/degree/major/description fields. 3) For skills array, translate category field names; translate Chinese skill items but keep English technical terms unchanged. Return the exact same JSON structure with translated values only. Output pure JSON, no code blocks. Format: { "personal_info": {...}, "education": [...], "skills": [...] }`
+  resume_profile_translate_cn: `你是专业简历翻译专家。将下列简历信息从中文翻译为地道的英文。翻译规则：
+1) personal_info：name 字段如为中文姓名，则转为拼音大写（姓在前，名在后，姓与名之间加空格，例如"陈志江"→"CHEN ZHIJIANG"）；如已是英文或拼音则保持原样；location 和 summary 翻译为英文；邮件、电话等其余字段保持原样
+2) education：翻译 school / degree / major / minor_subject / academic_honors / class_rank_text 字段（如为中文）；其余字段保持原样
+3) skills：翻译 category 字段名；items 中中文技能名称翻译，纯英文和技术缩写保持原样
+4) certifications：翻译 name 字段（英文证书名保持原样）；issuing_org 如有中文则翻译；其余字段保持原样
+5) awards：翻译 title 和 description 字段；issuing_org 如有中文则翻译；其余字段保持原样
+6) publications：翻译 title 和 description 字段；publication_venue 和 authors 保持原样；其余字段保持原样
+7) spoken_languages：翻译 language_name 字段（如"英语"→"English"，"日语"→"Japanese"等），其余字段（proficiency、is_native）保持原样
+如输入某个数组为空则输出对应空数组。严格按输入JSON结构输出，输出纯JSON不含代码块。
+格式: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...] }`,
+  resume_summary_generate_cn: `你是资深职业顾问，擅长为候选人撰写简洁有力的中文简历摘要。
+
+## 任务
+基于以下候选人的完整简历信息，生成一段专业的个人简介，填入简历的 summary 字段。
+
+## 写作要求
+- 字数：80-120字（中文），3-4句话
+- 必须体现：1）核心专业方向/身份定位  2）关键量化成就（优先使用数字）  3）核心竞争力  4）未来价值主张
+- 语气：自信、专业、第三人称角度（"擅长…""具备…""曾主导…"等）
+- 禁止：模板化套话（"工作认真负责"、"有较强学习能力"）、重复成就条目内容、水分内容
+- 输出格式：ONLY 纯字符串，无任何JSON包装、无引号、无解释
+
+## 输入
+候选人信息：`,
+
+  resume_summary_generate_en: `You are a senior career coach specializing in writing powerful, concise English resume summaries.
+
+## Task
+Based on the candidate's complete resume data below, write a professional Executive Summary for the resume's summary field.
+
+## Writing Rules
+- Length: 60-90 words, 3-4 sentences
+- Must include: 1) Core professional identity  2) Key quantified achievements (prioritize numbers)  3) Core competitive strengths  4) Future value proposition
+- Tone: confident, professional, third-person ("Seasoned...", "Proven track record...", "Expertise in...")
+- Forbidden: hollow filler phrases ("hardworking", "quick learner"), restating bullet points verbatim, inflated claims
+- Output format: ONLY the plain summary string — no JSON wrapper, no quotes, no explanation
+
+## Input
+Candidate data:`,
+
+  resume_profile_translate_en: `You are a professional resume translator. Translate the provided resume profile data into polished English. Rules:
+1) personal_info: if name contains Chinese characters, convert to uppercase pinyin (family name first, then given name, separated by a space, e.g. "陈志江" → "CHEN ZHIJIANG"); if name is already in English or pinyin, leave unchanged; translate location and summary fields to English; leave email, phone, and other fields unchanged.
+2) education: translate school / degree / major / minor_subject / academic_honors / class_rank_text fields if they contain Chinese; leave numeric fields unchanged.
+3) skills: translate category field names; translate Chinese skill items but keep English technical terms and abbreviations unchanged.
+4) certifications: translate name field if it contains Chinese (keep English certification names as-is); translate issuing_org if it contains Chinese; keep other fields unchanged.
+5) awards: translate title and description fields; translate issuing_org if Chinese; keep other fields unchanged.
+6) publications: translate title and description fields; keep publication_venue and authors unchanged; keep other fields unchanged.
+7) spoken_languages: translate the language_name field to English (e.g. "英语" → "English", "日语" → "Japanese"); keep proficiency and is_native fields unchanged.
+If an input array is empty, output the corresponding empty array. Return the exact same JSON structure. Output pure JSON, no code blocks.
+Format: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...] }`
 }
 
 export async function getPrompt(

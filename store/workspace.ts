@@ -1,6 +1,12 @@
 import { create } from 'zustand'
 import type { WorkExperience, Achievement, ResumeLang, Profile, ResumePersonalInfo, ResumeEducation, ResumeSkillGroup, Certification, SpokenLanguage, Award, Publication } from '@/lib/types/domain'
 
+// Minimal translation overlay types (only translatable text fields)
+export interface TranslatedCertification { name: string; issuing_org: string | null }
+export interface TranslatedAward { title: string; description: string | null; issuing_org: string | null }
+export interface TranslatedPublication { title: string; description: string | null }
+export interface TranslatedLanguage { language_name: string }
+
 interface WorkspaceState {
   splitRatio: number
   setSplitRatio: (ratio: number) => void
@@ -109,6 +115,18 @@ interface WorkspaceState {
     info: ResumePersonalInfo | null,
     education: ResumeEducation[],
     skills: ResumeSkillGroup[]
+  ) => void
+
+  // Translated supplemental section text overlays (populated on lang switch, null = not yet translated)
+  translatedCertifications: TranslatedCertification[] | null
+  translatedAwards: TranslatedAward[] | null
+  translatedPublications: TranslatedPublication[] | null
+  translatedLanguages: TranslatedLanguage[] | null
+  setTranslatedSections: (
+    certs: TranslatedCertification[] | null,
+    awards: TranslatedAward[] | null,
+    pubs: TranslatedPublication[] | null,
+    langs?: TranslatedLanguage[] | null
   ) => void
 
   // Restore a version snapshot: update confirmed/draft status to match editor_json
@@ -369,19 +387,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setTranslatedTexts: (texts) => set({ translatedTexts: texts }),
   clearTranslatedTexts: () => {
     const s = get()
-    if (s.originalPersonalInfo !== null) {
-      set({
-        translatedTexts: {},
-        resumePersonalInfo: s.originalPersonalInfo,
-        resumeEducation: s.originalEducation ?? s.resumeEducation,
-        resumeSkills: s.originalSkills ?? s.resumeSkills,
-        originalPersonalInfo: null,
-        originalEducation: null,
-        originalSkills: null,
-      })
-    } else {
-      set({ translatedTexts: {} })
-    }
+    const profileRestore = s.originalPersonalInfo !== null ? {
+      resumePersonalInfo: s.originalPersonalInfo,
+      resumeEducation: s.originalEducation ?? s.resumeEducation,
+      resumeSkills: s.originalSkills ?? s.resumeSkills,
+      originalPersonalInfo: null,
+      originalEducation: null,
+      originalSkills: null,
+    } : {}
+    set({
+      translatedTexts: {},
+      translatedCertifications: null,
+      translatedAwards: null,
+      translatedPublications: null,
+      translatedLanguages: null,
+      ...profileRestore,
+    })
   },
 
   // ── Profile translation (originals saved for restore) ─────────────────────
@@ -403,6 +424,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...(skills.length > 0 ? { resumeSkills: skills } : {}),
     })
   },
+
+  // ── Translated supplemental sections ──────────────────────────────────────
+  translatedCertifications: null,
+  translatedAwards: null,
+  translatedPublications: null,
+  translatedLanguages: null,
+  setTranslatedSections: (certs, awards, pubs, langs) => set({
+    translatedCertifications: certs,
+    translatedAwards: awards,
+    translatedPublications: pubs,
+    translatedLanguages: langs ?? null,
+  }),
 
   // ── Restore version snapshot ──────────────────────────────────────────────
   restoreVersion: (editorJson: object, resumeLang?: string, showPhoto?: boolean) => {

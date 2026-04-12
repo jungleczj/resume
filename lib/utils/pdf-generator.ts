@@ -26,491 +26,363 @@ interface PDFData {
   lang: 'zh' | 'en'
 }
 
-const PAGE_WIDTH = 595   // A4 in points
-const PAGE_HEIGHT = 842
-const MARGIN = 50
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2
-const LINE_H = 13        // base line height
+// ── Page constants ────────────────────────────────────────────────────────────
+const PAGE_W = 595
+const PAGE_H = 842
+const MARGIN  = 36       // outer margin (matches 36px padding in HTML)
+const LINE_H  = 12
 
-// ── Text wrapping helper ────────────────────────────────────────────────────
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+// ── Cobalt palette ────────────────────────────────────────────────────────────
+const ACCENT     = rgb(0.145, 0.388, 0.922)   // #2563eb
+const TEXT_MAIN  = rgb(0.204, 0.255, 0.341)   // #334155
+const TEXT_BRIGHT= rgb(0.059, 0.090, 0.165)   // #0f172a
+const TEXT_MUTED = rgb(0.392, 0.455, 0.545)   // #64748b
+const SURFACE    = rgb(0.973, 0.980, 0.988)   // #f8fafc
+const BORDER     = rgb(0.886, 0.910, 0.941)   // #e2e8f0
+
+// ── Layout constants ──────────────────────────────────────────────────────────
+const SIDEBAR_W   = Math.round((PAGE_W - MARGIN * 2) * 0.32)
+const MAIN_X      = MARGIN + SIDEBAR_W + 18
+const MAIN_W      = PAGE_W - MAIN_X - MARGIN
+const SIDEBAR_X   = MARGIN
+const HEADER_H    = 38   // header strip height
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function wrapText(text: string, font: PDFFont, size: number, maxW: number): string[] {
   const words = text.split(/\s+/)
   const lines: string[] = []
-  let current = ''
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word
-    if (font.widthOfTextAtSize(test, size) > maxWidth) {
-      if (current) lines.push(current)
-      current = word
+  let cur = ''
+  for (const w of words) {
+    const test = cur ? `${cur} ${w}` : w
+    if (font.widthOfTextAtSize(test, size) > maxW) {
+      if (cur) lines.push(cur)
+      cur = w
     } else {
-      current = test
+      cur = test
     }
   }
-  if (current) lines.push(current)
+  if (cur) lines.push(cur)
   return lines.length ? lines : ['']
 }
 
-// ── Draw wrapped text, returning new y position ────────────────────────────
 function drawWrapped(
   page: PDFPage,
   text: string,
   x: number,
   y: number,
-  maxWidth: number,
+  maxW: number,
   font: PDFFont,
   size: number,
   color: ReturnType<typeof rgb>,
-  lineHeight = LINE_H,
-  indent = 0
+  lh = LINE_H,
 ): number {
-  const lines = wrapText(text, font, size, maxWidth)
-  for (let i = 0; i < lines.length; i++) {
-    if (y < MARGIN + 10) break
-    page.drawText(lines[i], {
-      x: i === 0 ? x : x + indent,
-      y,
-      size,
-      font,
-      color
-    })
-    y -= lineHeight
+  for (const line of wrapText(text, font, size, maxW)) {
+    if (y < MARGIN) break
+    page.drawText(line, { x, y, size, font, color })
+    y -= lh
   }
   return y
 }
 
-// ── Section heading ─────────────────────────────────────────────────────────
-function drawSectionHeading(
+function sectionHeading(
   page: PDFPage,
   label: string,
+  x: number,
   y: number,
-  font: PDFFont
+  maxW: number,
+  font: PDFFont,
+  isSidebar = false
 ): number {
-  page.drawText(label, {
-    x: MARGIN,
-    y,
-    size: 8,
-    font,
-    color: rgb(0.31, 0.27, 0.80)  // indigo accent
-  })
-  y -= 8
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: PAGE_WIDTH - MARGIN, y },
-    thickness: 0.4,
-    color: rgb(0.31, 0.27, 0.80)
-  })
+  // Left accent bar
+  page.drawRectangle({ x, y: y - 7, width: 2.5, height: 9, color: ACCENT })
+  page.drawText(label, { x: x + 7, y, size: 8, font, color: TEXT_BRIGHT })
   y -= 10
+  if (!isSidebar) {
+    // Horizontal rule for main column
+    page.drawLine({
+      start: { x: x + font.widthOfTextAtSize(label, 8) + 12, y: y + 3 },
+      end: { x: x + maxW, y: y + 3 },
+      thickness: 0.4,
+      color: BORDER,
+    })
+  }
+  y -= 4
   return y
 }
 
 export async function generatePDF(data: PDFData): Promise<Blob> {
   const doc = await PDFDocument.create()
   doc.registerFontkit(fontkit)
-  const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT])
 
-  let regularFont: PDFFont
-  let boldFont: PDFFont
+  let regular: PDFFont
+  let bold: PDFFont
 
   if (data.lang === 'zh') {
     try {
-      const fontPath = join(process.cwd(), 'public', 'fonts', 'SimHei.ttf')
-      const fontBytes = readFileSync(fontPath)
-      const embedded = await doc.embedFont(fontBytes)
-      regularFont = embedded
-      boldFont = embedded
+      const fontBytes = readFileSync(join(process.cwd(), 'public', 'fonts', 'SimHei.ttf'))
+      const emb = await doc.embedFont(fontBytes)
+      regular = emb
+      bold = emb
     } catch {
-      regularFont = await doc.embedFont(StandardFonts.Helvetica)
-      boldFont = await doc.embedFont(StandardFonts.HelveticaBold)
+      regular = await doc.embedFont(StandardFonts.Helvetica)
+      bold = await doc.embedFont(StandardFonts.HelveticaBold)
     }
   } else {
-    regularFont = await doc.embedFont(StandardFonts.Helvetica)
-    boldFont = await doc.embedFont(StandardFonts.HelveticaBold)
+    regular = await doc.embedFont(StandardFonts.Helvetica)
+    bold    = await doc.embedFont(StandardFonts.HelveticaBold)
   }
 
-  const darkGray = rgb(0.07, 0.07, 0.14)
-  const midGray  = rgb(0.27, 0.27, 0.33)
-  const lightGray = rgb(0.40, 0.40, 0.46)
+  const page = doc.addPage([PAGE_W, PAGE_H])
 
-  let y = PAGE_HEIGHT - MARGIN
+  // ── HEADER STRIP ─────────────────────────────────────────────────────────
+  const headerY = PAGE_H - MARGIN
 
-  // ── PHOTO (top-right, drawn before text so text can overlap if needed) ─────
-  const PHOTO_W = 72
-  const PHOTO_H = 88
-  let headerContentWidth = CONTENT_WIDTH
+  // Name in accent
+  page.drawText((data.name || (data.lang === 'zh' ? '候选人' : 'Candidate')).toUpperCase(), {
+    x: MARGIN, y: headerY - 12, size: 10, font: bold, color: ACCENT,
+  })
 
+  // Thin accent underline
+  page.drawLine({
+    start: { x: MARGIN, y: PAGE_H - MARGIN - HEADER_H },
+    end:   { x: PAGE_W - MARGIN, y: PAGE_H - MARGIN - HEADER_H },
+    thickness: 1, color: ACCENT, opacity: 0.5,
+  })
+
+  const bodyTopY = PAGE_H - MARGIN - HEADER_H - 14
+
+  // ── LEFT SIDEBAR ─────────────────────────────────────────────────────────
+  let sy = bodyTopY
+
+  // Photo
   if (data.showPhoto && data.photoUrl) {
     try {
       const res = await fetch(data.photoUrl)
       if (res.ok) {
         const imgBytes = new Uint8Array(await res.arrayBuffer())
         const ct = res.headers.get('content-type') ?? ''
-        const image = ct.includes('png')
-          ? await doc.embedPng(imgBytes)
-          : await doc.embedJpg(imgBytes)
-        page.drawImage(image, {
-          x: PAGE_WIDTH - MARGIN - PHOTO_W,
-          y: PAGE_HEIGHT - MARGIN - PHOTO_H,
-          width: PHOTO_W,
-          height: PHOTO_H
-        })
-        headerContentWidth = CONTENT_WIDTH - PHOTO_W - 8
+        const image = ct.includes('png') ? await doc.embedPng(imgBytes) : await doc.embedJpg(imgBytes)
+        page.drawRectangle({ x: SIDEBAR_X - 1, y: sy - 82, width: 62, height: 82, color: SURFACE, borderColor: BORDER, borderWidth: 0.5 })
+        page.drawImage(image, { x: SIDEBAR_X, y: sy - 80, width: 60, height: 78 })
+        sy -= 88
       }
-    } catch {
-      // Photo fetch failed — skip, continue without photo
-    }
+    } catch { /* skip */ }
   }
 
-  // ── NAME ─────────────────────────────────────────────────────────────────
-  const nameText = data.name || (data.lang === 'zh' ? '候选人' : 'Candidate')
-  page.drawText(nameText, {
-    x: MARGIN,
-    y,
-    size: 20,
-    font: boldFont,
-    color: darkGray
+  // Name
+  page.drawText(data.name || (data.lang === 'zh' ? '候选人' : 'Candidate'), {
+    x: SIDEBAR_X, y: sy, size: 13, font: bold, color: ACCENT,
   })
-  y -= 26
+  sy -= 14
 
-  // ── CONTACT ROW ──────────────────────────────────────────────────────────
-  const contactParts = [
+  // Contact
+  const contactLines = [
     data.contact.email,
     data.contact.phone,
     data.contact.location,
     data.contact.linkedin,
-    data.contact.website
+    data.contact.website,
   ].filter(Boolean) as string[]
 
-  if (contactParts.length) {
-    const contactLine = contactParts.join('  ·  ')
-    // Wrap if too long for header width
-    y = drawWrapped(page, contactLine, MARGIN, y, headerContentWidth, regularFont, 9, midGray, 12)
-    y -= 2
+  for (const c of contactLines) {
+    if (sy < MARGIN) break
+    sy = drawWrapped(page, c, SIDEBAR_X, sy, SIDEBAR_W - 4, regular, 7.5, TEXT_MUTED, 10)
   }
+  sy -= 8
 
-  // ── SUMMARY ──────────────────────────────────────────────────────────────
-  if (data.summary) {
-    y = drawWrapped(page, data.summary, MARGIN, y, headerContentWidth, regularFont, 9.5, midGray, 12)
-    y -= 4
-  }
-
-  // Ensure y is below photo bottom before divider
-  const photoBotY = PAGE_HEIGHT - MARGIN - PHOTO_H - 8
-  if (data.showPhoto && data.photoUrl && y > photoBotY) {
-    y = photoBotY
-  }
-
-  // ── ACCENT DIVIDER ────────────────────────────────────────────────────────
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: PAGE_WIDTH - MARGIN, y },
-    thickness: 1.0,
-    color: rgb(0.31, 0.27, 0.80)
-  })
-  y -= 16
-
-  // ── EDUCATION ─────────────────────────────────────────────────────────────
-  if (data.education.length > 0) {
-    const label = data.lang === 'zh' ? 'EDUCATION / 教育背景' : 'EDUCATION'
-    y = drawSectionHeading(page, label, y, boldFont)
-
-    for (const edu of data.education) {
-      if (y < MARGIN + 20) break
-      // School + degree + major on left; years on right
-      const schoolText = edu.school
-      const degreeText = [edu.degree, edu.major].filter(Boolean).join(' ')
-      const yearText = [edu.start_year, edu.end_year].filter(Boolean).join(' – ')
-
-      // School name
-      page.drawText(schoolText, {
-        x: MARGIN,
-        y,
-        size: 11,
-        font: boldFont,
-        color: darkGray
-      })
-
-      // Years right-aligned
-      if (yearText) {
-        const yw = regularFont.widthOfTextAtSize(yearText, 9)
-        page.drawText(yearText, {
-          x: PAGE_WIDTH - MARGIN - yw,
-          y,
-          size: 9,
-          font: regularFont,
-          color: lightGray
-        })
+  // Skills
+  if (data.skills.length > 0) {
+    sy = sectionHeading(page, data.lang === 'zh' ? '核心技能' : 'Core Skills', SIDEBAR_X, sy, SIDEBAR_W, bold, true)
+    for (const group of data.skills) {
+      if (sy < MARGIN) break
+      page.drawText(group.category + ':', { x: SIDEBAR_X, y: sy, size: 7.5, font: bold, color: TEXT_BRIGHT })
+      sy -= 9
+      for (const item of group.items) {
+        if (sy < MARGIN) break
+        sy = drawWrapped(page, `· ${item}`, SIDEBAR_X + 3, sy, SIDEBAR_W - 6, regular, 7.5, TEXT_MAIN, 9)
       }
-      y -= LINE_H + 1
-
-      // Degree · Major
-      if (degreeText) {
-        page.drawText(degreeText, {
-          x: MARGIN,
-          y,
-          size: 10,
-          font: regularFont,
-          color: midGray
-        })
-        y -= LINE_H
-      }
-
-      // GPA / rank / honors
-      const extras: string[] = []
-      if (edu.gpa_score) extras.push(`GPA ${edu.gpa_score}${edu.gpa_scale ? `/${edu.gpa_scale}` : ''}`)
-      if (edu.class_rank_text) extras.push(edu.class_rank_text)
-      if (edu.academic_honors) extras.push(edu.academic_honors)
-      if (extras.length) {
-        page.drawText(extras.join('  ·  '), {
-          x: MARGIN,
-          y,
-          size: 9,
-          font: regularFont,
-          color: lightGray
-        })
-        y -= LINE_H
-      }
-
-      y -= 6
+      sy -= 3
     }
-
-    y -= 4
+    sy -= 4
   }
 
-  // ── WORK EXPERIENCE ───────────────────────────────────────────────────────
+  // Certifications + Awards
+  const certAward = [
+    ...(data.certifications?.filter(c => c.name) ?? []).map(c => ({ title: c.name, sub: c.issuing_org ?? '' })),
+    ...(data.awards?.filter(a => a.title) ?? []).map(a => ({ title: a.title, sub: a.issuing_org ?? '' })),
+  ]
+  if (certAward.length > 0) {
+    sy = sectionHeading(page, data.lang === 'zh' ? '证书与荣誉' : 'Awards & Certs', SIDEBAR_X, sy, SIDEBAR_W, bold, true)
+    for (const item of certAward) {
+      if (sy < MARGIN) break
+      sy = drawWrapped(page, item.title, SIDEBAR_X, sy, SIDEBAR_W - 4, bold, 7.5, TEXT_BRIGHT, 9)
+      if (item.sub) {
+        sy = drawWrapped(page, item.sub, SIDEBAR_X, sy, SIDEBAR_W - 4, regular, 7, TEXT_MUTED, 9)
+      }
+      sy -= 3
+    }
+    sy -= 4
+  }
+
+  // Languages
+  const langs = data.spokenLanguages?.filter(l => l.language_name) ?? []
+  if (langs.length > 0) {
+    sy = sectionHeading(page, data.lang === 'zh' ? '语言能力' : 'Languages', SIDEBAR_X, sy, SIDEBAR_W, bold, true)
+    for (const l of langs) {
+      if (sy < MARGIN) break
+      const prof = l.is_native
+        ? (data.lang === 'zh' ? '母语' : 'Native')
+        : l.proficiency.replace(/_/g, ' ')
+      page.drawText(`${l.language_name}  (${prof})`, { x: SIDEBAR_X, y: sy, size: 7.5, font: regular, color: TEXT_MAIN })
+      sy -= 10
+    }
+  }
+
+  // ── RIGHT MAIN CONTENT ────────────────────────────────────────────────────
+  let my = bodyTopY
+
+  // Summary
+  if (data.summary) {
+    // Summary card background
+    const summaryLines = wrapText(data.summary, regular, 8.5, MAIN_W - 16)
+    const cardH = summaryLines.length * 11 + 22
+    page.drawRectangle({ x: MAIN_X - 4, y: my - cardH, width: MAIN_W + 8, height: cardH, color: SURFACE, borderColor: BORDER, borderWidth: 0.5 })
+    page.drawRectangle({ x: MAIN_X - 4, y: my - cardH, width: 2.5, height: cardH, color: ACCENT })
+    page.drawText(data.lang === 'zh' ? '个人简介' : 'Executive Summary', {
+      x: MAIN_X + 4, y: my - 10, size: 9, font: bold, color: TEXT_BRIGHT,
+    })
+    my -= 20
+    my = drawWrapped(page, data.summary, MAIN_X + 4, my, MAIN_W - 12, regular, 8.5, TEXT_MAIN, 11)
+    my -= 12
+  }
+
+  // Work Experience
   const confirmedExps = data.experiences
-    .map(exp => ({
-      ...exp,
-      achievements: (exp.achievements ?? []).filter(a => a.status === 'confirmed')
-    }))
+    .map(exp => ({ ...exp, achievements: (exp.achievements ?? []).filter(a => a.status === 'confirmed') }))
     .filter(exp => exp.achievements.length > 0)
 
   if (confirmedExps.length > 0) {
-    const label = data.lang === 'zh' ? 'WORK EXPERIENCE / 工作经历' : 'WORK EXPERIENCE'
-    y = drawSectionHeading(page, label, y, boldFont)
+    my = sectionHeading(page, data.lang === 'zh' ? '工作经历' : 'Professional Experience', MAIN_X, my, MAIN_W, bold)
 
-    for (const exp of confirmedExps) {
-      if (y < MARGIN + 20) break
+    for (let i = 0; i < confirmedExps.length; i++) {
+      if (my < MARGIN + 20) break
+      const exp = confirmedExps[i]
 
-      // Company + date row
-      page.drawText(exp.company, {
-        x: MARGIN,
-        y,
-        size: 11,
-        font: boldFont,
-        color: darkGray
-      })
-
-      const dateStr = exp.original_tenure ?? (() => {
-        const startYear = exp.start_date ? new Date(exp.start_date).getFullYear() : null
-        const endYear = exp.end_date ? new Date(exp.end_date).getFullYear() : null
-        const endLabel = exp.is_current
-          ? (data.lang === 'zh' ? '至今' : 'Present')
-          : endYear ? String(endYear) : ''
-        return startYear ? `${startYear}${endLabel ? ` – ${endLabel}` : ''}` : endLabel
-      })()
-
-      if (dateStr) {
-        const dw = regularFont.widthOfTextAtSize(dateStr, 9)
-        page.drawText(dateStr, {
-          x: PAGE_WIDTH - MARGIN - dw,
-          y,
-          size: 9,
-          font: regularFont,
-          color: lightGray
-        })
-      }
-      y -= LINE_H + 1
+      // Timeline dot
+      page.drawCircle({ x: MAIN_X - 10, y: my + 3, size: 3.5, color: i === 0 ? ACCENT : BORDER })
 
       // Job title
-      if (exp.job_title) {
-        page.drawText(exp.job_title, {
-          x: MARGIN,
-          y,
-          size: 10,
-          font: regularFont,
-          color: midGray
-        })
-        y -= LINE_H + 1
-      }
+      page.drawText(exp.job_title || '', { x: MAIN_X, y: my, size: 9.5, font: bold, color: TEXT_BRIGHT })
+      my -= 11
 
-      // Achievement bullets — grouped by project
-      type ProjectGroup = { projectName: string | null; items: typeof exp.achievements }
-      const groups: ProjectGroup[] = []
+      // Company + tenure
+      const dateStr = exp.original_tenure ?? (() => {
+        const sy2 = exp.start_date ? new Date(exp.start_date).getFullYear() : null
+        const ey = exp.end_date ? new Date(exp.end_date).getFullYear() : null
+        const endLbl = exp.is_current ? (data.lang === 'zh' ? '至今' : 'Present') : ey ? String(ey) : ''
+        return sy2 ? `${sy2}${endLbl ? ` – ${endLbl}` : ''}` : endLbl
+      })()
+
+      page.drawText((exp.company || '').toUpperCase(), { x: MAIN_X, y: my, size: 8, font: bold, color: ACCENT })
+      if (dateStr) {
+        const dw = regular.widthOfTextAtSize(dateStr, 7.5)
+        page.drawText(dateStr, { x: MAIN_X + MAIN_W - dw, y: my, size: 7.5, font: regular, color: TEXT_MUTED })
+      }
+      my -= 11
+
+      // Achievement bullets
+      type PG = { projectName: string | null; items: typeof exp.achievements }
+      const groups: PG[] = []
       for (const a of exp.achievements) {
         const last = groups[groups.length - 1]
-        if (last && last.projectName === (a.project_name ?? null)) {
-          last.items.push(a)
-        } else {
-          groups.push({ projectName: a.project_name ?? null, items: [a] })
-        }
+        if (last && last.projectName === (a.project_name ?? null)) last.items.push(a)
+        else groups.push({ projectName: a.project_name ?? null, items: [a] })
       }
 
       for (const group of groups) {
-        if (y < MARGIN + 10) break
-
-        // Project sub-header
+        if (my < MARGIN + 10) break
         if (group.projectName) {
-          page.drawText(`▸ ${group.projectName}`, {
-            x: MARGIN + 4,
-            y,
-            size: 9.5,
-            font: boldFont,
-            color: rgb(0.31, 0.27, 0.80)
-          })
-          y -= LINE_H
+          page.drawText(`▸ ${group.projectName}`, { x: MAIN_X + 4, y: my, size: 8, font: bold, color: ACCENT })
+          my -= 10
         }
-
         for (const ach of group.items) {
-          if (y < MARGIN + 10) break
-          const bullet = '• '
-          const bulletW = regularFont.widthOfTextAtSize(bullet, 9)
-          const maxW = CONTENT_WIDTH - bulletW - 8
-          const lines = wrapText(ach.text, regularFont, 9, maxW)
-
-          for (let i = 0; i < lines.length; i++) {
-            if (y < MARGIN + 10) break
-            page.drawText(i === 0 ? bullet + lines[i] : '  ' + lines[i], {
-              x: MARGIN + 4,
-              y,
-              size: 9,
-              font: regularFont,
-              color: rgb(0.2, 0.2, 0.26)
-            })
-            y -= LINE_H
-          }
+          if (my < MARGIN + 10) break
+          // "/" bullet matching Cobalt HTML
+          page.drawText('/', { x: MAIN_X + 2, y: my, size: 8.5, font: bold, color: ACCENT })
+          const maxW = MAIN_W - 14
+          my = drawWrapped(page, ach.text, MAIN_X + 10, my, maxW, regular, 8.5, TEXT_MAIN, 11)
         }
       }
-
-      y -= 8
+      my -= 8
     }
-
-    y -= 4
+    my -= 4
   }
 
-  // ── SKILLS ────────────────────────────────────────────────────────────────
-  if (data.skills.length > 0) {
-    const label = data.lang === 'zh' ? 'SKILLS / 技能与证书' : 'SKILLS & CERTIFICATIONS'
-    y = drawSectionHeading(page, label, y, boldFont)
+  // Education (2-column grid simulation)
+  if (data.education.length > 0) {
+    my = sectionHeading(page, data.lang === 'zh' ? '教育背景' : 'Academic Background', MAIN_X, my, MAIN_W, bold)
 
-    for (const group of data.skills) {
-      if (y < MARGIN + 10) break
-      const catText = `${group.category}: `
-      const catW = boldFont.widthOfTextAtSize(catText, 9.5)
-      page.drawText(catText, {
-        x: MARGIN,
-        y,
-        size: 9.5,
-        font: boldFont,
-        color: darkGray
+    const colW = Math.floor((MAIN_W - 8) / 2)
+    for (let i = 0; i < data.education.length; i++) {
+      if (my < MARGIN + 30) break
+      const edu = data.education[i]
+      const col = i % 2
+      const ex = MAIN_X + col * (colW + 8)
+
+      // Card
+      const cardH = 48
+      page.drawRectangle({ x: ex - 2, y: my - cardH, width: colW + 4, height: cardH, color: SURFACE, borderColor: BORDER, borderWidth: 0.5 })
+      page.drawRectangle({ x: ex - 2, y: my - cardH, width: colW + 4, height: 1.5, color: i === 0 ? ACCENT : rgb(0.5, 0.5, 0.5) })
+
+      if (edu.degree) {
+        page.drawText(edu.degree.toUpperCase(), { x: ex + 2, y: my - 8, size: 6.5, font: bold, color: ACCENT })
+      }
+      page.drawText([edu.major, edu.school].filter(Boolean).join(' · ') || edu.school, {
+        x: ex + 2, y: my - 18, size: 8.5, font: bold, color: TEXT_BRIGHT,
       })
-      const itemsText = group.items.join(' · ')
-      const itemsMaxW = CONTENT_WIDTH - catW
-      const itemsLines = wrapText(itemsText, regularFont, 9.5, itemsMaxW)
-      for (let i = 0; i < itemsLines.length; i++) {
-        if (y < MARGIN + 10) break
-        page.drawText(itemsLines[i], {
-          x: i === 0 ? MARGIN + catW : MARGIN + catW,
-          y,
-          size: 9.5,
-          font: regularFont,
-          color: midGray
-        })
-        if (i < itemsLines.length - 1) y -= LINE_H
+
+      const yearText = [edu.start_year, edu.end_year].filter(Boolean).join('–')
+      const gpa = edu.gpa_score ? `GPA ${edu.gpa_score}${edu.gpa_scale ? `/${edu.gpa_scale}` : ''}` : ''
+      page.drawText([gpa, yearText].filter(Boolean).join(' • '), {
+        x: ex + 2, y: my - 30, size: 7, font: regular, color: TEXT_MUTED,
+      })
+
+      if (col === 1 || i === data.education.length - 1) {
+        my -= cardH + 8
       }
-      y -= LINE_H + 2
     }
+    my -= 4
   }
 
-  // ── CERTIFICATIONS ────────────────────────────────────────────────────────
-  const certs = data.certifications?.filter(c => c.name) ?? []
-  if (certs.length > 0) {
-    y -= 6
-    const label = data.lang === 'zh' ? 'CERTIFICATIONS / 证书' : 'CERTIFICATIONS'
-    y = drawSectionHeading(page, label, y, boldFont)
-    for (const cert of certs) {
-      if (y < MARGIN + 10) break
-      const dateStr = cert.issue_year ? String(cert.issue_year) : ''
-      const orgText = cert.issuing_org ? ` · ${cert.issuing_org}` : ''
-      const expiryText = cert.expiry_year ? ` (exp. ${cert.expiry_year})` : (cert.is_current ? '' : '')
-      const rightText = [dateStr, expiryText].filter(Boolean).join('')
-      page.drawText(cert.name + orgText, { x: MARGIN, y, size: 9.5, font: regularFont, color: darkGray })
-      if (rightText) {
-        const rw = regularFont.widthOfTextAtSize(rightText, 9)
-        page.drawText(rightText, { x: PAGE_WIDTH - MARGIN - rw, y, size: 9, font: regularFont, color: lightGray })
-      }
-      y -= LINE_H + 2
-    }
-    y -= 4
-  }
-
-  // ── SPOKEN LANGUAGES ──────────────────────────────────────────────────────
-  const langs = data.spokenLanguages?.filter(l => l.language_name) ?? []
-  if (langs.length > 0) {
-    y -= 2
-    const label = data.lang === 'zh' ? 'LANGUAGES / 语言能力' : 'LANGUAGES'
-    y = drawSectionHeading(page, label, y, boldFont)
-    const PROF_LABELS: Record<string, string> = {
-      native_bilingual: data.lang === 'zh' ? '母语 / 双语' : 'Native / Bilingual',
-      full_professional: data.lang === 'zh' ? '完全专业能力' : 'Full Professional',
-      professional_working: data.lang === 'zh' ? '专业工作能力' : 'Professional Working',
-      limited_working: data.lang === 'zh' ? '有限工作能力' : 'Limited Working',
-      elementary: data.lang === 'zh' ? '初级' : 'Elementary',
-    }
-    const langLine = langs.map(l => `${l.language_name} (${PROF_LABELS[l.proficiency] ?? l.proficiency})`).join('  ·  ')
-    y = drawWrapped(page, langLine, MARGIN, y, CONTENT_WIDTH, regularFont, 9.5, midGray, LINE_H)
-    y -= 8
-  }
-
-  // ── AWARDS & HONORS ───────────────────────────────────────────────────────
-  const awards = data.awards?.filter(a => a.title) ?? []
-  if (awards.length > 0) {
-    y -= 2
-    const label = data.lang === 'zh' ? 'AWARDS & HONORS / 荣誉奖项' : 'AWARDS & HONORS'
-    y = drawSectionHeading(page, label, y, boldFont)
-    for (const award of awards) {
-      if (y < MARGIN + 10) break
-      const yearText = award.award_year ? String(award.award_year) : ''
-      const orgText = award.issuing_org ? ` · ${award.issuing_org}` : ''
-      page.drawText(award.title + orgText, { x: MARGIN, y, size: 9.5, font: regularFont, color: darkGray })
-      if (yearText) {
-        const rw = regularFont.widthOfTextAtSize(yearText, 9)
-        page.drawText(yearText, { x: PAGE_WIDTH - MARGIN - rw, y, size: 9, font: regularFont, color: lightGray })
-      }
-      y -= LINE_H
-      if (award.description) {
-        y = drawWrapped(page, award.description, MARGIN + 4, y, CONTENT_WIDTH - 4, regularFont, 9, lightGray, LINE_H)
-      }
-      y -= 4
-    }
-    y -= 2
-  }
-
-  // ── PUBLICATIONS ──────────────────────────────────────────────────────────
+  // Publications
   const pubs = data.publications?.filter(p => p.title) ?? []
   if (pubs.length > 0) {
-    y -= 2
-    const label = data.lang === 'zh' ? 'PUBLICATIONS / 论文出版' : 'PUBLICATIONS'
-    y = drawSectionHeading(page, label, y, boldFont)
+    my = sectionHeading(page, data.lang === 'zh' ? '学术成果' : 'Publications & Research', MAIN_X, my, MAIN_W, bold)
     for (const pub of pubs) {
-      if (y < MARGIN + 10) break
-      const yearText = pub.pub_year ? String(pub.pub_year) : ''
-      const venueText = pub.publication_venue ? ` · ${pub.publication_venue}` : ''
-      const titleLine = pub.title + venueText
-      page.drawText(titleLine.length > 80 ? titleLine.slice(0, 77) + '...' : titleLine, {
-        x: MARGIN, y, size: 9.5, font: regularFont, color: darkGray
-      })
-      if (yearText) {
-        const rw = regularFont.widthOfTextAtSize(yearText, 9)
-        page.drawText(yearText, { x: PAGE_WIDTH - MARGIN - rw, y, size: 9, font: regularFont, color: lightGray })
+      if (my < MARGIN + 10) break
+      page.drawText('›', { x: MAIN_X + 2, y: my, size: 8.5, font: bold, color: ACCENT })
+      const titleLine = pub.title.length > 72 ? pub.title.slice(0, 69) + '...' : pub.title
+      page.drawText(titleLine, { x: MAIN_X + 10, y: my, size: 8.5, font: bold, color: TEXT_BRIGHT })
+      my -= 10
+      if (pub.publication_venue) {
+        page.drawText(`${pub.publication_venue}${pub.pub_year ? `, ${pub.pub_year}` : ''}`, {
+          x: MAIN_X + 10, y: my, size: 7.5, font: regular, color: TEXT_MUTED,
+        })
+        my -= 9
       }
-      y -= LINE_H
-      if (pub.authors?.length) {
-        const authLine = pub.authors.slice(0, 5).join(', ') + (pub.authors.length > 5 ? ', et al.' : '')
-        y = drawWrapped(page, authLine, MARGIN + 4, y, CONTENT_WIDTH - 4, regularFont, 8.5, lightGray, LINE_H)
-      }
-      y -= 4
+      my -= 3
     }
   }
+
+  // Footer
+  page.drawLine({
+    start: { x: MARGIN, y: MARGIN + 14 },
+    end:   { x: PAGE_W - MARGIN, y: MARGIN + 14 },
+    thickness: 0.4, color: BORDER,
+  })
+  page.drawText('CareerFlow · Professional Portfolio System · 2024', {
+    x: PAGE_W / 2 - 95, y: MARGIN + 5, size: 6.5, font: regular, color: rgb(0.7, 0.75, 0.8),
+  })
 
   const bytes = await doc.save()
   return new Blob([bytes.buffer as ArrayBuffer], { type: 'application/pdf' })

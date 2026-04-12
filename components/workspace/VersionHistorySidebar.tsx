@@ -74,25 +74,25 @@ function tierDot(tier?: number): string {
   return 'bg-rose-400'
 }
 
-const LANG_LABELS: Record<string, string> = { zh: '中文', en: 'English', bilingual: '双语' }
-
 // ── Version summary line ─────────────────────────────────────────────────────
 
-function buildSummary(version: ResumeVersion): string {
+type SummaryT = (key: string, params?: Record<string, string | number>) => string
+
+function buildSummary(version: ResumeVersion, t: SummaryT, langLabels: Record<string, string>): string {
   const doc = parseEditorJson(version.editor_json)
   const exps = doc?.content ?? []
   const expCount = exps.length
   const achCount = exps.reduce((n, e) => n + (e.content?.length ?? 0), 0)
 
   const lang = version.resume_lang ?? doc?.meta?.lang
-  const langLabel = lang ? (LANG_LABELS[lang] ?? lang) : null
+  const langLabel = lang ? (langLabels[lang] ?? lang) : null
 
   const parts: string[] = []
-  if (expCount > 0) parts.push(`${expCount}个职位`)
-  if (achCount > 0) parts.push(`${achCount}条成就`)
+  if (expCount > 0) parts.push(t('workspace.version_history.positions', { count: expCount }))
+  if (achCount > 0) parts.push(t('workspace.version_history.achievements_count', { count: achCount }))
   if (langLabel) parts.push(langLabel)
-  if (version.snapshot_jd) parts.push('有JD')
-  if (version.show_photo) parts.push('含照片')
+  if (version.snapshot_jd) parts.push(t('workspace.version_history.has_jd'))
+  if (version.show_photo) parts.push(t('workspace.version_history.has_photo'))
 
   return parts.join(' · ')
 }
@@ -108,6 +108,12 @@ function VersionPreviewModal({
   onClose: () => void
   onRestore: () => void
 }) {
+  const t = useTranslations()
+  const langLabels = {
+    zh: t('workspace.resume_lang.zh'),
+    en: t('workspace.resume_lang.en'),
+    bilingual: t('workspace.resume_lang.bilingual'),
+  }
   const doc = parseEditorJson(version.editor_json)
   const exps = doc?.content ?? []
 
@@ -121,7 +127,7 @@ function VersionPreviewModal({
               {version.snapshot_label || formatTime(version.created_at)}
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">
-              {formatTime(version.created_at)} · {buildSummary(version)}
+              {formatTime(version.created_at)} · {buildSummary(version, t, langLabels)}
             </p>
           </div>
           <button
@@ -135,12 +141,12 @@ function VersionPreviewModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           {exps.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">此版本暂无成就数据</p>
+            <p className="text-xs text-gray-400 text-center py-8">{t('workspace.version_history.no_data')}</p>
           ) : (
             exps.map((exp, ei) => {
               const tenure = exp.attrs?.original_tenure
                 ?? (exp.attrs?.is_current
-                  ? `${exp.attrs?.start_year ?? ''} — 至今`
+                  ? `${exp.attrs?.start_year ?? ''} — ${t('workspace.version_history.present')}`
                   : `${exp.attrs?.start_year ?? ''} — ${exp.attrs?.end_year ?? ''}`)
 
               return (
@@ -173,7 +179,7 @@ function VersionPreviewModal({
 
           {version.snapshot_jd && (
             <div className="rounded-lg bg-indigo-50 border border-indigo-100 px-3 py-2">
-              <p className="text-xs font-medium text-indigo-700 mb-1">JD 片段</p>
+              <p className="text-xs font-medium text-indigo-700 mb-1">{t('workspace.version_history.jd_excerpt')}</p>
               <p className="text-xs text-indigo-600 line-clamp-3">{version.snapshot_jd}</p>
             </div>
           )}
@@ -185,14 +191,14 @@ function VersionPreviewModal({
             onClick={onClose}
             className="px-4 py-1.5 text-xs text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
           >
-            关闭
+            {t('workspace.version_history.close')}
           </button>
           <button
             onClick={() => { onRestore(); onClose() }}
             className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
-            恢复此版本
+            {t('workspace.version_history.restore')}
           </button>
         </div>
       </div>
@@ -210,6 +216,11 @@ export function VersionHistorySidebar({
   onRestore
 }: VersionHistorySidebarProps) {
   const t = useTranslations()
+  const langLabels = {
+    zh: t('workspace.resume_lang.zh'),
+    en: t('workspace.resume_lang.en'),
+    bilingual: t('workspace.resume_lang.bilingual'),
+  }
   const [versions, setVersions] = useState<ResumeVersion[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -419,7 +430,12 @@ function VersionCard({
     setEditingLabel(false)
   }
 
-  const summary = buildSummary(version)
+  const langLabels: Record<string, string> = {
+    zh: t('workspace.resume_lang.zh'),
+    en: t('workspace.resume_lang.en'),
+    bilingual: t('workspace.resume_lang.bilingual'),
+  }
+  const summary = buildSummary(version, t, langLabels)
 
   // Tier breakdown for visual indicator
   const doc = parseEditorJson(version.editor_json)
@@ -454,7 +470,7 @@ function VersionCard({
               <span
                 className="text-xs font-semibold text-gray-800 truncate cursor-text"
                 onDoubleClick={() => { setLabelDraft(version.snapshot_label ?? formatTime(version.created_at)); setEditingLabel(true) }}
-                title="双击重命名"
+                title={t('workspace.version_history.rename_hint')}
               >
                 {version.snapshot_label || formatTime(version.created_at)}
               </span>
@@ -466,7 +482,7 @@ function VersionCard({
             )}
             {version.is_auto_save === false && (
               <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                手动保存
+                {t('workspace.version_history.manual_save')}
               </span>
             )}
           </div>

@@ -113,6 +113,7 @@
       "language": "语言",
       "photo": "照片",
       "save": "保存",
+      "saved": "已保存",
       "show_photo": "显示照片"
     },
     "jd_panel": {
@@ -121,7 +122,9 @@
       "char_limit": "最多 5000 字",
       "generate_btn": "生成简历（通用版）",
       "generate_btn_custom": "生成定制简历",
-      "truncated_warning": "内容已截断至 5000 字上限"
+      "truncated_warning": "内容已截断至 5000 字上限",
+      "snapshot_jd_label": "JD定制",
+      "snapshot_generic_label": "通用版"
     },
     "achievement_panel": {
       "tabs": {
@@ -164,19 +167,71 @@
       "message": "检测到上次会话未保存的编辑",
       "restore": "恢复",
       "dismiss": "放弃"
-    }
+    },
+    "photo_detected": {
+      "message": "检测到简历中含有照片，是否使用？",
+      "use": "使用照片",
+      "ignore": "不需要"
+    },
+    "resume_lang": {
+      "zh": "中文",
+      "en": "仅英文",
+      "bilingual": "中英双语"
+    },
+    "parse_progress": {
+      "processing": "AI 正在提炼成就...",
+      "completed": "提炼完成",
+      "failed": "解析失败",
+      "retry": "返回重新上传"
+    },
+    "version_history": {
+      "close": "关闭",
+      "restore": "恢复此版本",
+      "rename_hint": "双击重命名",
+      "manual_save": "手动保存",
+      "no_data": "此版本暂无成就数据",
+      "jd_excerpt": "JD 片段",
+      "present": "至今",
+      "positions": "{count}个职位",
+      "achievements_count": "{count}条成就",
+      "has_jd": "有JD",
+      "has_photo": "含照片"
+    },
+    "pii_banner": "检测到简历中含有个人敏感信息（如手机号、地址等），AI 处理过程会使用这些内容，请知悉。"
   },
   "library": {
     "title": "我的成就库",
-    "subtitle": "管理你所有的职业成就",
-    "search_placeholder": "搜索成就...",
+    "subtitle": "你的职业成就，一键管理",
+    "sidebar_title": "成就库",
+    "count_total": "共 {count} 条记录",
+    "search_placeholder": "搜索成就内容或公司名称...",
     "filter_all": "全部",
-    "filter_tier1": "核心亮点",
-    "filter_tier2": "重要成就",
-    "filter_tier3": "基础经历",
-    "empty_state": "暂无成就，去工作台上传简历开始积累",
+    "filter_confirmed": "已确认",
+    "filter_draft": "草稿",
+    "filter_ignored": "已忽略",
+    "stat_all": "全部成就",
+    "stat_confirmed": "已确认",
+    "stat_draft": "草稿待审",
+    "stat_ignored": "已忽略",
+    "tier_quantified": "已量化",
+    "tier_incomplete": "待补充",
+    "tier_descriptive": "主观描述",
+    "status_confirmed": "已确认",
+    "status_draft": "草稿",
+    "status_ignored": "已忽略",
+    "col_description": "成就描述",
+    "col_company": "公司 / 职位",
+    "col_tier": "档位",
+    "col_status": "状态",
+    "col_actions": "操作",
+    "loading": "加载中...",
+    "empty_state": "暂无成就记录。上传简历后，AI 会自动提炼你的成就。",
+    "empty_search": "没有匹配的成就",
     "go_workspace": "去工作台",
+    "count_display": "显示 {filtered} / {total} 条",
     "achievement_count": "{count} 条成就",
+    "action_confirm": "确认",
+    "action_ignore": "忽略",
     "tier_badge": {
       "1": "T1",
       "2": "T2",
@@ -264,7 +319,23 @@
     },
     "photo_toggle": "显示照片",
     "export_btn": "导出",
-    "processing": "生成中..."
+    "processing": "生成中...",
+    "post_download_title": "简历已下载！",
+    "post_download_body": "登录后可永久保存你的简历和成就记录，下次无需重新上传。",
+    "sign_in_to_save": "登录保存",
+    "maybe_later": "稍后再说"
+  },
+  "market_confirm": {
+    "title": "你目前在哪个地区？",
+    "subtitle": "这将决定你的使用方案。国内用户完全免费，海外用户按次付费。",
+    "cn_name": "中国大陆",
+    "cn_badge": "完全免费",
+    "cn_desc": "无限制使用所有功能，无月度配额",
+    "intl_name": "Other regions / 其他地区",
+    "intl_desc": "从 $4.99/次 起，可订阅无限导出",
+    "saving": "保存中...",
+    "confirm": "确认并继续",
+    "footer": "选择后可在设置页修改 · 不影响现有数据"
   },
   "payment_success": {
     "verifying_title": "正在确认支付...",

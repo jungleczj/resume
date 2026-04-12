@@ -20,10 +20,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { key: 'workspace',    hrefAuth: '/upload',   hrefGuest: '/',    authRequired: false },
-  { key: 'achievements', hrefAuth: '/library',  hrefGuest: '/',    authRequired: false },
-  { key: 'pricing',      hrefAuth: '/pricing',  hrefGuest: '/pricing', authRequired: false },
-  { key: 'settings',     hrefAuth: '/settings', hrefGuest: null,   authRequired: true  },
+  { key: 'workspace',    hrefAuth: '/workspace', hrefGuest: '/',    authRequired: false },
+  { key: 'achievements', hrefAuth: '/library',   hrefGuest: '/library', authRequired: false },
+  { key: 'pricing',      hrefAuth: '/pricing',   hrefGuest: '/pricing', authRequired: false },
+  { key: 'settings',     hrefAuth: '/settings',  hrefGuest: null,   authRequired: true  },
 ]
 
 export function NavBar() {
@@ -74,9 +74,12 @@ export function NavBar() {
 
   // Resolve href for a nav item based on auth state
   const resolveHref = (item: NavItem): string | null => {
-    if (!user) return item.hrefGuest
-    // Workspace: use last visited workspace URL if available, otherwise upload
-    if (item.key === 'workspace' && lastWorkspaceUrl) return lastWorkspaceUrl
+    if (!user) {
+      // Anonymous: restore last workspace session (carries anonymous_id query param)
+      if (item.key === 'workspace' && lastWorkspaceUrl) return lastWorkspaceUrl
+      return item.hrefGuest
+    }
+    // Logged-in: always use clean /workspace (server loads their data by user_id)
     return item.hrefAuth
   }
 

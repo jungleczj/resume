@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface PIIBannerProps { uploadId?: string; anonymousId: string; userId: string | null }
 
 export function PIIBanner({ uploadId, anonymousId, userId }: PIIBannerProps) {
+  const t = useTranslations('workspace')
   const [show, setShow] = useState(false)
   const storageKey = `pii_banner_closed_${uploadId ?? anonymousId}`
 
@@ -25,7 +27,7 @@ export function PIIBanner({ uploadId, anonymousId, userId }: PIIBannerProps) {
   return (
     <div className="w-full bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center gap-3 text-xs text-amber-800">
       <span className="material-symbols-outlined text-amber-500 text-sm flex-shrink-0">warning</span>
-      <span className="flex-1">检测到简历中含有个人敏感信息（如手机号、地址等），AI 处理过程会使用这些内容，请知悉。</span>
+      <span className="flex-1">{t('pii_banner')}</span>
       <button
         onClick={() => { localStorage.setItem(storageKey, '1'); setShow(false) }}
         className="flex-shrink-0 text-amber-600 hover:text-amber-800 transition-colors"

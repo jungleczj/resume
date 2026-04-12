@@ -2,6 +2,9 @@
 
 import { NavBar } from '@/components/layout/NavBar'
 import { useEffect, useState } from 'react'
+import { useRouter } from '@/lib/i18n/navigation'
+import { useTranslations } from 'next-intl'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 interface AchievementRow {
@@ -33,23 +36,15 @@ const TIER_COLORS: Record<number, string> = {
   2: 'bg-amber-400',
   3: 'bg-rose-400',
 }
-const TIER_LABELS: Record<number, string> = {
-  1: '已量化',
-  2: '待补充',
-  3: '主观描述',
-}
 const STATUS_STYLE: Record<string, string> = {
   confirmed: 'bg-emerald-50 text-emerald-700',
   draft: 'bg-amber-50 text-amber-700',
   ignored: 'bg-gray-50 text-gray-400',
 }
-const STATUS_LABEL: Record<string, string> = {
-  confirmed: '已确认',
-  draft: '草稿',
-  ignored: '已忽略',
-}
 
 export default function LibraryClient() {
+  const router = useRouter()
+  const t = useTranslations('library')
   const [achievements, setAchievements] = useState<AchievementRow[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterTab>('all')
@@ -59,10 +54,15 @@ export default function LibraryClient() {
     const load = async () => {
       setLoading(true)
       try {
-        const anonId = typeof window !== 'undefined' ? localStorage.getItem('cf_anonymous_id') : null
-        const params = new URLSearchParams()
-        if (anonId) params.set('anonymous_id', anonId)
-        const res = await fetch(`/api/achievements?${params}`)
+        // Auth gate: only logged-in users can access the library
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login?next=/library')
+          return
+        }
+        // Authenticated: fetch achievements (server uses auth session cookie)
+        const res = await fetch('/api/achievements')
         if (res.ok) {
           const { data } = await res.json() as { data: AchievementRow[] }
           setAchievements(data ?? [])
@@ -72,7 +72,7 @@ export default function LibraryClient() {
       }
     }
     load()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = achievements.filter(a => {
     if (filter !== 'all' && a.status !== filter) return false
@@ -107,13 +107,13 @@ export default function LibraryClient() {
         {/* Sidebar */}
         <aside className="fixed left-0 top-20 flex flex-col pt-8 px-4 h-screen w-64 border-r border-slate-100 bg-slate-50">
           <div className="mb-8 px-4">
-            <h3 className="font-headline text-sm font-medium uppercase tracking-widest text-slate-400">成就库</h3>
-            <p className="text-xs text-slate-500 mt-1">共 {counts.all} 条记录</p>
+            <h3 className="font-headline text-sm font-medium uppercase tracking-widest text-slate-400">{t('sidebar_title')}</h3>
+            <p className="text-xs text-slate-500 mt-1">{t('count_total', { count: counts.all })}</p>
           </div>
           <nav className="space-y-1">
             {(['all', 'confirmed', 'draft', 'ignored'] as FilterTab[]).map(tab => {
               const labels: Record<FilterTab, string> = {
-                all: '全部', confirmed: '已确认', draft: '草稿', ignored: '已忽略'
+                all: t('filter_all'), confirmed: t('filter_confirmed'), draft: t('filter_draft'), ignored: t('filter_ignored')
               }
               const icons: Record<FilterTab, string> = {
                 all: 'apps', confirmed: 'verified', draft: 'edit_note', ignored: 'archive'
@@ -147,17 +147,17 @@ export default function LibraryClient() {
         {/* Main */}
         <main className="ml-64 flex-1 p-12 min-h-screen">
           <header className="mb-8">
-            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-[#1b1b24] mb-2">成就库</h1>
-            <p className="text-lg text-[#464555] font-medium opacity-80">你的职业成就，一键管理。</p>
+            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-[#1b1b24] mb-2">{t('title')}</h1>
+            <p className="text-lg text-[#464555] font-medium opacity-80">{t('subtitle')}</p>
           </header>
 
           {/* Stats */}
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[
-              { label: '全部成就', value: counts.all, icon: 'emoji_events', color: 'text-indigo-600' },
-              { label: '已确认', value: counts.confirmed, icon: 'verified', color: 'text-emerald-600' },
-              { label: '草稿待审', value: counts.draft, icon: 'pending_actions', color: 'text-amber-600' },
-              { label: '已忽略', value: counts.ignored, icon: 'archive', color: 'text-slate-400' },
+              { label: t('stat_all'), value: counts.all, icon: 'emoji_events', color: 'text-indigo-600' },
+              { label: t('stat_confirmed'), value: counts.confirmed, icon: 'verified', color: 'text-emerald-600' },
+              { label: t('stat_draft'), value: counts.draft, icon: 'pending_actions', color: 'text-amber-600' },
+              { label: t('stat_ignored'), value: counts.ignored, icon: 'archive', color: 'text-slate-400' },
             ].map(stat => (
               <div key={stat.label} className="bg-white p-6 rounded-2xl shadow-sm border border-[#c7c4d8]/10 flex flex-col justify-between">
                 <p className="text-sm font-bold text-[#777587] uppercase tracking-wider mb-2">{stat.label}</p>
@@ -178,7 +178,7 @@ export default function LibraryClient() {
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="block w-full pl-12 pr-4 py-4 bg-white border border-[#c7c4d8]/20 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-[#1b1b24] font-medium shadow-sm placeholder:text-[#777587]/60"
-              placeholder="搜索成就内容或公司名称..."
+              placeholder={t('search_placeholder')}
               type="text"
             />
           </div>
@@ -188,26 +188,25 @@ export default function LibraryClient() {
             {loading ? (
               <div className="flex items-center justify-center py-20 text-slate-400">
                 <span className="material-symbols-outlined animate-spin text-3xl mr-3">refresh</span>
-                <span className="text-sm font-medium">加载中...</span>
+                <span className="text-sm font-medium">{t('loading')}</span>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <span className="material-symbols-outlined text-5xl mb-3">emoji_events</span>
                 <p className="text-sm font-medium">
                   {achievements.length === 0
-                    ? '暂无成就记录。上传简历后，AI 会自动提炼你的成就。'
-                    : '没有匹配的成就'}
+                    ? t('empty_state') : t('empty_search')}
                 </p>
               </div>
             ) : (
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#f5f2ff]/50">
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">成就描述</th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">公司 / 职位</th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">档位</th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">状态</th>
-                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587] text-right">操作</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">{t('col_description')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">{t('col_company')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">{t('col_tier')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587]">{t('col_status')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-[#777587] text-right">{t('col_actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#c7c4d8]/10">
@@ -228,12 +227,14 @@ export default function LibraryClient() {
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
                           <span className={cn('w-2 h-2 rounded-full flex-shrink-0', TIER_COLORS[row.tier])} />
-                          <span className="text-xs text-slate-500">{TIER_LABELS[row.tier] ?? `T${row.tier}`}</span>
+                          <span className="text-xs text-slate-500">
+                            {row.tier === 1 ? t('tier_quantified') : row.tier === 2 ? t('tier_incomplete') : t('tier_descriptive')}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider', STATUS_STYLE[row.status])}>
-                          {STATUS_LABEL[row.status] ?? row.status}
+                          {row.status === 'confirmed' ? t('status_confirmed') : row.status === 'draft' ? t('status_draft') : t('status_ignored')}
                         </div>
                       </td>
                       <td className="px-6 py-5 text-right">
@@ -242,7 +243,7 @@ export default function LibraryClient() {
                             <button
                               onClick={() => handleStatusChange(row.id, 'confirmed')}
                               className="w-8 h-8 flex items-center justify-center hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors rounded-full"
-                              title="确认"
+                              title={t('action_confirm')}
                             >
                               <span className="material-symbols-outlined text-[20px]">check_circle</span>
                             </button>
@@ -251,7 +252,7 @@ export default function LibraryClient() {
                             <button
                               onClick={() => handleStatusChange(row.id, 'ignored')}
                               className="w-8 h-8 flex items-center justify-center hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors rounded-full"
-                              title="忽略"
+                              title={t('action_ignore')}
                             >
                               <span className="material-symbols-outlined text-[20px]">visibility_off</span>
                             </button>
@@ -267,7 +268,7 @@ export default function LibraryClient() {
 
           {filtered.length > 0 && (
             <p className="mt-4 text-xs text-slate-400 text-right">
-              显示 {filtered.length} / {achievements.length} 条
+              {t('count_display', { filtered: filtered.length, total: achievements.length })}
             </p>
           )}
         </main>

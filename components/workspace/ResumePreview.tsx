@@ -2,14 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useWorkspaceStore } from '@/store/workspace'
-import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import type { Achievement, ResumePersonalInfo, LanguageProficiency } from '@/lib/types/domain'
+import type { Achievement, ResumePersonalInfo } from '@/lib/types/domain'
 import { PhotoCropModal } from './PhotoCropModal'
 import { trackEvent } from '@/lib/analytics'
 
 // ─── Inline-editable text cell ───────────────────────────────────────────────
-// Allows cursor + typing (select-text) but copy events are blocked document-wide.
 function EditableCell({
   value,
   onSave,
@@ -26,7 +24,6 @@ function EditableCell({
   const ref = useRef<HTMLSpanElement>(null)
   const focused = useRef(false)
 
-  // Sync external value when not in edit mode
   useEffect(() => {
     if (ref.current && !focused.current) {
       if (ref.current.textContent !== (value ?? '')) {
@@ -52,7 +49,6 @@ function EditableCell({
           e.preventDefault()
           e.currentTarget.blur()
         }
-        // Block Ctrl/Cmd+C and Ctrl/Cmd+X at keystroke level
         if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X')) {
           e.preventDefault()
           e.stopPropagation()
@@ -61,7 +57,6 @@ function EditableCell({
       onCopy={(e) => { e.preventDefault(); e.stopPropagation() }}
       onCut={(e) => { e.preventDefault(); e.stopPropagation() }}
       onPaste={(e) => {
-        // Strip formatting — allow plain text paste only
         e.preventDefault()
         const text = e.clipboardData.getData('text/plain')
         document.execCommand('insertText', false, text)
@@ -72,8 +67,6 @@ function EditableCell({
 }
 
 // ─── Highlighted editable cell (tier-2 placeholder orange rendering) ─────────
-// Shows [[type:description]] placeholders in orange when not editing.
-// Falls back to raw text (contentEditable) when clicked.
 function HighlightedEditableCell({
   value,
   onSave,
@@ -86,12 +79,10 @@ function HighlightedEditableCell({
   const [editing, setEditing] = useState(false)
   const spanRef = useRef<HTMLSpanElement>(null)
 
-  // Sync text on mount and when switching into edit mode
   useEffect(() => {
     if (editing && spanRef.current) {
       spanRef.current.textContent = value
       spanRef.current.focus()
-      // Move cursor to end
       const range = document.createRange()
       range.selectNodeContents(spanRef.current)
       range.collapse(false)
@@ -101,7 +92,6 @@ function HighlightedEditableCell({
     }
   }, [editing]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Parse [[type:description]] segments for display
   function parseSegments(text: string) {
     return text.split(/(\[\[.*?\]\])/g).map((part, i) =>
       /^\[\[.*?\]\]$/.test(part) ? (
@@ -163,12 +153,70 @@ function HighlightedEditableCell({
   )
 }
 
+// ─── Proficiency labels ───────────────────────────────────────────────────────
+const PROFICIENCY_LABELS: Record<string, { zh: string; en: string }> = {
+  elementary:           { zh: '初级',     en: 'Elementary' },
+  limited_working:      { zh: '日常沟通', en: 'Limited Working' },
+  professional_working: { zh: '工作交流', en: 'Professional' },
+  full_professional:    { zh: '流利',     en: 'Full Professional' },
+  native_bilingual:     { zh: '母语',     en: 'Native' },
+}
+
+// ─── Cobalt theme tokens ──────────────────────────────────────────────────────
+const C = {
+  accent:    '#2563eb',
+  textMain:  '#334155',
+  textBright:'#0f172a',
+  surface:   '#f8fafc',
+  surfaceDark:'#f1f5f9',
+  border:    '#e2e8f0',
+}
+
+// ─── Section heading (left sidebar) ──────────────────────────────────────────
+function SidebarHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 style={{
+      fontFamily: "'Noto Serif', serif",
+      fontWeight: 700,
+      fontSize: 11,
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      color: C.textBright,
+      borderLeft: `3px solid ${C.accent}`,
+      paddingLeft: 8,
+      marginBottom: 8,
+    }}>
+      {children}
+    </h3>
+  )
+}
+
+// ─── Section heading (right main) ────────────────────────────────────────────
+function MainHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      <h3 style={{
+        fontFamily: "'Noto Serif', serif",
+        fontWeight: 700,
+        fontSize: 15,
+        color: C.textBright,
+        whiteSpace: 'nowrap',
+      }}>
+        {children}
+      </h3>
+      <div style={{ flex: 1, height: 1, background: C.border }} />
+    </div>
+  )
+}
+
 // ─── Main template component ─────────────────────────────────────────────────
 export function ResumePreview() {
-  const t = useTranslations()
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [cropFile, setCropFile] = useState<File | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const dragCounterRef = useRef(0)
 
   const {
     showPhoto,
@@ -200,31 +248,33 @@ export function ResumePreview() {
     activeAchievementId,
     setActiveAchievementId,
     ignoreAchievement,
+    originalPersonalInfo,
+    originalEducation,
+    originalSkills,
+    translatedCertifications,
+    translatedAwards,
+    translatedPublications,
+    translatedLanguages,
   } = useWorkspaceStore()
 
-  // Derive display flags from resumeLang (not locale)
   const isZH = resumeLang === 'zh' || resumeLang === 'bilingual'
   const isBilingual = resumeLang === 'bilingual'
 
-  // Section header helper: bilingual shows "EN / 中文"
   const sectionLabel = (zh: string, en: string) =>
     isBilingual ? `${en} / ${zh}` : isZH ? zh : en
 
-  // ── Scroll resume to active achievement (set from panel click) ───────────
+  // Scroll to active achievement
   useEffect(() => {
     if (!activeAchievementId) return
     const li = document.querySelector(`[data-resume-ach-id="${activeAchievementId}"]`) as HTMLElement | null
     li?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [activeAchievementId])
 
-  // ── Block all clipboard copy/cut document-wide while mounted ──────────────
-  // Capture phase fires before any element handler; stopImmediatePropagation
-  // prevents other listeners from seeing the event at all.
+  // Block all clipboard copy/cut document-wide while mounted
   useEffect(() => {
     const block = (e: ClipboardEvent) => {
       e.preventDefault()
       e.stopImmediatePropagation()
-      // Overwrite clipboard data as belt-and-suspenders safety
       try { e.clipboardData?.clearData() } catch { /* ignore */ }
     }
     document.addEventListener('copy', block as EventListener, true)
@@ -235,17 +285,27 @@ export function ResumePreview() {
     }
   }, [])
 
-  // Step 1: file selected → open crop modal
   const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      setPhotoError(isZH ? '仅支持 JPG / PNG 格式' : 'Only JPG / PNG supported')
+      setTimeout(() => setPhotoError(null), 3000)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setPhotoError(isZH ? '文件不能超过 2MB' : 'File must be under 2 MB')
+      setTimeout(() => setPhotoError(null), 3000)
+      if (photoInputRef.current) photoInputRef.current.value = ''
+      return
+    }
+    setPhotoError(null)
     setCropFile(file)
-    // Reset input so the same file can be selected again if cancelled
     if (photoInputRef.current) photoInputRef.current.value = ''
   }
 
-  // Step 2: crop confirmed → upload blob
   const handleCroppedBlob = async (blob: Blob) => {
     setCropFile(null)
     setPhotoUploading(true)
@@ -264,8 +324,19 @@ export function ResumePreview() {
             user_id: userId ?? undefined,
           })
         }
+      } else {
+        let msg = isZH ? '照片上传失败，请重试' : 'Photo upload failed, please retry'
+        try {
+          const body = await res.json()
+          if (body?.error) msg = body.error
+        } catch { /* ignore */ }
+        setPhotoError(msg)
+        setTimeout(() => setPhotoError(null), 4000)
       }
-    } catch { /* silent */ } finally {
+    } catch {
+      setPhotoError(isZH ? '网络错误，请重试' : 'Network error, please retry')
+      setTimeout(() => setPhotoError(null), 4000)
+    } finally {
       setPhotoUploading(false)
     }
   }
@@ -279,20 +350,78 @@ export function ResumePreview() {
 
   const hasData = !!resumePersonalInfo || confirmedExps.some((e) => e.achievements.length > 0)
 
-  // Safe string getter for personal info fields
   const pInfo = (field: keyof ResumePersonalInfo): string => {
     const val = resumePersonalInfo?.[field]
     return val == null ? '' : String(val)
   }
 
+  // Contact items for sidebar
+  const contactItems = [
+    { icon: 'mail', value: pInfo('email'), field: 'email' as const, placeholder: 'email' },
+    { icon: 'call', value: pInfo('phone'), field: 'phone' as const, placeholder: isZH ? '电话' : 'phone' },
+    { icon: 'location_on', value: pInfo('location'), field: 'location' as const, placeholder: isZH ? '城市' : 'location' },
+    { icon: 'link', value: pInfo('linkedin'), field: 'linkedin' as const, placeholder: 'LinkedIn / GitHub' },
+    { icon: 'public', value: pInfo('website'), field: 'website' as const, placeholder: 'website' },
+  ]
+
   return (
-    <div className="min-h-full bg-[#f0f2f5] flex items-start justify-center p-8 pb-16">
+    <div className="min-h-full flex items-start justify-center p-8 pb-16" style={{ background: C.surfaceDark }}>
+      {/* Load Cobalt fonts */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        .cobalt-resume * { box-sizing: border-box; }
+        .editable-cell {
+          border-radius: 2px;
+          padding: 0 2px;
+          margin: 0 -2px;
+          min-width: 4px;
+          display: inline;
+          transition: background 0.1s;
+        }
+        .editable-cell:hover { background-color: rgba(37,99,235,0.07); }
+        .editable-cell:focus {
+          background-color: rgba(37,99,235,0.1);
+          box-shadow: 0 0 0 1.5px rgba(37,99,235,0.35);
+          outline: none;
+        }
+        .editable-cell[data-ph]:empty::before {
+          content: attr(data-ph);
+          color: #cbd5e1;
+          pointer-events: none;
+          font-style: italic;
+          font-weight: normal;
+        }
+      `}</style>
+
       {/* A4 paper */}
       <div
-        className="bg-white shadow-xl relative select-none"
-        style={{ width: 794, minHeight: 1123, padding: '52px 56px' }}
+        className={cn('cobalt-resume select-none relative', dragActive && 'ring-2 ring-blue-300/50')}
+        style={{
+          width: 794,
+          minHeight: 1123,
+          background: '#ffffff',
+          color: C.textMain,
+          boxShadow: '0 4px 32px rgba(0,0,0,0.12)',
+          fontFamily: "'Inter', sans-serif",
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          dragCounterRef.current++
+          if (!dragActive) setDragActive(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          dragCounterRef.current--
+          if (dragCounterRef.current <= 0) { dragCounterRef.current = 0; setDragActive(false) }
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={() => { dragCounterRef.current = 0; setDragActive(false) }}
       >
         {!hasData ? (
           /* ── Empty / loading state ── */
@@ -307,575 +436,727 @@ export function ResumePreview() {
           </div>
         ) : (
           <>
-            {/* ══ HEADER ═══════════════════════════════════════════════════ */}
-            <div className="flex items-start justify-between mb-5">
-              <div className="flex-1 min-w-0 pr-4">
-                {/* Name */}
-                <h1 className="text-[22px] font-bold text-gray-900 leading-snug mb-1.5">
+            {/* ══ HEADER STRIP ══════════════════════════════════════════════ */}
+            <header style={{ background: '#ffffff', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 36px 14px' }}>
+                <h1 style={{
+                  fontFamily: "'Noto Serif', serif",
+                  fontWeight: 900,
+                  fontSize: 13,
+                  color: C.accent,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.12em',
+                }}>
                   <EditableCell
                     value={pInfo('name')}
                     onSave={(v) => updatePersonalInfoField('name', v)}
                     placeholder={isZH ? '姓名' : 'Your Name'}
-                    className="font-bold text-[22px]"
                   />
                 </h1>
-
-                {/* Contact row — always render all fields with placeholders */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11.5px] text-gray-500">
-                  <EditableCell
-                    value={pInfo('email')}
-                    onSave={(v) => updatePersonalInfoField('email', v)}
-                    placeholder="email"
-                  />
-                  <span className="text-gray-200 select-none">·</span>
-                  <EditableCell
-                    value={pInfo('phone')}
-                    onSave={(v) => updatePersonalInfoField('phone', v)}
-                    placeholder={isZH ? '电话' : 'phone'}
-                  />
-                  <span className="text-gray-200 select-none">·</span>
-                  <EditableCell
-                    value={pInfo('location')}
-                    onSave={(v) => updatePersonalInfoField('location', v)}
-                    placeholder={isZH ? '城市' : 'location'}
-                  />
-                  <span className="text-gray-200 select-none">·</span>
-                  <EditableCell
-                    value={pInfo('linkedin')}
-                    onSave={(v) => updatePersonalInfoField('linkedin', v)}
-                    placeholder="LinkedIn"
-                    className="text-indigo-500"
-                  />
-                  <span className="text-gray-200 select-none">·</span>
-                  <EditableCell
-                    value={pInfo('website')}
-                    onSave={(v) => updatePersonalInfoField('website', v)}
-                    placeholder="website"
-                    className="text-indigo-500"
-                  />
-                </div>
-
-                {/* Summary */}
-                <p className="mt-2.5 text-[12px] text-gray-600 leading-relaxed">
-                  <EditableCell
-                    value={pInfo('summary')}
-                    onSave={(v) => updatePersonalInfoField('summary', v)}
-                    placeholder={isZH ? '个人简介（可直接点击编辑）' : 'Professional summary (click to edit)'}
-                    multiline
-                    className="block w-full"
-                  />
-                </p>
+                <span style={{ fontSize: 9, fontFamily: 'monospace', color: `${C.textMain}80`, letterSpacing: '0.1em' }}>
+                  CV_2024
+                </span>
               </div>
+              <div style={{ height: 2, background: C.accent, margin: '0 36px', opacity: 0.5 }} />
+            </header>
 
-              {/* Photo slot — click to upload */}
-              {showPhoto && (
-                <>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handlePhotoFileChange}
-                  />
-                  <div
-                    onClick={() => !photoUploading && photoInputRef.current?.click()}
-                    className={cn(
-                      'w-[72px] h-[88px] flex-shrink-0 bg-gray-50 border border-gray-200 rounded overflow-hidden flex items-center justify-center relative group cursor-pointer',
-                      photoUploading && 'opacity-60'
-                    )}
-                    title={isZH ? '点击上传照片' : 'Click to upload photo'}
-                  >
-                    {photoPath ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={photoPath}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                        draggable={false}
+            {/* ══ TWO-COLUMN BODY ═══════════════════════════════════════════ */}
+            <div style={{ display: 'flex', flex: 1, padding: '28px 36px 28px' }}>
+
+              {/* ── LEFT SIDEBAR (32%) ──────────────────────────────────── */}
+              <aside style={{ width: '32%', flexShrink: 0, paddingRight: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                {/* Photo + Name + Title */}
+                <div style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 6,
+                  padding: '18px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                }}>
+                  {/* Photo slot */}
+                  {showPhoto && (
+                    <>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={handlePhotoFileChange}
                       />
-                    ) : (
-                      <span className="text-[10px] text-gray-300 text-center px-1 leading-tight">
-                        {isZH ? '照片' : 'Photo'}
-                      </span>
-                    )}
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <span className="material-symbols-outlined text-white text-lg">
-                        {photoUploading ? 'hourglass_empty' : 'upload'}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Thin accent divider */}
-            <div className="h-[1.5px] bg-gradient-to-r from-indigo-500 via-indigo-300 to-transparent mb-5" />
-
-            {/* ══ EDUCATION ════════════════════════════════════════════════ */}
-            {resumeEducation.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel('教育背景', 'Education')}
-                </h2>
-                <div className="space-y-2.5">
-                  {resumeEducation.map((edu, i) => {
-                    const gpaRankParts: string[] = []
-                    if (edu.gpa_score) {
-                      gpaRankParts.push(`GPA ${edu.gpa_score}${edu.gpa_scale ? `/${edu.gpa_scale}` : ''}`)
-                    }
-                    if (edu.class_rank_text) gpaRankParts.push(edu.class_rank_text)
-                    if (edu.minor_subject) gpaRankParts.push(isZH ? `辅修：${edu.minor_subject}` : `Minor: ${edu.minor_subject}`)
-                    if (edu.academic_honors) gpaRankParts.push(edu.academic_honors)
-                    return (
-                      <div key={i} className="space-y-0.5">
-                        <div className="flex items-baseline justify-between gap-3">
-                          <div className="flex items-baseline gap-2 min-w-0 flex-1">
-                            <EditableCell
-                              value={edu.school}
-                              onSave={(v) => {
-                                const updated = [...resumeEducation]
-                                updated[i] = { ...edu, school: v }
-                                updateEducation(updated)
-                              }}
-                              placeholder={isZH ? '学校名称' : 'School'}
-                              className="font-semibold text-[13px] text-gray-900"
-                            />
-                            {(edu.degree || edu.major) && (
-                              <>
-                                <span className="text-gray-300 select-none text-[12px]">·</span>
-                                <EditableCell
-                                  value={[edu.degree, edu.major].filter(Boolean).join(' ')}
-                                  onSave={(v) => {
-                                    const parts = v.trim().split(/\s+/)
-                                    const updated = [...resumeEducation]
-                                    updated[i] = {
-                                      ...edu,
-                                      degree: parts[0] ?? null,
-                                      major: parts.slice(1).join(' ') || null,
-                                    }
-                                    updateEducation(updated)
-                                  }}
-                                  placeholder={isZH ? '学历 专业' : 'Degree Major'}
-                                  className="text-[13px] text-gray-600"
-                                />
-                              </>
-                            )}
+                      <div className="relative" style={{ alignSelf: 'flex-start' }}>
+                        {photoError && (
+                          <div style={{ position: 'absolute', bottom: '105%', right: 0, zIndex: 10 }}>
+                            <span style={{ fontSize: 9, background: '#ef4444', color: '#fff', padding: '2px 7px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                              {photoError}
+                            </span>
                           </div>
-                          <EditableCell
-                            value={[edu.start_year, edu.end_year].filter(Boolean).join(' – ')}
-                            onSave={(v) => {
-                              const parts = v.split(/[-–—]/).map((s) => parseInt(s.trim(), 10))
-                              const updated = [...resumeEducation]
-                              updated[i] = {
-                                ...edu,
-                                start_year: isNaN(parts[0]) ? null : parts[0],
-                                end_year: parts[1] && !isNaN(parts[1]) ? parts[1] : null,
-                              }
-                              updateEducation(updated)
-                            }}
-                            placeholder="2020 – 2024"
-                            className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0"
-                          />
-                        </div>
-                        {gpaRankParts.length > 0 && (
-                          <p className="text-[11px] text-gray-400 pl-0.5">
-                            {gpaRankParts.join(' · ')}
-                          </p>
                         )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
-
-            {/* ══ WORK EXPERIENCE ══════════════════════════════════════════ */}
-            {confirmedExps.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel('工作经历', 'Work Experience')}
-                </h2>
-                <div className="space-y-5">
-                  {confirmedExps.map((exp) => (
-                    <div key={exp.id}>
-                      {/* Company · Role row */}
-                      <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                        <div className="flex items-baseline gap-2 min-w-0 flex-1">
-                          <EditableCell
-                            value={exp.company}
-                            onSave={(v) => updateExperienceField(exp.id, 'company', v)}
-                            placeholder={isZH ? '公司名称' : 'Company'}
-                            className="font-semibold text-[13px] text-gray-900"
-                          />
-                          <span className="text-gray-300 select-none text-[12px]">·</span>
-                          <EditableCell
-                            value={exp.job_title}
-                            onSave={(v) => updateExperienceField(exp.id, 'job_title', v)}
-                            placeholder={isZH ? '职位' : 'Title'}
-                            className="text-[13px] text-gray-600"
-                          />
+                        <div
+                          onClick={() => !photoUploading && photoInputRef.current?.click()}
+                          title={isZH ? '点击上传照片' : 'Click to upload photo'}
+                          style={{
+                            width: 80,
+                            height: 96,
+                            borderRadius: 6,
+                            background: '#ffffff',
+                            border: `1px solid ${C.border}`,
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            opacity: photoUploading ? 0.6 : 1,
+                          }}
+                          className="group"
+                        >
+                          {photoPath ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={photoPath}
+                              alt="Profile"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(20%)' }}
+                              draggable={false}
+                            />
+                          ) : (
+                            <span style={{ fontSize: 9, color: '#94a3b8', textAlign: 'center', padding: '0 4px', lineHeight: 1.4 }}>
+                              {isZH ? '照片' : 'Photo'}
+                            </span>
+                          )}
+                          <div style={{
+                            position: 'absolute', inset: 0,
+                            background: 'rgba(0,0,0,0.28)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            opacity: 0, transition: 'opacity 0.15s',
+                            pointerEvents: 'none',
+                          }} className="group-hover:opacity-100">
+                            <span className="material-symbols-outlined" style={{ color: '#fff', fontSize: 18 }}>
+                              {photoUploading ? 'hourglass_empty' : 'upload'}
+                            </span>
+                          </div>
                         </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Name + Title */}
+                  <div>
+                    <h2 style={{
+                      fontFamily: "'Noto Serif', serif",
+                      fontWeight: 700,
+                      fontSize: 18,
+                      color: C.accent,
+                      lineHeight: 1.25,
+                      marginBottom: 3,
+                    }}>
+                      <EditableCell
+                        value={pInfo('name')}
+                        onSave={(v) => updatePersonalInfoField('name', v)}
+                        placeholder={isZH ? '姓名' : 'Your Name'}
+                      />
+                    </h2>
+                    {confirmedExps[0]?.job_title && (
+                      <p style={{ fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 9, color: C.textMain }}>
+                        {confirmedExps[0].job_title}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Contact info */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    {contactItems.map(({ icon, value, field, placeholder }) => (
+                      <div key={field} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: `${C.textMain}cc` }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 13, color: C.accent, flexShrink: 0 }}>{icon}</span>
                         <EditableCell
-                          value={exp.original_tenure ?? ''}
-                          onSave={(v) => updateExperienceField(exp.id, 'original_tenure', v)}
-                          placeholder={isZH ? '任期' : 'Tenure'}
-                          className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0"
+                          value={value}
+                          onSave={(v) => updatePersonalInfoField(field, v)}
+                          placeholder={placeholder}
                         />
                       </div>
+                    ))}
+                  </div>
+                </div>
 
-                      {/* Achievement bullets — grouped by project_name */}
-                      {exp.achievements.length > 0 && (() => {
-                        // Group consecutive achievements by project_name
-                        type ProjectGroup = { project_name: string | null; project_member_role: string | null; items: Achievement[] }
-                        const groups: ProjectGroup[] = []
-                        for (const a of exp.achievements) {
-                          const last = groups[groups.length - 1]
-                          if (last && last.project_name === (a.project_name ?? null)) {
-                            last.items.push(a)
-                          } else {
-                            groups.push({ project_name: a.project_name ?? null, project_member_role: a.project_member_role ?? null, items: [a] })
-                          }
-                        }
+                {/* Skills */}
+                {resumeSkills.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <SidebarHeading>{sectionLabel('核心技能', 'Core Skills')}</SidebarHeading>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {resumeSkills.map((group, i) => {
+                        const origSkill = originalSkills?.[i]
+                        const zhGroup = isBilingual && origSkill ? origSkill : group
                         return (
-                          <div className="space-y-2">
-                            {groups.map((group, gi) => (
-                              <div key={gi}>
-                                {/* Project sub-header (only when project_name is set) */}
-                                {group.project_name && (
-                                  <div className="flex items-center gap-1.5 mb-1 mt-1.5">
-                                    <span className="text-[11px] text-indigo-400 font-medium select-none">▸</span>
-                                    <span className="text-[11px] text-indigo-500 font-medium tracking-wide">
-                                      {group.project_name}
-                                    </span>
-                                    {group.project_member_role && (
-                                      <>
-                                        <span className="text-gray-300 select-none text-[10px]">·</span>
-                                        <span className="text-[11px] text-gray-400">
-                                          {group.project_member_role}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
-                                <ul className="space-y-[5px] pl-1">
-                                  {group.items.map((a) => {
-                                    const isDropTarget = pendingDropTarget === a.id
-                                    const isActive = activeAchievementId === a.id
-                                    return (
-                                      <li
-                                        key={a.id}
-                                        data-resume-ach-id={a.id}
-                                        onClick={() => {
-                                          const nextActive = isActive ? null : a.id
-                                          setActiveAchievementId(nextActive)
-                                          if (nextActive) {
-                                            trackEvent('achievement_highlighted', {
-                                              anonymous_id: anonymousId ?? undefined,
-                                              achievement_id: a.id,
-                                              from: 'resume',
-                                            })
-                                          }
-                                        }}
-                                        className={cn(
-                                          'flex items-start gap-2 rounded transition-all duration-150 cursor-pointer',
-                                          isDropTarget && 'ring-2 ring-indigo-400 ring-offset-1 bg-indigo-50/60',
-                                          isActive && !isDropTarget && 'ring-2 ring-indigo-300 ring-offset-1 bg-indigo-50/40'
-                                        )}
-                                        onDragOver={(e) => {
-                                          e.preventDefault()
-                                          e.dataTransfer.dropEffect = 'copy'
-                                          if (pendingDropTarget !== a.id) setPendingDropTarget(a.id)
-                                        }}
-                                        onDragLeave={(e) => {
-                                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                            setPendingDropTarget(null)
-                                          }
-                                        }}
-                                        onDrop={(e) => {
-                                          e.preventDefault()
-                                          setPendingDropTarget(null)
-                                          try {
-                                            const raw = e.dataTransfer.getData('application/json')
-                                            if (!raw) return
-                                            const newAch = JSON.parse(raw) as Achievement
-                                            replaceAchievementInResume(exp.id, a.id, newAch)
-                                          } catch {
-                                            // Malformed drag data — ignore
-                                          }
-                                        }}
-                                      >
-                                        <span
-                                          className={cn(
-                                            'w-[5px] h-[5px] rounded-full flex-shrink-0 mt-[6px]',
-                                            a.tier === 1 && 'bg-emerald-500',
-                                            a.tier === 2 && 'bg-amber-400',
-                                            a.tier === 3 && 'bg-rose-400'
-                                          )}
-                                        />
-                                        {(() => {
-                                          // Use translated text when lang is 'en'/'bilingual' and a translation exists
-                                          const displayText = translatedTexts[a.id] ?? a.text
-                                          return a.tier === 2 && a.has_placeholders && !translatedTexts[a.id] ? (
-                                            <HighlightedEditableCell
-                                              value={displayText}
-                                              onSave={(v) => updateAchievementText(exp.id, a.id, v)}
-                                              className="text-[12.5px] text-gray-700 leading-relaxed flex-1"
-                                            />
-                                          ) : (
-                                            <EditableCell
-                                              value={displayText}
-                                              onSave={(v) => updateAchievementText(exp.id, a.id, v)}
-                                              multiline
-                                              className="text-[12.5px] text-gray-700 leading-relaxed flex-1"
-                                            />
-                                          )
-                                        })()}
-                                        {/* Delete button — only shown when this achievement is selected */}
-                                        {isActive && (
-                                          <button
-                                            onMouseDown={(e) => {
-                                              // mouseDown fires before blur on editable cells; stop propagation
-                                              e.stopPropagation()
-                                              e.preventDefault()
-                                              ignoreAchievement(a.id)
-                                              setActiveAchievementId(null)
-                                            }}
-                                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded transition-colors select-none"
-                                            title={isZH ? '从简历中移除' : 'Remove from resume'}
-                                          >
-                                            <span className="text-[13px] leading-none font-medium select-none">×</span>
-                                          </button>
-                                        )}
-                                      </li>
-                                    )
-                                  })}
-                                </ul>
-                              </div>
-                            ))}
-                          </div>
-                        )
-                      })()}
-
-                      {/* ── INSERT drop zone ── drag an achievement here to append it */}
-                      {(() => {
-                        const isInsertTarget = pendingInsertTarget === exp.id
-                        return (
-                          <div
-                            className={cn(
-                              'mt-1.5 h-6 rounded flex items-center justify-center text-[10px] transition-all duration-150 border border-dashed',
-                              isInsertTarget
-                                ? 'border-indigo-400 bg-indigo-50/60 text-indigo-400'
-                                : 'border-transparent text-transparent'
+                          <div key={i}>
+                            <p style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: `${C.accent}b3`, marginBottom: 5 }}>
+                              <EditableCell
+                                value={zhGroup.category}
+                                onSave={(v) => {
+                                  const updated = [...resumeSkills]
+                                  updated[i] = { ...group, category: v }
+                                  updateSkills(updated)
+                                }}
+                                placeholder={isZH ? '分类' : 'Category'}
+                              />
+                            </p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                              {zhGroup.items.map((item, j) => (
+                                <span key={j} style={{
+                                  padding: '2px 7px',
+                                  background: C.surface,
+                                  color: C.textMain,
+                                  fontSize: 9,
+                                  fontWeight: 500,
+                                  borderRadius: 3,
+                                  border: `1px solid ${C.border}`,
+                                }}>
+                                  {item}
+                                </span>
+                              ))}
+                            </div>
+                            {isBilingual && origSkill && group.category !== origSkill.category && (
+                              <p style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>{group.category}</p>
                             )}
-                            onDragOver={(e) => {
-                              e.preventDefault()
-                              e.dataTransfer.dropEffect = 'copy'
-                              if (pendingInsertTarget !== exp.id) setPendingInsertTarget(exp.id)
-                            }}
-                            onDragLeave={(e) => {
-                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                setPendingInsertTarget(null)
-                              }
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault()
-                              setPendingInsertTarget(null)
-                              try {
-                                const raw = e.dataTransfer.getData('application/json')
-                                if (!raw) return
-                                const newAch = JSON.parse(raw) as Achievement
-                                insertAchievementInResume(exp.id, newAch)
-                              } catch { /* ignore */ }
-                            }}
-                          >
-                            {isInsertTarget ? (isZH ? '+ 追加成就' : '+ Add here') : ''}
                           </div>
                         )
-                      })()}
+                      })}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                  </div>
+                )}
 
-            {/* ══ SKILLS ═══════════════════════════════════════════════════ */}
-            {resumeSkills.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel('技能', 'Skills')}
-                </h2>
-                <div className="space-y-1.5">
-                  {resumeSkills.map((group, i) => (
-                    <div key={i} className="flex items-baseline gap-2 text-[12.5px]">
-                      <EditableCell
-                        value={group.category}
-                        onSave={(v) => {
-                          const updated = [...resumeSkills]
-                          updated[i] = { ...group, category: v }
-                          updateSkills(updated)
-                        }}
-                        placeholder={isZH ? '分类' : 'Category'}
-                        className="font-semibold text-gray-800 whitespace-nowrap flex-shrink-0"
-                      />
-                      <span className="text-gray-300 select-none flex-shrink-0">:</span>
-                      <EditableCell
-                        value={group.items.join(' · ')}
-                        onSave={(v) => {
-                          const updated = [...resumeSkills]
-                          updated[i] = {
-                            ...group,
-                            items: v.split(/[·,，、]/).map((s) => s.trim()).filter(Boolean),
-                          }
-                          updateSkills(updated)
-                        }}
-                        placeholder={isZH ? '技能1 · 技能2' : 'Skill1 · Skill2'}
-                        className="text-gray-600"
-                      />
+                {/* Certifications + Awards combined */}
+                {(resumeCertifications.length > 0 || resumeAwards.length > 0) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <SidebarHeading>{sectionLabel('证书与荣誉', 'Awards & Certs')}</SidebarHeading>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {resumeCertifications.map((cert, i) => {
+                        const tCert = translatedCertifications?.[i]
+                        const displayName = !isZH && tCert?.name ? tCert.name : cert.name
+                        return (
+                          <div key={i} style={{
+                            background: `${C.surface}80`,
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 3,
+                            padding: '5px 8px',
+                          }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayName}</p>
+                            {cert.issue_year && (
+                              <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
+                                {cert.issuing_org ? `${cert.issuing_org} · ` : ''}{cert.issue_year}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
+                      {resumeAwards.map((award, i) => {
+                        const tAward = translatedAwards?.[i]
+                        const displayTitle = !isZH && tAward?.title ? tAward.title : award.title
+                        return (
+                          <div key={i} style={{
+                            background: `${C.surface}80`,
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 3,
+                            padding: '5px 8px',
+                          }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
+                            {award.award_year && (
+                              <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
+                                {award.issuing_org ? `${award.issuing_org} · ` : ''}{award.award_year}
+                              </p>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                  </div>
+                )}
 
-            {/* ══ CERTIFICATIONS ═══════════════════════════════════════════ */}
-            {resumeCertifications.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel(t('workspace.resume_preview.certifications'), t('workspace.resume_preview.certifications'))}
-                </h2>
-                <div className="space-y-1.5">
-                  {resumeCertifications.map((cert, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3 text-[12.5px]">
-                      <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
-                        <span className="font-medium text-gray-800">{cert.name}</span>
-                        {cert.issuing_org && (
-                          <>
-                            <span className="text-gray-300 select-none">·</span>
-                            <span className="text-gray-500 text-[11.5px]">{cert.issuing_org}</span>
-                          </>
-                        )}
-                      </div>
-                      {cert.issue_year && (
-                        <span className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0">
-                          {cert.issue_year}
-                          {cert.expiry_year ? ` – ${cert.expiry_year}` : (cert.is_current ? (isZH ? ' – 持续有效' : ' – No Expiry') : '')}
+                {/* Languages */}
+                {resumeLanguages.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <SidebarHeading>{sectionLabel('语言能力', 'Languages')}</SidebarHeading>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {resumeLanguages.map((lang, i) => {
+                        const tLang = translatedLanguages?.[i]
+                        const displayName = !isZH && tLang?.language_name ? tLang.language_name : lang.language_name
+                        const prof = PROFICIENCY_LABELS[lang.proficiency]
+                        const profLabel = lang.is_native
+                          ? (isZH ? '母语' : 'Native')
+                          : prof
+                            ? (isZH ? prof.zh : prof.en)
+                            : lang.proficiency
+                        return (
+                          <div key={i} style={{
+                            background: `${C.surface}80`,
+                            border: `1px solid ${C.border}`,
+                            borderRadius: 3,
+                            padding: '5px 8px',
+                          }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>
+                              {displayName}
+                              {profLabel && <span style={{ fontWeight: 400, color: '#64748b', marginLeft: 4 }}>({profLabel})</span>}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </aside>
+
+              {/* ── RIGHT MAIN CONTENT (68%) ─────────────────────────────── */}
+              <article style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+                {/* Executive Summary */}
+                {pInfo('summary') && (
+                  <section style={{
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderLeft: `3px solid ${C.accent}`,
+                    borderRadius: 5,
+                    padding: '14px 16px',
+                  }}>
+                    <h3 style={{
+                      fontFamily: "'Noto Serif', serif",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: C.textBright,
+                      marginBottom: 7,
+                    }}>
+                      {sectionLabel('个人简介', 'Executive Summary')}
+                    </h3>
+                    <p style={{ fontSize: 10.5, lineHeight: 1.65, color: C.textMain }}>
+                      <EditableCell
+                        value={isBilingual && originalPersonalInfo ? String(originalPersonalInfo.summary ?? '') : pInfo('summary')}
+                        onSave={(v) => updatePersonalInfoField('summary', v)}
+                        placeholder={isZH ? '个人简介（点击编辑）' : 'Professional summary (click to edit)'}
+                        multiline
+                        className="block w-full"
+                      />
+                      {isBilingual && originalPersonalInfo && resumePersonalInfo?.summary && (
+                        <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.65, fontStyle: 'italic' }}>
+                          {pInfo('summary')}
                         </span>
                       )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                    </p>
+                  </section>
+                )}
 
-            {/* ══ SPOKEN LANGUAGES ═════════════════════════════════════════ */}
-            {resumeLanguages.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel(t('workspace.resume_preview.spoken_languages'), t('workspace.resume_preview.spoken_languages'))}
-                </h2>
-                <div className="flex flex-wrap gap-x-6 gap-y-1.5">
-                  {resumeLanguages.map((lang, i) => {
-                    const profLabel = t(`workspace.resume_preview.proficiency.${lang.proficiency as LanguageProficiency}`)
-                    return (
-                      <div key={i} className="flex items-center gap-1.5 text-[12.5px]">
-                        <span className="font-medium text-gray-800">{lang.language_name}</span>
-                        <span className="text-gray-300 select-none">·</span>
-                        <span className="text-gray-500 text-[11.5px]">
-                          {lang.is_native ? (isZH ? '母语' : 'Native') : profLabel}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
+                {/* Work Experience */}
+                {confirmedExps.length > 0 && (
+                  <section>
+                    <MainHeading>{sectionLabel('工作经历', 'Professional Experience')}</MainHeading>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {confirmedExps.map((exp, expIdx) => (
+                        <div key={exp.id} style={{ position: 'relative', paddingLeft: 18 }}>
+                          {/* Timeline dot + line */}
+                          <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 5,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            background: expIdx === 0 ? C.accent : C.border,
+                            boxShadow: expIdx === 0 ? `0 0 7px ${C.accent}99` : 'none',
+                          }} />
+                          {expIdx < confirmedExps.length - 1 && (
+                            <div style={{
+                              position: 'absolute',
+                              left: 3.5,
+                              top: 14,
+                              bottom: -20,
+                              width: 1,
+                              background: `${C.accent}30`,
+                            }} />
+                          )}
 
-            {/* ══ AWARDS & HONORS ══════════════════════════════════════════ */}
-            {resumeAwards.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel(t('workspace.resume_preview.awards'), t('workspace.resume_preview.awards'))}
-                </h2>
-                <div className="space-y-1.5">
-                  {resumeAwards.map((award, i) => (
-                    <div key={i} className="flex items-baseline justify-between gap-3 text-[12.5px]">
-                      <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
-                        <span className="font-medium text-gray-800">{award.title}</span>
-                        {award.issuing_org && (
-                          <>
-                            <span className="text-gray-300 select-none">·</span>
-                            <span className="text-gray-500 text-[11.5px]">{award.issuing_org}</span>
-                          </>
-                        )}
-                      </div>
-                      {award.award_year && (
-                        <span className="text-[11px] text-gray-400 whitespace-nowrap flex-shrink-0">{award.award_year}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                          {/* Company + Date row */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 3 }}>
+                            <div>
+                              <h4 style={{ fontWeight: 700, fontSize: 12, color: C.textBright, marginBottom: 2 }}>
+                                <EditableCell
+                                  value={exp.job_title}
+                                  onSave={(v) => updateExperienceField(exp.id, 'job_title', v)}
+                                  placeholder={isZH ? '职位' : 'Title'}
+                                />
+                              </h4>
+                              <p style={{ fontSize: 10, fontWeight: 600, color: C.accent, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                                <EditableCell
+                                  value={exp.company}
+                                  onSave={(v) => updateExperienceField(exp.id, 'company', v)}
+                                  placeholder={isZH ? '公司名称' : 'Company'}
+                                />
+                              </p>
+                            </div>
+                            <span style={{
+                              fontSize: 8,
+                              fontFamily: 'monospace',
+                              background: C.surface,
+                              border: `1px solid ${C.border}`,
+                              color: C.textMain,
+                              padding: '2px 7px',
+                              borderRadius: 3,
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                              marginLeft: 8,
+                            }}>
+                              <EditableCell
+                                value={exp.original_tenure ?? ''}
+                                onSave={(v) => updateExperienceField(exp.id, 'original_tenure', v)}
+                                placeholder={isZH ? '任期' : 'Tenure'}
+                              />
+                            </span>
+                          </div>
 
-            {/* ══ PUBLICATIONS ═════════════════════════════════════════════ */}
-            {resumePublications.length > 0 && (
-              <section className="mb-6">
-                <h2 className="text-[9.5px] font-bold text-indigo-400 uppercase tracking-[0.15em] mb-3 select-none">
-                  {sectionLabel(t('workspace.resume_preview.publications'), t('workspace.resume_preview.publications'))}
-                </h2>
-                <div className="space-y-2.5">
-                  {resumePublications.map((pub, i) => (
-                    <div key={i} className="text-[12px] text-gray-700 leading-relaxed">
-                      <span className="font-medium text-gray-800">{pub.title}</span>
-                      {pub.publication_venue && (
-                        <span className="text-gray-500"> · {pub.publication_venue}</span>
-                      )}
-                      {pub.pub_year && (
-                        <span className="text-gray-400"> · {pub.pub_year}</span>
-                      )}
+                          {/* Achievement bullets */}
+                          {exp.achievements.length > 0 && (() => {
+                            type ProjectGroup = { project_name: string | null; project_member_role: string | null; items: Achievement[] }
+                            const groups: ProjectGroup[] = []
+                            for (const a of exp.achievements) {
+                              const last = groups[groups.length - 1]
+                              if (last && last.project_name === (a.project_name ?? null)) {
+                                last.items.push(a)
+                              } else {
+                                groups.push({ project_name: a.project_name ?? null, project_member_role: a.project_member_role ?? null, items: [a] })
+                              }
+                            }
+                            return (
+                              <div style={{ marginTop: 7, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {groups.map((group, gi) => (
+                                  <div key={gi}>
+                                    {group.project_name && (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4, marginTop: 6 }}>
+                                        <span style={{ fontSize: 10, color: C.accent, fontWeight: 500 }}>▸</span>
+                                        <span style={{ fontSize: 10, color: C.accent, fontWeight: 600, letterSpacing: '0.04em' }}>{group.project_name}</span>
+                                        {group.project_member_role && (
+                                          <>
+                                            <span style={{ color: C.border, fontSize: 9 }}>·</span>
+                                            <span style={{ fontSize: 10, color: '#64748b' }}>{group.project_member_role}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+                                    <ul style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 2 }}>
+                                      {group.items.map((a) => {
+                                        const isDropTarget = pendingDropTarget === a.id
+                                        const isActive = activeAchievementId === a.id
+                                        return (
+                                          <li
+                                            key={a.id}
+                                            data-resume-ach-id={a.id}
+                                            onClick={() => {
+                                              const nextActive = isActive ? null : a.id
+                                              setActiveAchievementId(nextActive)
+                                              if (nextActive) {
+                                                trackEvent('achievement_highlighted', {
+                                                  anonymous_id: anonymousId ?? undefined,
+                                                  achievement_id: a.id,
+                                                  from: 'resume',
+                                                })
+                                              }
+                                            }}
+                                            style={{
+                                              display: 'flex',
+                                              alignItems: 'flex-start',
+                                              gap: 7,
+                                              borderRadius: 3,
+                                              transition: 'all 0.15s',
+                                              outline: isDropTarget ? `2px solid ${C.accent}` : isActive ? `2px solid ${C.accent}80` : 'none',
+                                              outlineOffset: 2,
+                                              background: isDropTarget ? `${C.accent}0d` : isActive ? `${C.accent}08` : 'transparent',
+                                              cursor: 'pointer',
+                                            }}
+                                            onDragOver={(e) => {
+                                              e.preventDefault()
+                                              e.dataTransfer.dropEffect = 'copy'
+                                              if (pendingDropTarget !== a.id) setPendingDropTarget(a.id)
+                                            }}
+                                            onDragLeave={(e) => {
+                                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                                setPendingDropTarget(null)
+                                              }
+                                            }}
+                                            onDrop={(e) => {
+                                              e.preventDefault()
+                                              setPendingDropTarget(null)
+                                              try {
+                                                const raw = e.dataTransfer.getData('application/json')
+                                                if (!raw) return
+                                                const newAch = JSON.parse(raw) as Achievement
+                                                replaceAchievementInResume(exp.id, a.id, newAch)
+                                              } catch { /* ignore */ }
+                                            }}
+                                          >
+                                            {/* Accent slash bullet — matching HTML template style */}
+                                            <span style={{
+                                              color: C.accent,
+                                              fontWeight: 900,
+                                              fontSize: 11,
+                                              lineHeight: '1.6',
+                                              flexShrink: 0,
+                                              userSelect: 'none',
+                                            }}>/</span>
+                                            {/* Tier dot */}
+                                            <span style={{
+                                              width: 5,
+                                              height: 5,
+                                              borderRadius: '50%',
+                                              flexShrink: 0,
+                                              marginTop: 7,
+                                              background: a.tier === 1 ? '#10b981' : a.tier === 2 ? '#f59e0b' : '#f87171',
+                                            }} />
+                                            {(() => {
+                                              const enText = translatedTexts[a.id]
+                                              if (isBilingual && enText) {
+                                                return (
+                                                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                    <EditableCell
+                                                      value={a.text}
+                                                      onSave={(v) => updateAchievementText(exp.id, a.id, v)}
+                                                      multiline
+                                                      className="block"
+                                                    />
+                                                    <div style={{ fontSize: 9.5, color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic' }}>{enText}</div>
+                                                  </div>
+                                                )
+                                              }
+                                              const displayText = (!isZH && enText) ? enText : a.text
+                                              return a.tier === 2 && a.has_placeholders && !enText ? (
+                                                <HighlightedEditableCell
+                                                  value={displayText}
+                                                  onSave={(v) => updateAchievementText(exp.id, a.id, v)}
+                                                  className="flex-1"
+                                                />
+                                              ) : (
+                                                <EditableCell
+                                                  value={displayText}
+                                                  onSave={(v) => updateAchievementText(exp.id, a.id, v)}
+                                                  multiline
+                                                  className="flex-1"
+                                                />
+                                              )
+                                            })()}
+                                            {isActive && (
+                                              <button
+                                                onMouseDown={(e) => {
+                                                  e.stopPropagation()
+                                                  e.preventDefault()
+                                                  ignoreAchievement(a.id)
+                                                  setActiveAchievementId(null)
+                                                }}
+                                                style={{
+                                                  flexShrink: 0, width: 18, height: 18,
+                                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                  color: '#94a3b8', borderRadius: 3, border: 'none', background: 'transparent',
+                                                  cursor: 'pointer', fontSize: 13, fontWeight: 600, userSelect: 'none',
+                                                }}
+                                                title={isZH ? '从简历中移除' : 'Remove from resume'}
+                                                className="hover:text-red-500 hover:bg-red-50 transition-colors"
+                                              >
+                                                ×
+                                              </button>
+                                            )}
+                                          </li>
+                                        )
+                                      })}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })()}
+
+                          {/* Insert drop zone */}
+                          {(() => {
+                            const isInsertTarget = pendingInsertTarget === exp.id
+                            return (
+                              <div
+                                style={{
+                                  marginTop: 6,
+                                  borderRadius: 3,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 9,
+                                  transition: 'all 0.15s',
+                                  border: `1px dashed ${isInsertTarget ? C.accent : dragActive ? '#94a3b8' : 'transparent'}`,
+                                  height: isInsertTarget ? 28 : dragActive ? 24 : 0,
+                                  background: isInsertTarget ? `${C.accent}0d` : 'transparent',
+                                  color: isInsertTarget ? C.accent : '#94a3b8',
+                                  overflow: 'hidden',
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault()
+                                  e.dataTransfer.dropEffect = 'copy'
+                                  if (pendingInsertTarget !== exp.id) setPendingInsertTarget(exp.id)
+                                }}
+                                onDragLeave={(e) => {
+                                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                    setPendingInsertTarget(null)
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault()
+                                  setPendingInsertTarget(null)
+                                  try {
+                                    const raw = e.dataTransfer.getData('application/json')
+                                    if (!raw) return
+                                    const newAch = JSON.parse(raw) as Achievement
+                                    insertAchievementInResume(exp.id, newAch)
+                                  } catch { /* ignore */ }
+                                }}
+                              >
+                                {isInsertTarget
+                                  ? (isZH ? '+ 追加成就' : '+ Add here')
+                                  : dragActive
+                                    ? (isZH ? '拖入此处添加' : 'Drop here to add')
+                                    : ''}
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                  </section>
+                )}
+
+                {/* Education */}
+                {resumeEducation.length > 0 && (
+                  <section>
+                    <MainHeading>{sectionLabel('教育背景', 'Academic Background')}</MainHeading>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      {resumeEducation.map((edu, i) => {
+                        const origEdu = originalEducation?.[i]
+                        const zhEdu = isBilingual && origEdu ? origEdu : edu
+                        const isFirst = i === 0
+                        const gpaRankParts: string[] = []
+                        if (edu.gpa_score) gpaRankParts.push(`GPA ${edu.gpa_score}${edu.gpa_scale ? `/${edu.gpa_scale}` : ''}`)
+                        if (edu.class_rank_text) gpaRankParts.push(edu.class_rank_text)
+                        if (edu.academic_honors) gpaRankParts.push(edu.academic_honors)
+                        return (
+                          <div key={i} style={{
+                            background: C.surface,
+                            border: `1px solid ${C.border}`,
+                            borderBottom: `2px solid ${isFirst ? C.accent : `${C.textMain}30`}`,
+                            borderRadius: 5,
+                            padding: '12px 14px',
+                          }}>
+                            {(edu.degree || edu.major) && (
+                              <p style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.accent, marginBottom: 3 }}>
+                                {[zhEdu.degree].filter(Boolean).join('')}
+                              </p>
+                            )}
+                            <h4 style={{ fontWeight: 700, fontSize: 11, color: C.textBright, marginBottom: 2 }}>
+                              <EditableCell
+                                value={zhEdu.major || zhEdu.school}
+                                onSave={(v) => {
+                                  const updated = [...resumeEducation]
+                                  updated[i] = { ...edu, major: v }
+                                  updateEducation(updated)
+                                }}
+                                placeholder={isZH ? '专业' : 'Major'}
+                              />
+                            </h4>
+                            <p style={{ fontSize: 9.5, color: C.textMain }}>
+                              <EditableCell
+                                value={zhEdu.school}
+                                onSave={(v) => {
+                                  const updated = [...resumeEducation]
+                                  updated[i] = { ...edu, school: v }
+                                  updateEducation(updated)
+                                }}
+                                placeholder={isZH ? '学校名称' : 'School'}
+                              />
+                            </p>
+                            <p style={{ fontSize: 8, fontFamily: 'monospace', color: '#94a3b8', marginTop: 5 }}>
+                              {gpaRankParts.length > 0 && (
+                                <span style={{ color: C.accent }}>{gpaRankParts.join(' · ')}</span>
+                              )}
+                              {gpaRankParts.length > 0 && [edu.start_year, edu.end_year].filter(Boolean).length > 0 && ' • '}
+                              <EditableCell
+                                value={[edu.start_year, edu.end_year].filter(Boolean).join('–')}
+                                onSave={(v) => {
+                                  const parts = v.split(/[-–—]/).map((s) => parseInt(s.trim(), 10))
+                                  const updated = [...resumeEducation]
+                                  updated[i] = {
+                                    ...edu,
+                                    start_year: isNaN(parts[0]) ? null : parts[0],
+                                    end_year: parts[1] && !isNaN(parts[1]) ? parts[1] : null,
+                                  }
+                                  updateEducation(updated)
+                                }}
+                                placeholder="2020–2024"
+                              />
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+
+                {/* Publications */}
+                {resumePublications.length > 0 && (
+                  <section>
+                    <MainHeading>{sectionLabel('学术成果', 'Publications & Research')}</MainHeading>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {resumePublications.map((pub, i) => {
+                        const tPub = translatedPublications?.[i]
+                        const displayTitle = !isZH && tPub?.title ? tPub.title : pub.title
+                        return (
+                          <div key={i} style={{
+                            display: 'flex',
+                            gap: 10,
+                            padding: '6px 8px',
+                            borderRadius: 3,
+                            border: `1px solid transparent`,
+                            transition: 'all 0.15s',
+                          }}
+                          className="hover:bg-[#f8fafc] hover:border-[#e2e8f0]"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: 13, color: C.accent, flexShrink: 0, marginTop: 1 }}>description</span>
+                            <div>
+                              <p style={{ fontSize: 9.5, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
+                              {pub.publication_venue && (
+                                <p style={{ fontSize: 8.5, color: C.textMain, fontStyle: 'italic', marginTop: 2 }}>
+                                  {pub.publication_venue}{pub.pub_year ? `, ${pub.pub_year}` : ''}
+                                </p>
+                              )}
+                              {isBilingual && tPub && tPub.title !== pub.title && (
+                                <p style={{ fontSize: 8.5, color: '#94a3b8', marginTop: 2, fontStyle: 'italic' }}>{tPub.title}</p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+              </article>
+            </div>
+
+            {/* ══ FOOTER ════════════════════════════════════════════════════ */}
+            <footer style={{
+              borderTop: `1px solid ${C.border}`,
+              padding: '10px 36px',
+              textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 8, fontFamily: 'monospace', color: `${C.textMain}40`, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                CareerFlow · Professional Portfolio System · 2024
+              </p>
+            </footer>
           </>
         )}
 
         {/* Protection watermark */}
-        <div className="absolute bottom-4 right-5 select-none pointer-events-none">
-          <span className="text-[9px] text-gray-200 tracking-wide">CareerFlow · Protected</span>
+        <div style={{ position: 'absolute', bottom: 12, right: 16, pointerEvents: 'none', userSelect: 'none' }}>
+          <span style={{ fontSize: 8, color: `${C.border}`, letterSpacing: '0.05em' }}>CareerFlow · Protected</span>
         </div>
       </div>
 
-      {/* Global styles for editable cells */}
-      <style jsx global>{`
-        .editable-cell {
-          border-radius: 3px;
-          padding: 0 2px;
-          margin: 0 -2px;
-          min-width: 4px;
-          display: inline;
-          transition: background 0.1s;
-        }
-        .editable-cell:hover {
-          background-color: rgba(238, 242, 255, 0.7);
-        }
-        .editable-cell:focus {
-          background-color: rgba(224, 231, 255, 0.6);
-          box-shadow: 0 0 0 1.5px rgba(129, 140, 248, 0.4);
-          outline: none;
-        }
-        .editable-cell[data-ph]:empty::before {
-          content: attr(data-ph);
-          color: #d1d5db;
-          pointer-events: none;
-          font-style: italic;
-          font-weight: normal;
-        }
-      `}</style>
-
-      {/* Photo crop modal — rendered outside the A4 paper so it's full-screen */}
       {cropFile && (
         <PhotoCropModal
           file={cropFile}

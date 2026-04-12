@@ -243,6 +243,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── AI Summary generation ──────────────────────────────────────────────────
+    let generated_summary: string | null = null
+    try {
+      const summaryPrompt = await getPrompt('resume_summary_generate', market)
+      // Build a concise input for the summary model
+      const topAchievements = selectedAchievements
+        .filter((a) => (a.tier as number) <= 2)
+        .slice(0, 10)
+        .map((a) => `- ${a.text} (${a.company}, ${a.job_title})`)
+        .join('\n')
+      const educationLines = (education ?? [])
+        .slice(0, 2)
+        .map((e: Record<string, unknown>) => `${e.school ?? ''} ${e.degree ?? ''} ${e.major ?? ''}`.trim())
+        .join('; ')
+      const skillLines = (skills ?? [])
+        .slice(0, 4)
+        .map((s: Record<string, unknown>) => `${s.category}: ${(s.items as string[] ?? []).slice(0, 5).join(', ')}`)
+        .join(' | ')
+      const summaryInput = [
+        personal_info?.name ? `姓名/Name: ${personal_info.name}` : '',
+        educationLines ? `教育/Education: ${educationLines}` : '',
+        skillLines ? `技能/Skills: ${skillLines}` : '',
+        topAchievements ? `代表成就/Achievements:\n${topAchievements}` : ''
+      ].filter(Boolean).join('\n')
+
+      const summaryRaw = await callAI(
+        'resume_summary_generate',
+        [
+          { role: 'system', content: summaryPrompt },
+          { role: 'user', content: summaryInput }
+        ],
+        market,
+        { timeout: 20000 }
+      )
+      generated_summary = summaryRaw.trim().replace(/^["']|["']$/g, '')
+    } catch {
+      // Summary generation failed — return null, frontend keeps existing summary
+    }
+
     await trackEvent('resume_generated', {
       anonymous_id,
       has_jd: !!jd_text?.trim(),
@@ -259,6 +298,7 @@ export async function POST(req: NextRequest) {
         ...(translated_personal_info ? { translated_personal_info } : {}),
         ...(translated_education ? { translated_education } : {}),
         ...(translated_skills ? { translated_skills } : {}),
+        ...(generated_summary ? { generated_summary } : {}),
         strategy,
         warning_message: warningMessage,
       }

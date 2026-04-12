@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { WorkspaceClient } from '@/components/workspace/WorkspaceClient'
 import { redirect } from '@/lib/i18n/navigation'
 import { headers } from 'next/headers'
+import type { ResumeVersion } from '@/lib/types/domain'
 
 interface WorkspacePageProps {
   params: Promise<{ locale: string }>
@@ -24,15 +25,20 @@ export default async function WorkspacePage({
   console.log('[workspace:page] anonymous_id:', anonymous_id)
   console.log('[workspace:page] locale:', locale)
 
-  if (!anonymous_id) {
-    console.log('[workspace:page] No anonymous_id, redirecting')
-    redirect({ href: '/', locale })
-  }
-
   const supabase = await createClient()
   const supabaseAdmin = createServiceClient()
   const { data: { user } } = await supabase.auth.getUser()
   console.log('[workspace:page] user:', user ? user.id : 'null')
+
+  // For logged-in users navigating via NavBar (no anonymous_id), use their user_id
+  // For anonymous users, anonymous_id is required
+  if (!anonymous_id && !user) {
+    console.log('[workspace:page] No anonymous_id and no user, redirecting')
+    redirect({ href: '/', locale })
+  }
+
+  // Effective identity: prefer user_id (logged-in) over anonymous_id
+  const effectiveAnonId = anonymous_id ?? user!.id
 
   // Load work experiences + achievements (use service client to bypass RLS for anonymous users)
   const expQuery = supabaseAdmin
@@ -45,7 +51,7 @@ export default async function WorkspacePage({
 
   const { data: experiences } = user
     ? await expQuery.eq('user_id', user.id)
-    : await expQuery.eq('anonymous_id', anonymous_id!)
+    : await expQuery.eq('anonymous_id', effectiveAnonId)
   console.log('[workspace:page] experiences count:', experiences?.length ?? 0)
 
   // Load user profile (if authenticated)
@@ -80,7 +86,7 @@ export default async function WorkspacePage({
 
   const { data: uploadRows, error: uploadRowsError } = user
     ? await uploadQuery.eq('user_id', user.id)
-    : await uploadQuery.eq('anonymous_id', anonymous_id!)
+    : await uploadQuery.eq('anonymous_id', effectiveAnonId)
 
   if (uploadRowsError) {
     console.error('[workspace:page] uploadRows query error:', uploadRowsError.message, uploadRowsError.code)
@@ -104,6 +110,22 @@ export default async function WorkspacePage({
     }
   }
 
+  // Load the most recent resume_version snapshot for returning users
+  // Only needed for logged-in users (anonymous users carry state in their upload session)
+  let initialVersion: ResumeVersion | null = null
+  if (user) {
+    const { data: versionRows } = await supabaseAdmin
+      .from('resume_versions')
+      .select('id, user_id, anonymous_id, editor_json, photo_path, show_photo, template_key, snapshot_label, snapshot_jd, resume_lang, is_auto_save, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (versionRows) {
+      initialVersion = versionRows as ResumeVersion
+    }
+  }
+
   // Only pass pre-loaded experiences when parse is already complete.
   // If parsing is still in progress (pending/processing), start with an empty
   // slate so the workspace shows the loading state, not stale data from a
@@ -114,7 +136,7 @@ export default async function WorkspacePage({
   return (
     <WorkspaceClient
       initialExperiences={preloadedExperiences}
-      anonymousId={anonymous_id!}
+      anonymousId={effectiveAnonId}
       userId={user?.id ?? null}
       profile={profile}
       locale={locale}
@@ -125,6 +147,7 @@ export default async function WorkspacePage({
       uploadFileType={uploadFileType}
       uploadId={uploadId ?? undefined}
       geoCountry={geoCountry}
+      initialVersion={initialVersion}
     />
   )
 }

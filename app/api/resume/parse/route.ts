@@ -265,8 +265,19 @@ export async function POST(req: NextRequest) {
     }
     console.log('[parse] merged output, experiences:', output.experiences.length, 'education:', output.education.length, 'skills:', output.skills.length)
 
-    // ── Clear stale records for anonymous sessions ────────────────────────────
-    if (!user_id && anonymous_id) {
+    // ── Clear stale records before inserting new ones ────────────────────────
+    // Both anonymous and authenticated users: always replace, never append.
+    if (user_id) {
+      await supabase.from('work_experiences').delete().eq('user_id', user_id)
+      await Promise.all([
+        supabase.from('education').delete().eq('user_id', user_id),
+        supabase.from('user_skills').delete().eq('user_id', user_id),
+        supabase.from('certifications').delete().eq('user_id', user_id),
+        supabase.from('spoken_languages').delete().eq('user_id', user_id),
+        supabase.from('awards_honors').delete().eq('user_id', user_id),
+        supabase.from('publications').delete().eq('user_id', user_id),
+      ])
+    } else if (anonymous_id) {
       await supabase.from('work_experiences').delete().eq('anonymous_id', anonymous_id)
       await Promise.all([
         supabase.from('education').delete().eq('anonymous_id', anonymous_id),
