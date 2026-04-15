@@ -5,9 +5,6 @@ import { type NextRequest, NextResponse } from 'next/server'
 const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
-  if (pathname.match(/\.(.*)$/)) {
-    return NextResponse.next()
-  }
   // ── Geo country forwarding (T-S02-4) ─────────────────────────────────────
   // Used only for analytics and default UI language — never for payment logic.
   const geoCountry =
@@ -43,5 +40,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|.*\\..*).*)']
+  matcher: ['/((?!_next/static|_next/image|favicon|api|auth).*)']
 }
