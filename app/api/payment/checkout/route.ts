@@ -21,13 +21,15 @@ export async function POST(req: NextRequest) {
 
     const amount = settings?.price_usd || 9.99
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
     const { checkout_url, session_id } = await createCreemCheckout({
       userId: user?.id,
       anonymousId,
       planType: plan_type,
       format,
       amount,
-      currency: 'USD'
+      currency: 'USD',
+      appUrl
     })
 
     // Save payment record

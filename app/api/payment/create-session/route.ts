@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const amount = prices[plan_type as keyof typeof prices] ?? prices.one_time
     const dbPlanType = plan_type === 'one_time' ? 'per_export' : plan_type
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3005'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
     const successUrl = `${appUrl}/payment/success?format=${format}&anon_id=${anonymousId}&plan=${plan_type}`
     const cancelUrl = `${appUrl}/workspace`
 

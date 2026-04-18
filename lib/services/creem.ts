@@ -10,6 +10,7 @@ interface CreemCheckoutParams {
   format: 'pdf' | 'docx'
   amount: number
   currency: string
+  appUrl: string
 }
 
 export async function createCreemCheckout(params: CreemCheckoutParams) {
@@ -20,8 +21,8 @@ export async function createCreemCheckout(params: CreemCheckoutParams) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/workspace`,
+      success_url: `${params.appUrl}/payment/success`,
+      cancel_url: `${params.appUrl}/workspace`,
       metadata: {
         user_id: params.userId,
         anonymous_id: params.anonymousId,

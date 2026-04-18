@@ -231,7 +231,8 @@ export async function POST(req: NextRequest) {
     console.log('[upload] DB record created, id:', uploadRecord.id, '— firing parse job')
 
     // Trigger async parsing (fire-and-forget)
-    void fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/resume/parse`, {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
+    void fetch(`${appUrl}/api/resume/parse`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
