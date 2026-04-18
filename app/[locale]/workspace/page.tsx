@@ -17,9 +17,9 @@ export default async function WorkspacePage({
   const { locale } = await params
   const { anonymous_id } = await searchParams
 
-  // T-S02-4: read geo country forwarded by middleware
+  // T-S02-4: read geo country from Vercel's native header
   const headersList = await headers()
-  const geoCountry = headersList.get('x-geo-country')
+  const geoCountry = headersList.get('x-vercel-ip-country') ?? headersList.get('x-geo-country')
 
   console.log('[workspace:page] === START ===')
   console.log('[workspace:page] anonymous_id:', anonymous_id)
