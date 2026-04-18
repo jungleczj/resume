@@ -5,9 +5,13 @@ import { type NextRequest, NextResponse } from 'next/server'
 const intlMiddleware = createMiddleware(routing)
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Skip static file requests (belt-and-suspenders — matcher already handles most)
   if (pathname.match(/\.(.*)$/)) {
     return NextResponse.next()
   }
+
   // ── Geo country forwarding (T-S02-4) ─────────────────────────────────────
   // Used only for analytics and default UI language — never for payment logic.
   const geoCountry =
@@ -26,7 +30,6 @@ export async function middleware(request: NextRequest) {
   // Redirect cn_free users away from /pricing without touching Supabase SDK.
   // The cf_market cookie is written by /auth/callback on every login.
   // If the cookie is absent (anonymous / not logged in) we let the page through.
-  const pathname = request.nextUrl.pathname
   const isPricingRoute = /\/(?:zh-CN|en-US)?\/pricing(?:\/|$)/.test(pathname) ||
     pathname === '/pricing'
 
