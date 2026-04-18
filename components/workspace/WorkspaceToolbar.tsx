@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/types/domain'
+import { useWorkspaceStore } from '@/store/workspace'
 
 interface WorkspaceToolbarProps {
   anonymousId: string
@@ -31,11 +32,14 @@ export function WorkspaceToolbar({
     supabase.auth.getUser().then(({ data }) => setUser(data.user))
   }, [])
 
+  const setResumeLang = useWorkspaceStore(s => s.setResumeLang)
   const isEN = locale === 'en-US'
 
   const toggleLocale = () => {
     const next = isEN ? 'zh-CN' : 'en-US'
     router.replace(pathname, { locale: next })
+    // Sync resume template language with UI locale toggle
+    setResumeLang(isEN ? 'zh' : 'en')
   }
 
   const handleSignOut = async () => {

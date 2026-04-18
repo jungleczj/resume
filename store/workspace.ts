@@ -342,6 +342,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           snapshot_jd: s.jdText || null,
           resume_lang: s.resumeLang,
           show_photo: s.showPhoto,
+          photo_path: s.photoPath ?? null,
         }),
       })
     } catch {

@@ -428,7 +428,7 @@ function buildDocument(
     sections: [{
       properties: {
         page: {
-          margin: { top: 720, right: 720, bottom: 720, left: 720 }
+          margin: { top: 540, right: 540, bottom: 540, left: 540 } // 540 twips = 0.375in = 36px@96dpi
         }
       },
       children: allChildren

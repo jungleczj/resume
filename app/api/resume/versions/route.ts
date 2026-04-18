@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
       snapshot_jd,
       resume_lang,
       show_photo,
+      photo_path,
     } = body
 
     if (!anonymous_id && !user_id) {
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
         resume_lang: resume_lang ?? 'zh',
         show_photo: show_photo ?? false,
         template_key: 'default',
-        photo_path: null,
+        photo_path: photo_path ?? null,
         is_auto_save: !snapshot_label,
       })
       .select('id, snapshot_label, snapshot_jd, resume_lang, is_auto_save, show_photo, editor_json, created_at')

@@ -29,7 +29,7 @@ interface PDFData {
 // ── Page constants ────────────────────────────────────────────────────────────
 const PAGE_W = 595
 const PAGE_H = 842
-const MARGIN  = 36       // outer margin (matches 36px padding in HTML)
+const MARGIN  = 27       // outer margin: 36px HTML × (595pt/794px) ≈ 27pt to match preview
 const LINE_H  = 12
 
 // ── Cobalt palette ────────────────────────────────────────────────────────────
