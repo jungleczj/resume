@@ -1,6 +1,5 @@
-import createNextIntlPlugin from 'next-intl/plugin'
-
-const withNextIntl = createNextIntlPlugin('./lib/i18n/request.ts')
+// next.config.js  (CommonJS — __dirname available natively)
+const path = require('path')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -11,7 +10,18 @@ const nextConfig = {
   // require() them natively in the Node.js API route runtime instead of bundling them.
   serverExternalPackages: ['pdf-parse', 'mammoth', 'pdf-lib', '@pdf-lib/fontkit'],
   experimental: {},
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, nextRuntime }) => {
+    // Provide next-intl config alias for ALL builds EXCEPT Edge Runtime.
+    // The middleware runs in Edge Runtime and does not use next-intl at all;
+    // setting this alias there caused a bundling chain on Vercel:
+    //   next-intl/config → lib/i18n/request.ts → next-intl/server → __dirname (crash)
+    if (nextRuntime !== 'edge') {
+      config.resolve.alias['next-intl/config'] = path.resolve(
+        __dirname,
+        'lib/i18n/request.ts'
+      )
+    }
+
     if (!isServer) {
       // pdfjs-dist uses canvas in Node.js (server) context only; ignore in browser
       config.resolve.alias.canvas = false
@@ -34,4 +44,4 @@ const nextConfig = {
   }
 }
 
-export default withNextIntl(nextConfig)
+module.exports = nextConfig
