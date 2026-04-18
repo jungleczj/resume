@@ -450,64 +450,78 @@ Output ONLY valid JSON — no markdown code blocks:
 
   resume_achievement_beautify_cn: `你是简历成就分级美化专家。输入：带index编号的原始成就/职责条目列表。
 
-## 三档分级规则
+## 三档分级规则与内联高亮标记
 
 **第一档 🟢（已量化）**
-- 判断：原文已含数字、百分比、金额、时间对比、规模等可见数据
-- **特别规则**：原文含有明确排名数字（如"排名前5%"、"班级第3名"、"3/50"、"top 10%"、"前10名"等）→ 必须直接判为第一档，has_placeholders: false，绝不插入占位符
-- 处理：保留所有原始数字（绝不修改），调整为「强动词 → 做了什么 → 结果数据」句式，去口语化，≤30字
+- 判断：原文已含数字、百分比、金额、时间对比、规模、排名等数据
+- 特别规则：原文含明确排名数字（如"排名前5%"、"班级第3名"、"3/50"、"top 10%"）→ 必须直接判为第一档，has_placeholders: false
+- 处理：
+  1. 调整为「强动词 → 做了什么 → 结果数据」句式，去口语化，≤30字
+  2. 将体现成果影响力的核心指标（数字、百分比、排名、金额等）用 {{...}} 包裹高亮
+     示例："获得竞赛集团排名前5%（45/1000）" → "参加集团安全竞赛，取得{{前5%（45/1000名）}}排名"
+     仅标记有实际成果意义的指标，勿标记年份、序号、工作年限等背景数字
 - has_placeholders: false
 
 **第二档 🟡（待补充）**
-- 判断：有明确成果描述但缺少数字，该类工作客观上存在可量化指标
-- 注意：如果原文已有排名数字，不得判为第二档
-- 处理：识别可量化维度，在数字位置插入 [[类型:说明]] 格式占位符，例如 [[增长率:团队效率提升]] 或 [[金额:节省成本]]
+- 判断：有成果描述但缺数字，客观上存在可量化指标；原文已有排名数字则不可判为第二档
+- 处理：在数字位置插入 [[类型:说明]] 占位符，如 [[增长率:团队效率提升幅度]] 或 [[金额:节省成本]]
 - has_placeholders: true
 
 **第三档 🔴（主观描述）**
-- 判断：纯感受/态度/能力表述，无法量化，如"具备良好沟通能力"、"工作认真负责"
-- 处理：保留用户原文，不改写，在末尾加标注 "（建议补充具体案例）"
+- 判断：纯感受/态度/能力表述，无法量化，如"具备良好沟通能力"
+- 处理：保留用户原文不改写，在末尾追加 {{建议补充具体案例}}
 - has_placeholders: false
+
+## 标记说明
+- {{...}}：AI高亮标记。第一档标记关键量化亮点（显示为蓝色加粗）；第三档标记改进建议（同样蓝色加粗）。展示时去掉大括号仅显示内容。
+- [[类型:说明]]：待填写占位符，用户须在此处补充真实数字（显示为橙色带背景）。
 
 ## 输出规则
 - 输入有多少条，输出必须恰好有多少条，index必须一一对应
 - 输出ONLY有效JSON，无markdown代码块：
 
 [
-  { "index": 0, "text": "美化后文字或原文+标注", "tier": 1, "has_placeholders": false },
-  { "index": 1, "text": "带[[类型:说明]]占位符的文字", "tier": 2, "has_placeholders": true },
-  { "index": 2, "text": "原文（建议补充具体案例）", "tier": 3, "has_placeholders": false }
+  { "index": 0, "text": "参加集团安全竞赛，取得{{前5%（45/1000名）}}排名", "tier": 1, "has_placeholders": false },
+  { "index": 1, "text": "优化团队协作流程，提升效率[[增长率:效率提升幅度]]", "tier": 2, "has_placeholders": true },
+  { "index": 2, "text": "善于跨团队沟通协调{{建议补充具体案例}}", "tier": 3, "has_placeholders": false }
 ]`,
 
   resume_achievement_beautify_en: `You are a resume achievement tiering and beautification specialist. Input: a list of raw achievement/responsibility items with index numbers.
 
-## Three-Tier Classification Rules
+## Three-Tier Classification Rules with Inline Highlight Markers
 
 **Tier 1 🟢 (Quantified)**
-- Criteria: original text already contains numbers, percentages, amounts, time comparisons, or scale data
-- **Special rule**: original text contains an explicit ranking with a number (e.g. "top 5%", "ranked 3rd", "3/50", "top 10 in class", "#1 performer") → must be Tier 1 immediately, has_placeholders: false — never insert a placeholder for a number that's already present
-- Action: preserve ALL original numbers (never modify), reformat as "strong verb → action → result data", remove casual language, ≤30 words
+- Criteria: original text already contains numbers, percentages, amounts, time comparisons, rankings, or scale data
+- Special rule: original text contains an explicit ranking with a number (e.g. "top 5%", "ranked 3rd", "45/1000") → must be Tier 1 immediately, has_placeholders: false
+- Action:
+  1. Reformat as "strong verb → action → result data", remove casual language, ≤30 words
+  2. Wrap core achievement metrics (numbers, %, rankings, amounts) in {{...}}:
+     E.g.: "Won top 5% in group security competition (45/1000)" → "Competed in group security challenge, ranked {{top 5% (45/1000)}}"
+     Only mark metrics with real achievement meaning; do NOT mark years, sequence numbers, or background figures
 - has_placeholders: false
 
 **Tier 2 🟡 (Needs Data)**
-- Criteria: describes a clear outcome but lacks numbers; this type of work objectively has quantifiable metrics
-- Note: if original text already has ranking numbers, do NOT assign Tier 2
-- Action: identify quantifiable dimensions, insert [[type:description]] placeholders where numbers belong, e.g. [[growth_rate:efficiency improvement]] or [[amount:cost saved]]
+- Criteria: describes a clear outcome but lacks numbers; objectively quantifiable. Note: if original text has ranking numbers, do NOT assign Tier 2
+- Action: insert [[type:description]] placeholders where numbers belong, e.g. [[growth_rate:efficiency improvement %]] or [[amount:cost saved]]
 - has_placeholders: true
 
 **Tier 3 🔴 (Subjective)**
-- Criteria: pure feeling/attitude/soft skill statements that cannot be quantified, e.g. "good communication skills", "hardworking and responsible"
-- Action: keep the user's original text unchanged, append "(suggest adding a specific example)" at the end
+- Criteria: pure feeling/attitude/soft skill statements that cannot be quantified
+- Action: keep original text unchanged, append {{Suggest: add a specific example or supporting data}}
 - has_placeholders: false
+
+## Marker Legend
+- {{...}}: AI highlight marker. Tier 1 = key quantified metric. Tier 3 = improvement suggestion. Braces stripped in display; shown in bold accent color.
+- [[type:description]]: user-fill placeholder. User must supply real data here. Shown in orange with background.
 
 ## Output Rules
 - Output exactly as many items as you received — index must match 1:1
 - Output ONLY valid JSON — no markdown code blocks:
 
 [
-  { "index": 0, "text": "beautified text or original+annotation", "tier": 1, "has_placeholders": false },
-  { "index": 1, "text": "text with [[type:description]] placeholders", "tier": 2, "has_placeholders": true },
-  { "index": 2, "text": "original text (suggest adding a specific example)", "tier": 3, "has_placeholders": false }
+  { "index": 0, "text": "Competed in group security challenge, ranked {{top 5% (45/1000)}}", "tier": 1, "has_placeholders": false },
+  { "index": 1, "text": "Optimized team workflow, improved efficiency by [[growth_rate:improvement %]]", "tier": 2, "has_placeholders": true },
+  { "index": 2, "text": "Strong cross-team communication skills {{Suggest: add a specific coordination example or outcome data}}", "tier": 3, "has_placeholders": false }
 ]`,
 
   jd_parse_cn: `从职位描述中提取关键技能、职责和要求。输出 JSON: { "skills": [], "keywords": [] }`,

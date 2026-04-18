@@ -370,6 +370,8 @@ export async function POST(req: NextRequest) {
 
       const achievementsToInsert = exp.achievements.map((a, ai) => ({
         experience_id: expRecord.id,
+        user_id: user_id ?? null,
+        anonymous_id: anonymous_id ?? null,
         text: a.text,
         status: 'confirmed',
         tier: a.tier,
@@ -386,6 +388,8 @@ export async function POST(req: NextRequest) {
         console.warn('[parse] achievements full insert schema error, retrying with core columns:', achError.message)
         const coreAchievements = exp.achievements.map((a) => ({
           experience_id: expRecord!.id,
+          user_id: user_id ?? null,
+          anonymous_id: anonymous_id ?? null,
           text: a.text,
           status: 'confirmed',
           tier: a.tier,

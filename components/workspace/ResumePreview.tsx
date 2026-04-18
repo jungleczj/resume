@@ -93,24 +93,40 @@ function HighlightedEditableCell({
   }, [editing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseSegments(text: string) {
-    return text.split(/(\[\[.*?\]\])/g).map((part, i) =>
-      /^\[\[.*?\]\]$/.test(part) ? (
-        <mark
-          key={i}
-          style={{
-            background: 'rgba(251,146,60,0.12)',
-            color: '#c2410c',
-            borderRadius: 3,
-            padding: '0 3px',
-            fontStyle: 'italic',
-          }}
-        >
-          {part}
-        </mark>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    )
+    return text.split(/(\[\[.*?\]\]|\{\{.*?\}\})/g).map((part, i) => {
+      if (/^\[\[.*?\]\]$/.test(part)) {
+        return (
+          <mark
+            key={i}
+            style={{
+              background: 'rgba(251,146,60,0.15)',
+              color: '#c2410c',
+              borderRadius: 3,
+              padding: '0 3px',
+              fontStyle: 'italic',
+            }}
+          >
+            {part}
+          </mark>
+        )
+      }
+      if (/^\{\{.*?\}\}$/.test(part)) {
+        return (
+          <mark
+            key={i}
+            style={{
+              background: 'transparent',
+              color: C.accent,
+              fontWeight: 700,
+              padding: 0,
+            }}
+          >
+            {part.slice(2, -2)}
+          </mark>
+        )
+      }
+      return <span key={i}>{part}</span>
+    })
   }
 
   if (!editing) {
@@ -479,13 +495,6 @@ export function ResumePreview() {
                   {/* Photo slot */}
                   {showPhoto && (
                     <>
-                      <input
-                        ref={photoInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={handlePhotoFileChange}
-                      />
                       <div className="relative" style={{ alignSelf: 'flex-start' }}>
                         {photoError && (
                           <div style={{ position: 'absolute', bottom: '105%', right: 0, zIndex: 10 }}>
@@ -910,6 +919,7 @@ export function ResumePreview() {
                                             }} />
                                             {(() => {
                                               const enText = translatedTexts[a.id]
+                                              const hasMarkers = a.has_placeholders || /\{\{.*?\}\}/.test(a.text)
                                               if (isBilingual && enText) {
                                                 return (
                                                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -924,7 +934,7 @@ export function ResumePreview() {
                                                 )
                                               }
                                               const displayText = (!isZH && enText) ? enText : a.text
-                                              return a.tier === 2 && a.has_placeholders && !enText ? (
+                                              return hasMarkers && !enText ? (
                                                 <HighlightedEditableCell
                                                   value={displayText}
                                                   onSave={(v) => updateAchievementText(exp.id, a.id, v)}
@@ -1156,6 +1166,17 @@ export function ResumePreview() {
           <span style={{ fontSize: 8, color: `${C.border}`, letterSpacing: '0.05em' }}>CareerFlow · Protected</span>
         </div>
       </div>
+
+      {/* File input lives outside select-none so browser user-gesture chain is never broken */}
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ position: 'fixed', top: -9999, left: -9999, opacity: 0, width: 1, height: 1 }}
+        tabIndex={-1}
+        aria-hidden
+        onChange={handlePhotoFileChange}
+      />
 
       {cropFile && (
         <PhotoCropModal

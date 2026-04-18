@@ -45,7 +45,6 @@ export function WorkspaceToolbar({
   }
 
   const navItems = [
-    { key: 'resumes',      href: '/library',   label: t('nav.resumes'),      show: true },
     { key: 'workspace',    href: '/workspace', label: t('nav.workspace'),    show: true },
     { key: 'achievements', href: '/library',   label: t('nav.achievements'), show: true },
     { key: 'pricing',      href: '/pricing',   label: t('nav.pricing'),      show: true },
@@ -110,9 +109,19 @@ export function WorkspaceToolbar({
             <div className="relative ml-2">
               <button
                 onClick={() => setUserMenuOpen(v => !v)}
-                className="w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-100 cursor-pointer active:scale-95 transition-transform duration-150 bg-surface-container-highest flex items-center justify-center"
+                className="w-10 h-10 rounded-full overflow-hidden border-2 border-indigo-100 cursor-pointer active:scale-95 transition-transform duration-150 bg-surface-container-highest flex items-center justify-center hover:ring-2 hover:ring-[#3525cd]/20"
               >
-                <span className="material-symbols-outlined text-on-surface-variant text-lg">person</span>
+                {user.user_metadata?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.user_metadata.avatar_url as string}
+                    alt="avatar"
+                    className="w-full h-full object-cover rounded-full"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="material-symbols-outlined text-on-surface-variant text-lg">person</span>
+                )}
               </button>
               {userMenuOpen && (
                 <>

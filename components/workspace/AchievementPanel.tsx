@@ -21,6 +21,47 @@ const TIER_LABEL: Record<AchievementTier, string> = {
   3: 'Experience',
 }
 
+/** Render achievement text with inline marker highlighting.
+ *  {{...}} → accent blue, bold, no background (quantified metric or suggestion)
+ *  [[...]] → orange with background (user-fill placeholder)
+ */
+function parseAchievementSegments(text: string) {
+  return text.split(/(\[\[.*?\]\]|\{\{.*?\}\})/g).map((part, i) => {
+    if (/^\[\[.*?\]\]$/.test(part)) {
+      return (
+        <mark
+          key={i}
+          style={{
+            background: 'rgba(251,146,60,0.15)',
+            color: '#c2410c',
+            borderRadius: 3,
+            padding: '0 3px',
+            fontStyle: 'italic',
+          }}
+        >
+          {part}
+        </mark>
+      )
+    }
+    if (/^\{\{.*?\}\}$/.test(part)) {
+      return (
+        <mark
+          key={i}
+          style={{
+            background: 'transparent',
+            color: '#2563eb',
+            fontWeight: 700,
+            padding: 0,
+          }}
+        >
+          {part.slice(2, -2)}
+        </mark>
+      )
+    }
+    return <span key={i}>{part}</span>
+  })
+}
+
 export function AchievementPanel() {
   const t = useTranslations()
   const {
@@ -375,7 +416,7 @@ function AchievementCard({
             />
           ) : (
             <p className="text-xs font-medium text-on-surface leading-snug">
-              {achievement.text}
+              {parseAchievementSegments(achievement.text)}
             </p>
           )}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
