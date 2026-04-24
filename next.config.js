@@ -10,8 +10,41 @@ const nextConfig = {
   // ── Locale redirect (replaces middleware entirely) ────────────────────────
   // These run in Node.js at the routing layer — no Edge Runtime, no __dirname issue.
   async redirects() {
+    // Pages that live under /[locale]/ — bare paths (e.g. /library) must redirect
+    // to the locale-prefixed version. Without middleware, bare paths return 404.
+    const localedPages = ['/library', '/workspace', '/settings', '/login', '/pricing', '/upload']
+
+    const pageRedirects = localedPages.flatMap((page) => [
+      // Returning user with saved locale cookie
+      {
+        source: page,
+        has: [{ type: 'cookie', key: 'NEXT_LOCALE', value: 'en-US' }],
+        destination: `/en-US${page}`,
+        permanent: false,
+      },
+      {
+        source: page,
+        has: [{ type: 'cookie', key: 'NEXT_LOCALE', value: 'zh-CN' }],
+        destination: `/zh-CN${page}`,
+        permanent: false,
+      },
+      // Accept-Language "en" → English
+      {
+        source: page,
+        has: [{ type: 'header', key: 'accept-language', value: '.*en.*' }],
+        destination: `/en-US${page}`,
+        permanent: false,
+      },
+      // Default fallback → zh-CN
+      {
+        source: page,
+        destination: `/zh-CN${page}`,
+        permanent: false,
+      },
+    ])
+
     return [
-      // 1. Returning user with saved locale cookie
+      // ── Root path ──────────────────────────────────────────────────────────
       {
         source: '/',
         has: [{ type: 'cookie', key: 'NEXT_LOCALE', value: 'en-US' }],
@@ -24,19 +57,19 @@ const nextConfig = {
         destination: '/zh-CN',
         permanent: false,
       },
-      // 2. First-time visitor — Accept-Language contains "en"
       {
         source: '/',
         has: [{ type: 'header', key: 'accept-language', value: '.*en.*' }],
         destination: '/en-US',
         permanent: false,
       },
-      // 3. Default fallback → zh-CN
       {
         source: '/',
         destination: '/zh-CN',
         permanent: false,
       },
+      // ── Locale-prefixed pages ───────────────────────────────────────────────
+      ...pageRedirects,
     ]
   },
 

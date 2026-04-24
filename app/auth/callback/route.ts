@@ -19,8 +19,24 @@ import { trackEvent } from '@/lib/analytics'
  * After successful session creation:
  *   - Migrates anonymous data to the authenticated user (if anonymous_id param present)
  *   - Sets cf_market cookie so middleware doesn't need to query DB on /pricing
- *   - Redirects to /library (or the `next` param)
+ *   - Redirects to /{locale}/library (or the locale-prefixed `next` param)
  */
+
+/** Supported locales — must match lib/i18n/routing.ts */
+const LOCALES = ['zh-CN', 'en-US'] as const
+
+/**
+ * Resolve the locale to use for the post-login redirect.
+ * Priority: NEXT_LOCALE cookie → Accept-Language header → default zh-CN
+ */
+function resolveLocale(req: NextRequest): string {
+  const cookie = req.cookies.get('NEXT_LOCALE')?.value
+  if (cookie && (LOCALES as readonly string[]).includes(cookie)) return cookie
+  const acceptLang = req.headers.get('accept-language') ?? ''
+  if (/\ben\b/i.test(acceptLang)) return 'en-US'
+  return 'zh-CN'
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const code = url.searchParams.get('code')
@@ -30,14 +46,27 @@ export async function GET(req: NextRequest) {
   const anonymousId = url.searchParams.get('anonymous_id')
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
+  const locale = resolveLocale(req)
 
   if (error) {
-    const redirectUrl = new URL('/login', appUrl)
-    redirectUrl.searchParams.set('error', errorDescription ?? error)
-    return NextResponse.redirect(redirectUrl)
+    // Redirect to locale-prefixed login on error
+    return NextResponse.redirect(`${appUrl}/${locale}/login?error=${encodeURIComponent(errorDescription ?? error)}`)
   }
 
-  const redirectTarget = next.startsWith('/') ? `${appUrl}${next}` : next
+  // Prefix the `next` path with locale unless it already has one.
+  // e.g. "/library" → "/zh-CN/library", "/zh-CN/workspace" → unchanged
+  const nextPath = (LOCALES as readonly string[]).some(l => next.startsWith(`/${l}/`) || next === `/${l}`)
+    ? next
+    : `/${locale}${next.startsWith('/') ? next : `/${next}`}`
+
+  // When we migrated anonymous data, append markers so the library page can:
+  //  1. Show a "just synced" confirmation banner
+  //  2. Fall back to anonymous_id query if migration partially failed
+  const finalPath = anonymousId
+    ? `${nextPath}${nextPath.includes('?') ? '&' : '?'}synced=1&anonymous_id=${encodeURIComponent(anonymousId)}`
+    : nextPath
+
+  const redirectTarget = finalPath.startsWith('/') ? `${appUrl}${finalPath}` : finalPath
   const response = NextResponse.redirect(redirectTarget)
 
   // Create Supabase client wired to this response object so session cookies
@@ -88,11 +117,23 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (user) {
-    // Migrate anonymous session data to the user's account (fire-and-forget)
+    // Migrate anonymous session data to the user's account.
+    // We AWAIT migration (up to 10 s) so the library page loads with data already
+    // present. Fire-and-forget caused a race: the library queried user_id before
+    // migration set user_id on the rows, returning an empty achievement list.
     if (anonymousId) {
-      migrateAnonymousData(anonymousId, user.id).catch(err =>
+      try {
+        await Promise.race([
+          migrateAnonymousData(anonymousId, user.id),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('migration timeout')), 10_000)
+          ),
+        ])
+      } catch (err) {
+        // Log but continue — partial migration is acceptable; the library will
+        // show a sync prompt so the user can retry if something is missing.
         console.error('[auth/callback] migrateAnonymousData failed:', err)
-      )
+      }
     }
 
     // Fetch payment_market and cache in a cookie so middleware avoids a DB round-trip

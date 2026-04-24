@@ -187,17 +187,38 @@ export async function generatePDF(data: PDFData): Promise<Blob> {
   // HTML: bg #f8fafc, border 1px #e2e8f0, borderRadius 6px, padding 18px 14px
   const cardPadT = Math.round(18 * S)
   const cardPadX = Math.round(14 * S)
+  const cardContentW = SIDEBAR_W - cardPadX * 2
 
-  // Estimate card height for background drawing
+  // Collect contact lines for height calc + rendering
   const contactLines = [
     data.contact.email, data.contact.phone, data.contact.location,
     data.contact.linkedin, data.contact.website,
   ].filter(Boolean) as string[]
 
+  // ── Pre-calculate card height using actual wrapText line counts ──────────
+  // This prevents text overflowing the card background when items wrap.
   const photoH = (data.showPhoto && data.photoUrl) ? Math.round(96 * S) + Math.round(12 * S) : 0
-  const nameH = px(18) + 4
-  const titleH = (data.experiences[0]?.job_title) ? px(9) + 6 : 0
-  const contactH = contactLines.length * (px(10) + 3)
+
+  // Name: use same firstTitle logic as rendering to avoid inconsistency
+  const firstTitle = data.experiences.find(e => (e.achievements ?? []).some(a => a.status === 'confirmed'))?.job_title
+
+  const nameWrappedLines = wrapText(
+    data.name || (data.lang === 'zh' ? '候选人' : 'Candidate'),
+    serifB, px(18), cardContentW,
+  )
+  const nameH = nameWrappedLines.length * (px(18) + 4)
+
+  const titleWrappedLines = firstTitle
+    ? wrapText(firstTitle.toUpperCase(), sansB, px(9), cardContentW)
+    : []
+  const titleH = titleWrappedLines.length > 0 ? titleWrappedLines.length * (px(9) + 6) : 0
+
+  const contactLH = px(10) + 3
+  let contactH = 0
+  for (const line of contactLines) {
+    contactH += wrapText(line, sansR, px(10), cardContentW).length * contactLH
+  }
+
   const innerGap = Math.round(12 * S) // gap between sections inside card
   const cardInnerH = photoH + nameH + titleH + innerGap + contactH
   const cardH = cardPadT * 2 + cardInnerH
@@ -238,16 +259,17 @@ export async function generatePDF(data: PDFData): Promise<Blob> {
     } catch { /* skip photo */ }
   }
 
-  // Name — HTML: Noto Serif 700, 18px, accent
-  page.drawText(data.name || (data.lang === 'zh' ? '候选人' : 'Candidate'), {
-    x: SIDEBAR_X + cardPadX, y: cy - px(18), size: px(18), font: serifB, color: ACCENT,
-  })
-  cy -= px(18) + 4
+  // Name — HTML: Noto Serif 700, 18px, accent (may wrap on long names)
+  for (const nameLine of nameWrappedLines) {
+    page.drawText(nameLine, {
+      x: SIDEBAR_X + cardPadX, y: cy - px(18), size: px(18), font: serifB, color: ACCENT,
+    })
+    cy -= px(18) + 4
+  }
 
-  // Job title — HTML: 600 weight, 9px, uppercase, textMain
-  const firstTitle = data.experiences.find(e => (e.achievements ?? []).some(a => a.status === 'confirmed'))?.job_title
-  if (firstTitle) {
-    page.drawText(firstTitle.toUpperCase(), {
+  // Job title — HTML: 600 weight, 9px, uppercase, textMain (may wrap on long titles)
+  for (const titleLine of titleWrappedLines) {
+    page.drawText(titleLine, {
       x: SIDEBAR_X + cardPadX, y: cy - px(9), size: px(9), font: sansB, color: TEXT_MAIN,
     })
     cy -= px(9) + 6

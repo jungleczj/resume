@@ -224,7 +224,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (dbError) {
-      console.error('[upload] DB insert error:', dbError.message, dbError.code)
+      // Log full detail so "TypeError: fetch failed" or similar network errors
+      // surface with their root cause, not just the top-level message.
+      console.error('[upload] DB insert error:', {
+        message: dbError.message,
+        code: dbError.code,
+        details: (dbError as { details?: string }).details,
+        hint: (dbError as { hint?: string }).hint,
+      })
       throw new Error(`DB error: ${dbError.message}`)
     }
 

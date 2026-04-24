@@ -533,8 +533,35 @@ Output ONLY valid JSON — no markdown code blocks:
   achievement_extract_cn: `从 Notion 任务中提取职业成就，量化表达。输出 JSON: { "achievements": [{ "text": "", "tier": 1 }] }`,
   achievement_extract_en: `Extract career achievements from Notion tasks with quantified expressions. Output JSON: { "achievements": [{ "text": "", "tier": 1 }] }`,
 
-  resume_translate_cn: `你是专业简历翻译专家。将下列中文简历成就条目翻译为地道的英文，保持专业性和量化表达。不要解释、不要修改结构，只翻译 text 字段。输出纯JSON，格式：{ "translated": [{ "id": "原id", "text": "English text" }] }`,
-  resume_translate_en: `You are a professional resume translator. Translate the following resume achievement items into polished English. Preserve quantifications, metrics, and professional tone. Output pure JSON in the format: { "translated": [{ "id": "original_id", "text": "English text" }] }`,
+  resume_translate_cn: `你是专业简历翻译专家。将输入的中文简历内容翻译为地道英文。输入可能包含以下字段（均为可选）：
+- achievements: 成就条目数组，每项含 id 和 text
+- project_names: 项目名称/角色字符串数组（project_name 和 project_member_role 共用）
+
+翻译规则：
+- achievements：翻译 text 字段，保持专业性和量化表达，保留 {{...}} 和 [[...]] 标记原样不变
+- project_names：将每个字符串翻译为地道英文；纯英文或英文缩写保持原样
+
+输出纯JSON，不含代码块：
+{
+  "translated": [{ "id": "原id", "text": "English text" }],
+  "translated_project_names": [{ "original": "原始字符串", "translated": "English" }]
+}
+若输入不含某字段，则对应输出数组为空。`,
+
+  resume_translate_en: `You are a professional resume translator. Translate Chinese resume content into polished English. Input may contain these optional fields:
+- achievements: array of achievement items, each with id and text
+- project_names: array of project name / member role strings (shared pool for both project_name and project_member_role)
+
+Translation rules:
+- achievements: translate the text field; preserve quantifications, metrics, and professional tone; keep {{...}} and [[...}} markers exactly as-is
+- project_names: translate each string to natural English; leave purely English strings or technical abbreviations unchanged
+
+Output pure JSON, no code blocks:
+{
+  "translated": [{ "id": "original_id", "text": "English text" }],
+  "translated_project_names": [{ "original": "original string", "translated": "English" }]
+}
+If an input field is absent, output the corresponding array as empty.`,
 
   resume_profile_translate_cn: `你是专业简历翻译专家。将下列简历信息从中文翻译为地道的英文。翻译规则：
 1) personal_info：name 字段如为中文姓名，则转为拼音大写（姓在前，名在后，姓与名之间加空格，例如"陈志江"→"CHEN ZHIJIANG"）；如已是英文或拼音则保持原样；location 和 summary 翻译为英文；邮件、电话等其余字段保持原样
@@ -542,10 +569,11 @@ Output ONLY valid JSON — no markdown code blocks:
 3) skills：翻译 category 字段名；items 中中文技能名称翻译，纯英文和技术缩写保持原样
 4) certifications：翻译 name 字段（英文证书名保持原样）；issuing_org 如有中文则翻译；其余字段保持原样
 5) awards：翻译 title 和 description 字段；issuing_org 如有中文则翻译；其余字段保持原样
-6) publications：翻译 title 和 description 字段；publication_venue 和 authors 保持原样；其余字段保持原样
+6) publications：翻译 title、description、publication_venue 字段（如为中文）；authors 保持原样；其余字段保持原样
 7) spoken_languages：翻译 language_name 字段（如"英语"→"English"，"日语"→"Japanese"等），其余字段（proficiency、is_native）保持原样
+8) work_experiences：翻译每条记录的 job_title 和 company 字段（如为中文）；id 字段必须原样保留；其余字段不输出
 如输入某个数组为空则输出对应空数组。严格按输入JSON结构输出，输出纯JSON不含代码块。
-格式: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...] }`,
+格式: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...], "work_experiences": [{ "id": "原id", "job_title": "English", "company": "English" }] }`,
   resume_summary_generate_cn: `你是资深职业顾问，擅长为候选人撰写简洁有力的中文简历摘要。
 
 ## 任务
@@ -582,10 +610,11 @@ Candidate data:`,
 3) skills: translate category field names; translate Chinese skill items but keep English technical terms and abbreviations unchanged.
 4) certifications: translate name field if it contains Chinese (keep English certification names as-is); translate issuing_org if it contains Chinese; keep other fields unchanged.
 5) awards: translate title and description fields; translate issuing_org if Chinese; keep other fields unchanged.
-6) publications: translate title and description fields; keep publication_venue and authors unchanged; keep other fields unchanged.
+6) publications: translate title, description, and publication_venue fields if they contain Chinese; keep authors unchanged; keep other fields unchanged.
 7) spoken_languages: translate the language_name field to English (e.g. "英语" → "English", "日语" → "Japanese"); keep proficiency and is_native fields unchanged.
+8) work_experiences: translate the job_title and company fields for each entry if they contain Chinese; the id field must be preserved exactly as-is; do not output any other fields.
 If an input array is empty, output the corresponding empty array. Return the exact same JSON structure. Output pure JSON, no code blocks.
-Format: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...] }`
+Format: { "personal_info": {...}, "education": [...], "skills": [...], "certifications": [...], "awards": [...], "publications": [...], "spoken_languages": [...], "work_experiences": [{ "id": "original_id", "job_title": "English", "company": "English" }] }`
 }
 
 export async function getPrompt(

@@ -10,16 +10,18 @@ import { getPrompt } from '@/lib/prompts'
  * Used when the user toggles resume_lang without clicking "Generate".
  *
  * Body:
- *   user_id?         string | null
- *   resume_lang      'en' | 'bilingual'
- *   achievements     { id: string; text: string }[]
- *   personal_info    ResumePersonalInfo
- *   education        ResumeEducation[]
- *   skills           ResumeSkillGroup[]
- *   certifications?  { name: string; issuing_org: string | null }[]
- *   awards?          { title: string; description: string | null }[]
- *   publications?    { title: string; description: string | null }[]
- *   spoken_languages?  { language_name: string }[]
+ *   user_id?          string | null
+ *   resume_lang       'en' | 'bilingual'
+ *   achievements      { id: string; text: string }[]
+ *   project_names?    string[]   — unique project names extracted from achievements
+ *   personal_info     ResumePersonalInfo
+ *   education         ResumeEducation[]
+ *   skills            ResumeSkillGroup[]
+ *   certifications?   { name: string; issuing_org: string | null }[]
+ *   awards?           { title: string; description: string | null; issuing_org: string | null }[]
+ *   publications?     { title: string; description: string | null; publication_venue: string | null }[]
+ *   spoken_languages? { language_name: string }[]
+ *   work_experiences? { id: string; job_title: string; company: string }[]
  */
 export async function POST(req: NextRequest) {
   try {
@@ -27,19 +29,22 @@ export async function POST(req: NextRequest) {
       user_id?: string | null
       resume_lang: string
       achievements?: { id: string; text: string }[]
+      project_names?: string[]
       personal_info?: Record<string, unknown> | null
       education?: unknown[]
       skills?: unknown[]
       certifications?: unknown[]
       awards?: unknown[]
-      publications?: unknown[]
+      publications?: { title: string; description: string | null; publication_venue: string | null }[]
       spoken_languages?: unknown[]
+      work_experiences?: { id: string; job_title: string; company: string }[]
     }
 
     const {
       user_id,
       resume_lang,
       achievements,
+      project_names,
       personal_info,
       education,
       skills,
@@ -47,6 +52,7 @@ export async function POST(req: NextRequest) {
       awards,
       publications,
       spoken_languages,
+      work_experiences,
     } = body
 
     if (!resume_lang || resume_lang === 'zh') {
@@ -67,22 +73,36 @@ export async function POST(req: NextRequest) {
 
     const result: Record<string, unknown> = {}
 
-    // ── 1. Translate achievement texts ────────────────────────────────────────
-    if (achievements?.length) {
+    // ── 1. Translate achievement texts + project names ────────────────────────
+    if (achievements?.length || project_names?.length) {
       try {
         const prompt = await getPrompt('resume_translate', market)
+        const input: Record<string, unknown> = {}
+        if (achievements?.length) input.achievements = achievements
+        if (project_names?.length) input.project_names = project_names
         const response = await callAI(
           'resume_translate',
           [
             { role: 'system', content: prompt },
-            { role: 'user', content: JSON.stringify(achievements) }
+            { role: 'user', content: JSON.stringify(input) }
           ],
           market,
           { timeout: 30000 }
         )
         const cleaned = response.trim().replace(/^```json\s*/i, '').replace(/\s*```$/, '')
-        const parsed = JSON.parse(cleaned) as { translated: { id: string; text: string }[] }
+        const parsed = JSON.parse(cleaned) as {
+          translated?: { id: string; text: string }[]
+          translated_project_names?: { original: string; translated: string }[]
+        }
         if (parsed?.translated?.length) result.translated_achievements = parsed.translated
+        if (parsed?.translated_project_names?.length) {
+          // Convert to { [original]: translated } map for fast lookup
+          const map: Record<string, string> = {}
+          for (const item of parsed.translated_project_names) {
+            if (item.original && item.translated) map[item.original] = item.translated
+          }
+          result.translated_project_names = map
+        }
       } catch {
         // Silently fallback — original text will be displayed
       }
@@ -96,19 +116,27 @@ export async function POST(req: NextRequest) {
       (certifications && certifications.length > 0) ||
       (awards && awards.length > 0) ||
       (publications && publications.length > 0) ||
-      (spoken_languages && spoken_languages.length > 0)
+      (spoken_languages && spoken_languages.length > 0) ||
+      (work_experiences && work_experiences.length > 0)
 
     if (hasAnyProfile) {
       try {
         const prompt = await getPrompt('resume_profile_translate', market)
+        // Include publication_venue in publications so AI can translate venue names
+        const pubsWithVenue = (publications ?? []).map(p => ({
+          title: p.title,
+          description: p.description ?? null,
+          publication_venue: p.publication_venue ?? null,
+        }))
         const input = {
           personal_info: personal_info ?? {},
           education: education ?? [],
           skills: skills ?? [],
           certifications: certifications ?? [],
           awards: awards ?? [],
-          publications: publications ?? [],
+          publications: pubsWithVenue,
           spoken_languages: spoken_languages ?? [],
+          work_experiences: work_experiences ?? [],
         }
         const response = await callAI(
           'resume_profile_translate',
@@ -124,10 +152,11 @@ export async function POST(req: NextRequest) {
           personal_info?: Record<string, unknown>
           education?: unknown[]
           skills?: unknown[]
-          certifications?: unknown[]
-          awards?: unknown[]
-          publications?: unknown[]
+          certifications?: { name: string; issuing_org?: string | null }[]
+          awards?: { title: string; description?: string | null; issuing_org?: string | null }[]
+          publications?: { title: string; description?: string | null; publication_venue?: string | null }[]
           spoken_languages?: unknown[]
+          work_experiences?: { id: string; job_title?: string; company?: string }[]
         }
         if (parsed?.personal_info) result.translated_personal_info = parsed.personal_info
         if (parsed?.education?.length) result.translated_education = parsed.education
@@ -136,6 +165,7 @@ export async function POST(req: NextRequest) {
         if (parsed?.awards?.length) result.translated_awards = parsed.awards
         if (parsed?.publications?.length) result.translated_publications = parsed.publications
         if (parsed?.spoken_languages?.length) result.translated_spoken_languages = parsed.spoken_languages
+        if (parsed?.work_experiences?.length) result.translated_work_experiences = parsed.work_experiences
       } catch {
         // Silently fallback — original data will be displayed
       }

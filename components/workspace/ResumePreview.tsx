@@ -227,12 +227,17 @@ function MainHeading({ children }: { children: React.ReactNode }) {
 
 // ─── Main template component ─────────────────────────────────────────────────
 export function ResumePreview() {
+  const outerRef = useRef<HTMLDivElement>(null)
+  const paperRef = useRef<HTMLDivElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const [photoUploading, setPhotoUploading] = useState(false)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const dragCounterRef = useRef(0)
+  // Scale the A4 canvas to fit the right panel while keeping A4 proportions
+  const [scale, setScale] = useState(1)
+  const [paperHeight, setPaperHeight] = useState(1123)
 
   const {
     showPhoto,
@@ -271,10 +276,14 @@ export function ResumePreview() {
     translatedAwards,
     translatedPublications,
     translatedLanguages,
+    translatedExperiences,
+    translatedProjectNames,
   } = useWorkspaceStore()
 
   const isZH = resumeLang === 'zh' || resumeLang === 'bilingual'
   const isBilingual = resumeLang === 'bilingual'
+  // true for both 'en' and 'bilingual' — controls whether translated overlays are used
+  const showTranslated = resumeLang !== 'zh'
 
   const sectionLabel = (zh: string, en: string) =>
     isBilingual ? `${en} / ${zh}` : isZH ? zh : en
@@ -285,6 +294,34 @@ export function ResumePreview() {
     const li = document.querySelector(`[data-resume-ach-id="${activeAchievementId}"]`) as HTMLElement | null
     li?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [activeAchievementId])
+
+  // ── Scale preview to fit the container ──────────────────────────────────
+  // The A4 canvas is always 794px wide; we scale it down to fit the panel.
+  // p-8 (32px each side) = 64px total horizontal padding subtracted from available width.
+  useEffect(() => {
+    const outer = outerRef.current
+    if (!outer) return
+    const ro = new ResizeObserver(([entry]) => {
+      const available = entry.contentRect.width - 64 // subtract p-8*2
+      setScale(available > 0 && available < 794 ? available / 794 : 1)
+    })
+    ro.observe(outer)
+    // Initial calculation
+    const initial = outer.clientWidth - 64
+    setScale(initial > 0 && initial < 794 ? initial / 794 : 1)
+    return () => ro.disconnect()
+  }, [])
+
+  // Track actual paper height so marginBottom collapses layout space correctly
+  useEffect(() => {
+    const paper = paperRef.current
+    if (!paper) return
+    const ro = new ResizeObserver(([entry]) => {
+      setPaperHeight(entry.contentRect.height || 1123)
+    })
+    ro.observe(paper)
+    return () => ro.disconnect()
+  }, [])
 
   // Block all clipboard copy/cut document-wide while mounted
   useEffect(() => {
@@ -364,6 +401,24 @@ export function ResumePreview() {
     }))
     .filter((exp) => exp.achievements.length > 0)
 
+  // Build a fast lookup map: expId → translated fields
+  const translatedExpMap = Object.fromEntries(
+    (translatedExperiences ?? []).map(t => [t.id, t])
+  )
+
+  // Helper: get translated value for an experience field, fallback to original
+  const expField = (expId: string, field: 'job_title' | 'company', fallback: string) => {
+    if (!showTranslated) return fallback
+    return translatedExpMap[expId]?.[field] ?? fallback
+  }
+
+  // Helper: translate "至今" / "现在" in tenure strings to "Present" for EN/bilingual
+  const translateTenure = (tenure: string | null | undefined): string => {
+    if (!tenure) return ''
+    if (!showTranslated) return tenure
+    return tenure.replace(/至今|现在/g, 'Present')
+  }
+
   const hasData = !!resumePersonalInfo || confirmedExps.some((e) => e.achievements.length > 0)
 
   const pInfo = (field: keyof ResumePersonalInfo): string => {
@@ -381,7 +436,7 @@ export function ResumePreview() {
   ]
 
   return (
-    <div className="min-h-full flex items-start justify-center p-8 pb-16" style={{ background: C.surfaceDark }}>
+    <div ref={outerRef} className="min-h-full flex items-start justify-center p-8 pb-16" style={{ background: C.surfaceDark }}>
       {/* Load Cobalt fonts */}
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <style jsx global>{`
@@ -410,8 +465,10 @@ export function ResumePreview() {
         }
       `}</style>
 
-      {/* A4 paper */}
+      {/* A4 paper — scaled to fit the panel, transformOrigin top-center keeps centering */}
       <div
+        id="resume-paper"
+        ref={paperRef}
         className={cn('cobalt-resume select-none relative', dragActive && 'ring-2 ring-blue-300/50')}
         style={{
           width: 794,
@@ -423,6 +480,15 @@ export function ResumePreview() {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          // Responsive scaling: shrink to fit the panel width while keeping A4 ratio
+          transform: scale < 1 ? `scale(${scale})` : undefined,
+          transformOrigin: 'top center',
+          // Collapse the extra layout space that CSS transform doesn't affect
+          // so the scrollable container height matches the visual height
+          marginBottom: scale < 1 ? `${(scale - 1) * paperHeight}px` : undefined,
+          // Cross-browser font smoothing for consistent rendering on Mac/Win/Linux
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
         }}
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
@@ -569,7 +635,7 @@ export function ResumePreview() {
                     </h2>
                     {confirmedExps[0]?.job_title && (
                       <p style={{ fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 9, color: C.textMain }}>
-                        {confirmedExps[0].job_title}
+                        {expField(confirmedExps[0].id, 'job_title', confirmedExps[0].job_title)}
                       </p>
                     )}
                   </div>
@@ -642,7 +708,8 @@ export function ResumePreview() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {resumeCertifications.map((cert, i) => {
                         const tCert = translatedCertifications?.[i]
-                        const displayName = !isZH && tCert?.name ? tCert.name : cert.name
+                        const displayName = showTranslated && tCert?.name ? tCert.name : cert.name
+                        const displayCertOrg = showTranslated && tCert?.issuing_org != null ? tCert.issuing_org : cert.issuing_org
                         return (
                           <div key={i} style={{
                             background: `${C.surface}80`,
@@ -653,7 +720,7 @@ export function ResumePreview() {
                             <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayName}</p>
                             {cert.issue_year && (
                               <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
-                                {cert.issuing_org ? `${cert.issuing_org} · ` : ''}{cert.issue_year}
+                                {displayCertOrg ? `${displayCertOrg} · ` : ''}{cert.issue_year}
                               </p>
                             )}
                           </div>
@@ -661,7 +728,8 @@ export function ResumePreview() {
                       })}
                       {resumeAwards.map((award, i) => {
                         const tAward = translatedAwards?.[i]
-                        const displayTitle = !isZH && tAward?.title ? tAward.title : award.title
+                        const displayTitle = showTranslated && tAward?.title ? tAward.title : award.title
+                        const displayAwardOrg = showTranslated && tAward?.issuing_org != null ? tAward.issuing_org : award.issuing_org
                         return (
                           <div key={i} style={{
                             background: `${C.surface}80`,
@@ -672,7 +740,7 @@ export function ResumePreview() {
                             <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
                             {award.award_year && (
                               <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
-                                {award.issuing_org ? `${award.issuing_org} · ` : ''}{award.award_year}
+                                {displayAwardOrg ? `${displayAwardOrg} · ` : ''}{award.award_year}
                               </p>
                             )}
                           </div>
@@ -689,12 +757,12 @@ export function ResumePreview() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {resumeLanguages.map((lang, i) => {
                         const tLang = translatedLanguages?.[i]
-                        const displayName = !isZH && tLang?.language_name ? tLang.language_name : lang.language_name
+                        const displayName = showTranslated && tLang?.language_name ? tLang.language_name : lang.language_name
                         const prof = PROFICIENCY_LABELS[lang.proficiency]
                         const profLabel = lang.is_native
-                          ? (isZH ? '母语' : 'Native')
+                          ? (showTranslated ? 'Native' : '母语')
                           : prof
-                            ? (isZH ? prof.zh : prof.en)
+                            ? (showTranslated ? prof.en : prof.zh)
                             : lang.proficiency
                         return (
                           <div key={i} style={{
@@ -787,14 +855,14 @@ export function ResumePreview() {
                             <div>
                               <h4 style={{ fontWeight: 700, fontSize: 12, color: C.textBright, marginBottom: 2 }}>
                                 <EditableCell
-                                  value={exp.job_title}
+                                  value={expField(exp.id, 'job_title', exp.job_title)}
                                   onSave={(v) => updateExperienceField(exp.id, 'job_title', v)}
                                   placeholder={isZH ? '职位' : 'Title'}
                                 />
                               </h4>
                               <p style={{ fontSize: 10, fontWeight: 600, color: C.accent, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                                 <EditableCell
-                                  value={exp.company}
+                                  value={expField(exp.id, 'company', exp.company)}
                                   onSave={(v) => updateExperienceField(exp.id, 'company', v)}
                                   placeholder={isZH ? '公司名称' : 'Company'}
                                 />
@@ -813,7 +881,7 @@ export function ResumePreview() {
                               marginLeft: 8,
                             }}>
                               <EditableCell
-                                value={exp.original_tenure ?? ''}
+                                value={translateTenure(exp.original_tenure)}
                                 onSave={(v) => updateExperienceField(exp.id, 'original_tenure', v)}
                                 placeholder={isZH ? '任期' : 'Tenure'}
                               />
@@ -839,11 +907,15 @@ export function ResumePreview() {
                                     {group.project_name && (
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4, marginTop: 6 }}>
                                         <span style={{ fontSize: 10, color: C.accent, fontWeight: 500 }}>▸</span>
-                                        <span style={{ fontSize: 10, color: C.accent, fontWeight: 600, letterSpacing: '0.04em' }}>{group.project_name}</span>
+                                        <span style={{ fontSize: 10, color: C.accent, fontWeight: 600, letterSpacing: '0.04em' }}>
+                                          {(showTranslated && translatedProjectNames?.[group.project_name]) || group.project_name}
+                                        </span>
                                         {group.project_member_role && (
                                           <>
                                             <span style={{ color: C.border, fontSize: 9 }}>·</span>
-                                            <span style={{ fontSize: 10, color: '#64748b' }}>{group.project_member_role}</span>
+                                            <span style={{ fontSize: 10, color: '#64748b' }}>
+                                              {(showTranslated && translatedProjectNames?.[group.project_member_role]) || group.project_member_role}
+                                            </span>
                                           </>
                                         )}
                                       </div>
@@ -1115,7 +1187,8 @@ export function ResumePreview() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {resumePublications.map((pub, i) => {
                         const tPub = translatedPublications?.[i]
-                        const displayTitle = !isZH && tPub?.title ? tPub.title : pub.title
+                        const displayTitle = showTranslated && tPub?.title ? tPub.title : pub.title
+                        const displayVenue = showTranslated && tPub?.publication_venue != null ? tPub.publication_venue : pub.publication_venue
                         return (
                           <div key={i} style={{
                             display: 'flex',
@@ -1130,9 +1203,9 @@ export function ResumePreview() {
                             <span className="material-symbols-outlined" style={{ fontSize: 13, color: C.accent, flexShrink: 0, marginTop: 1 }}>description</span>
                             <div>
                               <p style={{ fontSize: 9.5, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
-                              {pub.publication_venue && (
+                              {displayVenue && (
                                 <p style={{ fontSize: 8.5, color: C.textMain, fontStyle: 'italic', marginTop: 2 }}>
-                                  {pub.publication_venue}{pub.pub_year ? `, ${pub.pub_year}` : ''}
+                                  {displayVenue}{pub.pub_year ? `, ${pub.pub_year}` : ''}
                                 </p>
                               )}
                               {isBilingual && tPub && tPub.title !== pub.title && (

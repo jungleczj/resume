@@ -4,8 +4,11 @@ import type { WorkExperience, Achievement, ResumeLang, Profile, ResumePersonalIn
 // Minimal translation overlay types (only translatable text fields)
 export interface TranslatedCertification { name: string; issuing_org: string | null }
 export interface TranslatedAward { title: string; description: string | null; issuing_org: string | null }
-export interface TranslatedPublication { title: string; description: string | null }
+export interface TranslatedPublication { title: string; description: string | null; publication_venue?: string | null }
 export interface TranslatedLanguage { language_name: string }
+export interface TranslatedExperience { id: string; job_title?: string; company?: string }
+// project_name → translated text (keyed by original Chinese string)
+export type TranslatedProjectNames = Record<string, string>
 
 interface WorkspaceState {
   splitRatio: number
@@ -128,6 +131,14 @@ interface WorkspaceState {
     pubs: TranslatedPublication[] | null,
     langs?: TranslatedLanguage[] | null
   ) => void
+
+  // Translated work experience overlays (job_title + company per experience id)
+  translatedExperiences: TranslatedExperience[] | null
+  setTranslatedExperiences: (exps: TranslatedExperience[] | null) => void
+
+  // Translated project names: original Chinese string → English
+  translatedProjectNames: TranslatedProjectNames | null
+  setTranslatedProjectNames: (map: TranslatedProjectNames | null) => void
 
   // Restore a version snapshot: update confirmed/draft status to match editor_json
   restoreVersion: (editorJson: object, resumeLang?: string, showPhoto?: boolean) => void
@@ -402,6 +413,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       translatedAwards: null,
       translatedPublications: null,
       translatedLanguages: null,
+      translatedExperiences: null,
+      translatedProjectNames: null,
       ...profileRestore,
     })
   },
@@ -437,6 +450,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     translatedPublications: pubs,
     translatedLanguages: langs ?? null,
   }),
+
+  // ── Translated work experiences ───────────────────────────────────────────
+  translatedExperiences: null,
+  setTranslatedExperiences: (exps) => set({ translatedExperiences: exps }),
+
+  // ── Translated project names ──────────────────────────────────────────────
+  translatedProjectNames: null,
+  setTranslatedProjectNames: (map) => set({ translatedProjectNames: map }),
 
   // ── Restore version snapshot ──────────────────────────────────────────────
   restoreVersion: (editorJson: object, resumeLang?: string, showPhoto?: boolean) => {

@@ -84,6 +84,84 @@ export function ExportModal({
     load()
   }, [isCNFree])
 
+  // ── Client-side pixel-perfect PDF capture via html2canvas + jsPDF ──────────
+  // Captures the actual rendered preview DOM at full 794px width (A4 exact).
+  // Temporarily strips the CSS scale-transform so html2canvas sees the true layout.
+  const capturePreviewAsPDF = async (): Promise<Blob | null> => {
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      const paper = document.getElementById('resume-paper') as HTMLElement | null
+      if (!paper) return null
+
+      const origTransform   = paper.style.transform
+      const origMarginBottom = paper.style.marginBottom
+      const origBoxShadow   = paper.style.boxShadow
+
+      paper.style.transform    = 'none'
+      paper.style.marginBottom = '0'
+      paper.style.boxShadow    = 'none'
+
+      // Let the browser reflow and ensure fonts are ready before capture
+      await document.fonts.ready
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+
+      try {
+        const canvas = await html2canvas(paper, {
+          scale: 2,                                            // 2× for sharp output
+          width: 794,
+          height: Math.max(paper.offsetHeight, paper.scrollHeight),
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          windowWidth: 794,
+        })
+
+        // A4 portrait: 210 mm × 297 mm
+        const A4_W = 210
+        const A4_H = 297
+        const mmPerPx = A4_W / canvas.width
+        const totalH  = canvas.height * mmPerPx
+
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+
+        if (totalH <= A4_H) {
+          pdf.addImage(canvas, 'PNG', 0, 0, A4_W, totalH)
+        } else {
+          // Multi-page: slice the canvas into A4-height strips
+          const pageHeightPx = Math.floor(A4_H / mmPerPx)
+          let offsetY = 0
+          let pageNum = 0
+          while (offsetY < canvas.height) {
+            if (pageNum > 0) pdf.addPage()
+            const sliceH = Math.min(pageHeightPx, canvas.height - offsetY)
+            const sliceCanvas = document.createElement('canvas')
+            sliceCanvas.width  = canvas.width
+            sliceCanvas.height = sliceH
+            const ctx = sliceCanvas.getContext('2d')!
+            ctx.drawImage(canvas, 0, -offsetY)
+            pdf.addImage(sliceCanvas, 'PNG', 0, 0, A4_W, sliceH * mmPerPx)
+            offsetY += pageHeightPx
+            pageNum++
+          }
+        }
+
+        return pdf.output('blob')
+      } finally {
+        paper.style.transform    = origTransform
+        paper.style.marginBottom = origMarginBottom
+        paper.style.boxShadow    = origBoxShadow
+      }
+    } catch (e) {
+      console.error('[ExportModal] PDF capture failed:', e)
+      return null
+    }
+  }
+
   const handleDirectDownload = async () => {
     setExporting(true)
     setError(null)
@@ -95,52 +173,59 @@ export function ExportModal({
     })
 
     try {
-      const res = await fetch('/api/resume/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          format: selectedFormat,
-          anonymous_id: anonymousId,
-          user_id: userId,
-          // Send current store state so export reflects in-session edits
-          resumeData: {
-            personalInfo: resumePersonalInfo,
-            education: resumeEducation,
-            skills: resumeSkills,
-            certifications: resumeCertifications,
-            spokenLanguages: resumeLanguages,
-            awards: resumeAwards,
-            publications: resumePublications,
-            experiences,
-            showPhoto,
-            photoPath,
-            lang: resumeLang,
-          }
+      let blob: Blob
+
+      if (selectedFormat === 'pdf') {
+        // Pixel-perfect: capture the live preview DOM directly
+        const captured = await capturePreviewAsPDF()
+        if (!captured) throw new Error('PDF generation failed, please retry')
+        blob = captured
+      } else {
+        // DOCX: server-side generation with current store state
+        const res = await fetch('/api/resume/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            format: selectedFormat,
+            anonymous_id: anonymousId,
+            user_id: userId,
+            resumeData: {
+              personalInfo: resumePersonalInfo,
+              education: resumeEducation,
+              skills: resumeSkills,
+              certifications: resumeCertifications,
+              spokenLanguages: resumeLanguages,
+              awards: resumeAwards,
+              publications: resumePublications,
+              experiences,
+              showPhoto,
+              photoPath,
+              lang: resumeLang,
+            }
+          })
         })
-      })
 
-      if (res.status === 402) {
-        // Server-side paywall check fired (access revoked or state mismatch)
-        // Drop back into the plan-selector UI instead of showing an error
-        setHasAccess(false)
-        return
+        if (res.status === 402) {
+          setHasAccess(false)
+          return
+        }
+
+        if (!res.ok) {
+          const data = await res.json() as { error?: string }
+          throw new Error(data.error ?? 'Export failed')
+        }
+
+        blob = await res.blob()
       }
 
-      if (!res.ok) {
-        const data = await res.json() as { error?: string }
-        throw new Error(data.error ?? 'Export failed')
-      }
-
-      const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      // Build filename: 姓名_职位_日期.format
-      const safeName = (resumePersonalInfo?.name ?? 'Resume').replace(/[/\\?%*:|"<>]/g, '_')
-      const jobTitle = experiences.find(e => (e.achievements ?? []).some(a => a.status === 'confirmed'))?.job_title ?? ''
+      const safeName  = (resumePersonalInfo?.name ?? 'Resume').replace(/[/\\?%*:|"<>]/g, '_')
+      const jobTitle  = experiences.find(e => (e.achievements ?? []).some(a => a.status === 'confirmed'))?.job_title ?? ''
       const safeTitle = jobTitle.replace(/[/\\?%*:|"<>]/g, '_')
-      const dateStr = new Date().toISOString().slice(0, 7) // 2026-04
-      const filename = [safeName, safeTitle, dateStr].filter(Boolean).join('_') + `.${selectedFormat}`
+      const dateStr   = new Date().toISOString().slice(0, 7)
+      const filename  = [safeName, safeTitle, dateStr].filter(Boolean).join('_') + `.${selectedFormat}`
       a.download = filename
       document.body.appendChild(a)
       a.click()
@@ -153,7 +238,6 @@ export function ExportModal({
         market: isCNFree ? 'cn_free' : 'en_paid'
       })
 
-      // For anonymous (not logged in) users, prompt them to login after export
       if (!userId) {
         setShowLoginPrompt(true)
       } else {

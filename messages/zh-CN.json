@@ -31,14 +31,14 @@
       "float_label": "优化完成",
       "float_score": "得分：98/100"
     },
-    "trust": {
-      "heading": "10,000+ 职场人的信赖之选",
-      "stat1_num": "50k+",
-      "stat1_label": "简历已优化",
-      "stat2_num": "95%",
-      "stat2_label": "岗位匹配率",
-      "stat3_num": "200万+",
-      "stat3_label": "职位已匹配"
+    "why": {
+      "heading": "为什么选择 CareerFlow？",
+      "w1_title": "AI 深度优化",
+      "w1_desc": "AI 理解你的职业故事，按招聘官视角重写简历，精准命中每个岗位需求。",
+      "w2_title": "一职一简历",
+      "w2_desc": "粘贴目标职位 JD，立即生成针对该岗位的定制版简历，无需手动调整。",
+      "w3_title": "秒级导出",
+      "w3_desc": "随时下载排版精美、符合 ATS 标准的 PDF 和 Word 文件，直接投递。"
     },
     "features": {
       "heading": "专为求职者打造的 AI 能力",
@@ -64,25 +64,13 @@
       "s4_desc": "下载精美简历，一键投递心仪职位。",
       "cta": "免费开始优化"
     },
-    "testimonials": {
-      "heading": "职场精英的共同选择",
-      "subheading": "数千名职场人借助 AI，成功加速了职业发展。",
-      "t1_name": "Sarah Jenkins",
-      "t1_role": "Google 高级产品设计师",
-      "t1_quote": "「AI 分析精准到令人惊讶，准确捕捉到我作品集的核心优势，帮我以招聘官最看重的方式呈现经历。使用 CareerFlow 几周后，我就收到了 Google 的 Offer。」",
-      "t2_name": "David Chen",
-      "t2_role": "Meta 软件工程经理",
-      "t2_quote": "「作为面试官，CareerFlow 生成的简历质量让我印象深刻——不堆砌关键词，而是构建真实的影响力叙事。诚心推荐给每一位认真求职的人。」",
-      "t3_name": "Elena Rodriguez",
-      "t3_role": "Airbnb 数据科学家",
-      "t3_quote": "「职位匹配功能彻底改变了我的求职方式，省去了大量无效刷屏时间，精准指向我最具竞争力的方向。简历优化则是锦上添花。」"
-    },
     "footer": {
-      "tagline": "用 AI 重新定义简历优化。",
-      "about": "关于我们",
+      "tagline": "AI 驱动简历优化，助你把握每次机会。",
       "privacy": "隐私政策",
       "terms": "服务条款",
-      "copyright": "© 2024 CareerFlow AI. 保留所有权利。"
+      "support": "联系客服",
+      "pricing": "定价",
+      "copyright": "© 2025 CareerFlow AI. 保留所有权利。"
     }
   },
   "login": {
@@ -225,8 +213,12 @@
     "col_status": "状态",
     "col_actions": "操作",
     "loading": "加载中...",
+    "syncing": "正在同步你的成就，请稍候...",
+    "sync_success": "已成功同步 {count} 条成就到你的成就库",
+    "sync_empty": "同步完成，暂无历史成就，可前往工作台重新上传简历",
     "empty_state": "暂无成就记录。上传简历后，AI 会自动提炼你的成就。",
     "empty_search": "没有匹配的成就",
+    "go_to_workspace": "去工作台上传简历",
     "go_workspace": "去工作台",
     "count_display": "显示 {filtered} / {total} 条",
     "achievement_count": "{count} 条成就",
@@ -241,7 +233,7 @@
   "pricing": {
     "title_before": "解锁你的",
     "title_highlight": "职业新可能",
-    "subtitle": "超过 50,000 名职场人借助 CareerFlow AI，成功拿到国际大厂 Offer。",
+    "subtitle": "用 AI 优化简历，让每一份投递都更有把握。",
     "vp1_title": "无限 AI 优化",
     "vp1_desc": "针对每个目标职位持续优化你的简历，精准命中招聘需求。",
     "vp2_title": "无水印导出",
@@ -275,8 +267,9 @@
     "yearly_f4": "AI 求职信生成",
     "cta": "立即开通",
     "trust": "安全支付 & 14 天无理由退款",
-    "trust_sub": "受全球职场人信赖，采用行业领先加密技术。",
-    "footer_tagline": "© 2024 CareerFlow AI. 保留所有权利。",
+    "trust_sub": "支付由 Creem（Armitage Labs OÜ）作为收款方安全处理。",
+    "creem_disclosure": "本次支付将由 Creem（Armitage Labs OÜ）作为收款方处理。完成购买即表示你同意 Creem 的买方服务条款。",
+    "footer_tagline": "© 2025 CareerFlow AI. 保留所有权利。",
     "footer_privacy": "隐私政策",
     "footer_terms": "服务条款",
     "footer_support": "联系客服"
@@ -391,5 +384,53 @@
     "tip_link": "了解更多",
     "success_desc": "简历正在解析中，马上为你跳转到工作台。",
     "success_cta": "前往工作台"
+  },
+  "privacy": {
+    "title": "隐私政策",
+    "last_updated": "最后更新：2025 年 4 月",
+    "intro": "CareerFlow AI（「我们」）致力于保护你的隐私。本政策说明我们如何收集、使用和保护你在使用本服务时提供的信息。",
+    "s1_title": "一、我们收集哪些信息",
+    "s1_body": "我们收集你主动提供的信息，包括：上传的简历内容、用于登录的邮箱地址、粘贴的职位描述，以及偏好设置。我们也会自动收集使用数据，如访问页面和功能使用情况。",
+    "s2_title": "二、信息的使用方式",
+    "s2_body": "我们使用你的信息以：提供并持续改进 AI 简历优化服务、通过 Creem 处理付款、发送登录链接和付款收据等事务性邮件，以及分析使用情况以优化产品体验。",
+    "s3_title": "三、数据存储",
+    "s3_body": "你的数据安全地存储在基于 AWS 基础设施的 Supabase（PostgreSQL）中。简历内容和职业成就将被存储以支撑核心功能。你可以随时联系我们删除你的数据。",
+    "s4_title": "四、付款处理",
+    "s4_body": "付款由 Creem（Armitage Labs OÜ）作为收款方处理。我们不存储你的银行卡信息。有关付款信息的处理方式，请参阅 Creem 的隐私政策。",
+    "s5_title": "五、Cookie 使用",
+    "s5_body": "我们使用必要的 Cookie 来维持你的登录状态、记录地区偏好，以及支持匿名简历上传功能。我们不使用任何广告追踪 Cookie。",
+    "s6_title": "六、你的权利",
+    "s6_body": "你有权访问、更正或删除你的个人数据。欧盟/欧洲经济区用户享有 GDPR 规定的相关权利。如需行使上述权利，请通过 support@careerflow.ai 联系我们。",
+    "s7_title": "七、数据保留期限",
+    "s7_body": "在你的账户有效期内，我们将保留你的数据。匿名会话数据保留 90 天。你可以随时申请注销账户并删除所有相关数据。",
+    "s8_title": "八、联系方式",
+    "s8_body": "如有隐私相关问题，请通过以下方式联系我们：support@careerflow.ai",
+    "back": "返回首页"
+  },
+  "terms": {
+    "title": "服务条款",
+    "last_updated": "最后更新：2025 年 4 月",
+    "intro": "本服务条款规范你对 CareerFlow AI 的使用。使用本服务即表示你同意以下条款。",
+    "s1_title": "一、服务说明",
+    "s1_body": "CareerFlow AI 提供 AI 驱动的简历优化工具，包括简历解析、职业成就提炼、职位描述匹配以及导出功能。",
+    "s2_title": "二、使用资格",
+    "s2_body": "你须年满 18 周岁方可使用本服务。使用 CareerFlow AI 即表示你确认符合此要求。",
+    "s3_title": "三、用户责任",
+    "s3_body": "你同意：提供真实信息、仅将本服务用于合法目的、不尝试绕过任何安全措施，以及不使用本服务生成具有误导性或欺诈性的简历内容。",
+    "s4_title": "四、付款与收款方",
+    "s4_body": "面向付费市场的用户，付款由 Creem（Armitage Labs OÜ）作为收款方处理。完成购买即表示你同时接受 Creem 的买方服务条款。订阅套餐提供 14 天无理由退款保障。",
+    "s5_title": "五、退款政策",
+    "s5_body": "订阅套餐提供 14 天无理由退款保障。单次导出一旦文件已下载，则不予退款。如需申请退款，请联系 support@careerflow.ai。",
+    "s6_title": "六、知识产权",
+    "s6_body": "你提供的简历内容归你所有。使用本服务即表示你授予我们有限许可，仅用于提供服务目的处理你的内容。",
+    "s7_title": "七、免责声明",
+    "s7_body": "CareerFlow AI 按「现状」提供，不附带任何明示或默示的保证。我们不保证具体的求职结果，最终效果因个人情况和市场环境而异。",
+    "s8_title": "八、责任限制",
+    "s8_body": "在法律允许的最大范围内，CareerFlow AI 不对因使用本服务而产生的任何间接、附带或衍生损失承担责任。",
+    "s9_title": "九、条款变更",
+    "s9_body": "我们可能不时更新本条款。继续使用本服务即表示接受更新后的条款。",
+    "s10_title": "十、联系方式",
+    "s10_body": "如对本条款有疑问，请联系：support@careerflow.ai",
+    "back": "返回首页"
   }
 }

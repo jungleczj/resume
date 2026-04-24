@@ -94,6 +94,8 @@ export function WorkspaceClient({
     clearTranslatedTexts,
     applyTranslatedProfile,
     setTranslatedSections,
+    setTranslatedExperiences,
+    setTranslatedProjectNames,
     restoreVersion,
     splitRatio,
     setSplitRatio,
@@ -442,6 +444,17 @@ export function WorkspaceClient({
           .flatMap(exp => (exp.achievements ?? []).filter(a => a.status === 'confirmed'))
           .map(a => ({ id: a.id, text: a.text }))
 
+        // Collect unique project names + member roles from confirmed achievements
+        // Both share the same key→translated map since they're keyed by original string
+        const projectStringSet = new Set<string>()
+        for (const exp of storeExperiences) {
+          for (const ach of (exp.achievements ?? []).filter(a => a.status === 'confirmed')) {
+            if (ach.project_name) projectStringSet.add(ach.project_name)
+            if (ach.project_member_role) projectStringSet.add(ach.project_member_role)
+          }
+        }
+        const projectNamesInput = Array.from(projectStringSet)
+
         // Build minimal translation input for certifications/awards/publications
         const certsInput = resumeCertifications.map(c => ({
           name: c.name,
@@ -455,10 +468,21 @@ export function WorkspaceClient({
         const pubsInput = resumePublications.map(p => ({
           title: p.title,
           description: p.description ?? null,
+          publication_venue: p.publication_venue ?? null,
         }))
         const langsInput = resumeLanguages.map(l => ({
           language_name: l.language_name,
         }))
+
+        // Build work experiences input (confirmed experiences only)
+        const confirmedExpIds = new Set(
+          storeExperiences
+            .filter(exp => (exp.achievements ?? []).some(a => a.status === 'confirmed'))
+            .map(exp => exp.id)
+        )
+        const workExpsInput = storeExperiences
+          .filter(exp => confirmedExpIds.has(exp.id))
+          .map(exp => ({ id: exp.id, job_title: exp.job_title, company: exp.company }))
 
         const res = await fetch('/api/resume/translate', {
           method: 'POST',
@@ -467,6 +491,7 @@ export function WorkspaceClient({
             user_id: userId,
             resume_lang: resumeLang,
             achievements: confirmedAchs,
+            project_names: projectNamesInput,
             personal_info: resumePersonalInfo,
             education: resumeEducation,
             skills: resumeSkills,
@@ -474,6 +499,7 @@ export function WorkspaceClient({
             awards: awardsInput,
             publications: pubsInput,
             spoken_languages: langsInput,
+            work_experiences: workExpsInput,
           }),
         })
         if (!res.ok) return
@@ -504,6 +530,16 @@ export function WorkspaceClient({
           data?.translated_publications ?? null,
           data?.translated_spoken_languages ?? null,
         )
+
+        // Apply translated work experience fields
+        if (data?.translated_work_experiences?.length) {
+          setTranslatedExperiences(data.translated_work_experiences)
+        }
+
+        // Apply translated project names map
+        if (data?.translated_project_names && Object.keys(data.translated_project_names).length > 0) {
+          setTranslatedProjectNames(data.translated_project_names as Record<string, string>)
+        }
 
         trackEvent('resume_lang_switched', {
           anonymous_id: anonymousId,
