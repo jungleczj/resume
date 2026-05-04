@@ -14,7 +14,7 @@ const nextConfig = {
     // to the locale-prefixed version. Without middleware, bare paths return 404.
     const localedPages = [
       '/library', '/workspace', '/settings', '/login',
-      '/pricing', '/upload', '/privacy', '/terms',
+      '/pricing', '/upload', '/privacy', '/terms', '/refund',
     ]
 
     const pageRedirects = localedPages.flatMap((page) => [

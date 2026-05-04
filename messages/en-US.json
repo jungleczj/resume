@@ -81,6 +81,7 @@
       "tagline": "AI resume optimization for the modern job seeker.",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
+      "refund": "Refund Policy",
       "support": "Contact Support",
       "pricing": "Pricing",
       "copyright": "© 2025 CareerFlow AI. All rights reserved."
@@ -418,6 +419,24 @@
     "s7_body": "We retain your data for as long as your account is active. Anonymous session data is retained for 90 days. You may request deletion of your account and all associated data at any time.",
     "s8_title": "8. Contact",
     "s8_body": "For privacy-related inquiries, please contact us at: support@careerflow.ai",
+    "back": "Back to Home"
+  },
+  "refund": {
+    "title": "Refund Policy",
+    "last_updated": "Last updated: April 2025",
+    "intro": "CareerFlow AI is committed to making every purchase a confident one. Please read our refund policy carefully before completing your purchase.",
+    "s1_title": "1. Subscription Plans",
+    "s1_body": "All subscription plans include a 14-day money-back guarantee. If you are unsatisfied with our service within 14 days of subscribing, you may request a full refund — no questions asked. Subscription fees beyond the 14-day window are non-refundable.",
+    "s2_title": "2. Single Export Purchases",
+    "s2_body": "Single export purchases are for instant digital delivery. Once the file has been successfully downloaded, that purchase is non-refundable. If a technical issue prevented your file from downloading correctly, please contact us and we will prioritize resolving the issue or providing appropriate compensation.",
+    "s3_title": "3. How to Request a Refund",
+    "s3_body": "Email us at support@careerflow.ai with your account email address, purchase date, and a brief description of the issue. Our support team will respond and process your request within 2 business days.",
+    "s4_title": "4. Refund Processing Time",
+    "s4_body": "Once your refund request is approved, the amount will be returned to your original payment method. Processing typically takes 5–10 business days depending on your bank or payment provider.",
+    "s5_title": "5. Merchant of Record",
+    "s5_body": "Payments for CareerFlow AI are processed by Creem (Armitage Labs OÜ) as the merchant of record. Refunds are also handled through Creem and are subject to their refund policies. You may also submit a refund request directly through Creem's support channels if preferred.",
+    "s6_title": "6. Contact Us",
+    "s6_body": "For any refund-related questions, please reach out to: support@careerflow.ai. We are committed to responding within 2 business days.",
     "back": "Back to Home"
   },
   "terms": {

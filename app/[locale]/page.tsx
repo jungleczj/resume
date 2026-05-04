@@ -241,6 +241,9 @@ export default function LandingPage() {
                 <Link href="/terms" className="text-slate-500 hover:text-indigo-700 transition-all">
                   {t('footer.terms')}
                 </Link>
+                <Link href="/refund" className="text-slate-500 hover:text-indigo-700 transition-all">
+                  {t('footer.refund')}
+                </Link>
               </div>
             </div>
           </div>
