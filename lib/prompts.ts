@@ -472,17 +472,27 @@ Output ONLY valid JSON — no markdown code blocks:
 - 处理：保留用户原文不改写，在末尾追加 {{建议补充具体案例}}
 - has_placeholders: false
 
+## AI新增内容标注规则（必须遵守）
+原文中**没有**的词语、修饰语、上下文补充，必须用单方括号 [...] 包裹，让用户清楚哪些是AI添加的。
+- 原文已有的内容：照抄，不加括号
+- AI新增的词语/短语/背景修饰：用 [...]  包裹
+- 数据指标：仍用 {{...}} 标注
+- 待填写占位符：仍用 [[类型:说明]]
+- 禁止：用 [...] 包裹大段句子；括号内不超过6个字
+示例：原文"带领团队搭建推荐系统，提升了用户参与度" → "带领[跨部门]团队搭建[基于ML的]推荐系统，使用户参与度提升[[增长率:参与度提升幅度]]"
+
 ## 标记说明
-- {{...}}：AI高亮标记。第一档标记关键量化亮点（显示为蓝色加粗）；第三档标记改进建议（同样蓝色加粗）。展示时去掉大括号仅显示内容。
+- {{...}}：AI高亮标记。第一档标记关键量化亮点（显示为蓝色加粗）；第三档标记改进建议（同样蓝色加粗）。
 - [[类型:说明]]：待填写占位符，用户须在此处补充真实数字（显示为橙色带背景）。
+- [...]：AI新增内容标注，显示为绿色，提示用户这是AI添加的词语，可自行确认或修改。
 
 ## 输出规则
 - 输入有多少条，输出必须恰好有多少条，index必须一一对应
 - 输出ONLY有效JSON，无markdown代码块：
 
 [
-  { "index": 0, "text": "参加集团安全竞赛，取得{{前5%（45/1000名）}}排名", "tier": 1, "has_placeholders": false },
-  { "index": 1, "text": "优化团队协作流程，提升效率[[增长率:效率提升幅度]]", "tier": 2, "has_placeholders": true },
+  { "index": 0, "text": "参加[集团级]安全竞赛，取得{{前5%（45/1000名）}}排名", "tier": 1, "has_placeholders": false },
+  { "index": 1, "text": "优化[核心]团队协作流程，提升效率[[增长率:效率提升幅度]]", "tier": 2, "has_placeholders": true },
   { "index": 2, "text": "善于跨团队沟通协调{{建议补充具体案例}}", "tier": 3, "has_placeholders": false }
 ]`,
 
@@ -510,17 +520,27 @@ Output ONLY valid JSON — no markdown code blocks:
 - Action: keep original text unchanged, append {{Suggest: add a specific example or supporting data}}
 - has_placeholders: false
 
+## Marking AI-Added Content (mandatory)
+Any word, qualifier, or context you ADD that was NOT present in the original bullet must be wrapped in single square brackets [...] so the user can clearly see what the AI contributed.
+- Content reproduced verbatim from the original: no brackets
+- AI-added words, phrases, or qualifiers: wrap in [...]
+- Key metrics: still use {{...}}
+- Data placeholders: still use [[type:description]]
+- Rule: do NOT wrap whole sentences; each [...] block should be ≤5 words
+Example: original "Led team to build recommendation system that improved engagement" → "Led [cross-functional] team to build [ML-powered] recommendation system, improving engagement by [[growth_rate:engagement lift %]]"
+
 ## Marker Legend
 - {{...}}: AI highlight marker. Tier 1 = key quantified metric. Tier 3 = improvement suggestion. Braces stripped in display; shown in bold accent color.
 - [[type:description]]: user-fill placeholder. User must supply real data here. Shown in orange with background.
+- [...]: AI-added content marker. Shows the user what the AI inserted. Shown in green so it's visually distinct from original text.
 
 ## Output Rules
 - Output exactly as many items as you received — index must match 1:1
 - Output ONLY valid JSON — no markdown code blocks:
 
 [
-  { "index": 0, "text": "Competed in group security challenge, ranked {{top 5% (45/1000)}}", "tier": 1, "has_placeholders": false },
-  { "index": 1, "text": "Optimized team workflow, improved efficiency by [[growth_rate:improvement %]]", "tier": 2, "has_placeholders": true },
+  { "index": 0, "text": "Competed in [group-wide] security challenge, ranked {{top 5% (45/1000)}}", "tier": 1, "has_placeholders": false },
+  { "index": 1, "text": "Optimized [core] team workflow, improved efficiency by [[growth_rate:improvement %]]", "tier": 2, "has_placeholders": true },
   { "index": 2, "text": "Strong cross-team communication skills {{Suggest: add a specific coordination example or outcome data}}", "tier": 3, "has_placeholders": false }
 ]`,
 

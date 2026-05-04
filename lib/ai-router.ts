@@ -65,6 +65,56 @@ const MODEL_CHAINS: Record<AITask, string[]> = {
   ]
 }
 
+// ── DB-driven model chain cache (60s TTL) ────────────────────────────────────
+// ai_models 表存模型编号（id→name），model_configs 表存整数 ID 数组。
+// 更新数据库后最多 60s 生效，无需重新部署。
+// 降级顺序：DB → 上次成功的内存缓存 → 硬编码 MODEL_CHAINS
+let _chainCache: Record<string, string[]> | null = null
+let _chainCacheExpiry = 0
+
+async function getModelChains(): Promise<Record<AITask, string[]>> {
+  const now = Date.now()
+  if (_chainCache && now < _chainCacheExpiry) {
+    return _chainCache as Record<AITask, string[]>
+  }
+  try {
+    const { createServiceClient } = await import('./supabase/service')
+    const supabase = createServiceClient()
+
+    // id → model name 映射
+    const { data: models } = await supabase
+      .from('ai_models')
+      .select('id, name')
+      .eq('is_enabled', true)
+    if (!models?.length) throw new Error('no models')
+
+    const idToName: Record<number, string> = {}
+    for (const m of models) idToName[m.id as number] = m.name as string
+
+    // 每个任务的模型 ID 顺序
+    const { data: configs, error } = await supabase
+      .from('model_configs')
+      .select('task_key, model_chain')
+      .eq('is_active', true)
+    if (error || !configs?.length) throw new Error('no configs')
+
+    const fromDB: Record<string, string[]> = {}
+    for (const row of configs) {
+      const ids: number[] = Array.isArray(row.model_chain) ? row.model_chain : []
+      const names = ids.map((id: number) => idToName[id]).filter(Boolean) as string[]
+      if (names.length) fromDB[row.task_key as string] = names
+    }
+
+    // DB 配置覆盖硬编码，未配置的任务保留硬编码值
+    _chainCache = { ...MODEL_CHAINS, ...fromDB }
+    _chainCacheExpiry = now + 60_000
+    return _chainCache as Record<AITask, string[]>
+  } catch {
+    // DB 不可用时静默降级，保留上次缓存（如有）
+  }
+  return (_chainCache as Record<AITask, string[]>) ?? MODEL_CHAINS
+}
+
 const DEFAULT_TIMEOUT_MS = 60_000
 
 // ── Provider clients ─────────────────────────────────────────────────────────
@@ -139,7 +189,8 @@ export async function callAI(
   market: 'cn' | 'en',
   options: { timeout?: number } = {}
 ): Promise<string> {
-  const chain = MODEL_CHAINS[task]
+  const chains = await getModelChains()
+  const chain = chains[task] ?? MODEL_CHAINS[task]
   const timeout = options.timeout ?? DEFAULT_TIMEOUT_MS
   const startTime = Date.now()
 

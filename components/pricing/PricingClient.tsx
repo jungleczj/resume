@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { NavBar } from '@/components/layout/NavBar'
+import { Link } from '@/lib/i18n/navigation'
 
 export default function PricingClient() {
   const [selectedPlan, setSelectedPlan] = useState<'export' | 'monthly' | 'yearly'>('yearly')
@@ -162,6 +163,9 @@ export default function PricingClient() {
               <button className="w-full py-5 rounded-full bg-[#4f46e5] text-white font-headline text-lg font-extrabold shadow-xl hover:opacity-95 transition-all hover:scale-[1.01] active:scale-95">
                 {t('cta')}
               </button>
+              <p className="text-center text-xs text-[#777587] mt-3 leading-relaxed">
+                {t('creem_disclosure')}
+              </p>
             </div>
           </div>
         </div>
@@ -175,16 +179,9 @@ export default function PricingClient() {
             </div>
             <p className="text-xs text-[#464555]/70">{t('trust_sub')}</p>
           </div>
-          <div className="flex items-center gap-6 opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
-            <div className="h-8 flex items-center bg-white px-3 rounded shadow-sm">
-              <img alt="Stripe logo" className="h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrJsTNcB8oRvD6YZN7ITjYWDV3zW9O4g1nxrvccGVjc9sVR_9sG-1Ye61a28O_mhtQm09ll8bxxwE_LyLBmwb03zijpVjFsfycrU_GSAnn1nYXxAb5MxA-DQuJqV8Fzu_XsVJ-fcARDO95QpLd1Q3ku9yVE3QFT08CYUT_1zJCRYdzBB-8VbP_5-MEn44hk5EPsXFTmqnbvalKIjkW2MeFjyG9d43i3rJa9ETmvZCD5j_3GHL_JNfejn_jTJQ6PdVAhKGQPV6FUugQ" />
-            </div>
-            <div className="h-8 flex items-center bg-white px-3 rounded shadow-sm">
-              <img alt="PayPal logo" className="h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFjLAndY4Ux0H46OPUw-hyZDJyPVy4q7BoKdkKYCdN4DJJ-p6zS843ss3N9YWNneN9AV0RASUtLGQAvyqHedPhSh-ND6823Ep6-xW2HiKtyfWtsRNlLa4oCvZUv5qpMATzoqFohBN3o6kn-xhR_q6QwvUUZ749vGM47Vp4LFa_PAcni2dkUXBMMUQL87L8P6TYZXUpZBXQvQYrwvnw_vwz-LlSyHzJTxm2i3FEjSiDFsj62zttd3uGelvjjx4pqKKjPFuY4o0ntV6I" />
-            </div>
-            <div className="h-8 flex items-center bg-white px-3 rounded shadow-sm">
-              <img alt="Mastercard logo" className="h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6q-JzfxPafPKk2r9ZgSlU6NyGukwE4zk0pzGsz1ic-7RXlF6mxeZoMuHw1VsCYrpK4gQVBnQYD94kTQ3kGOr5WMmk2AbC-sMgWOMhgDVQ8fHyoBVi6_T31khZHY4F4xglgE2T-Lsd8HLs-JTwkrRdu198Kj2S8dgY9wb7TWA7oNXnhdGMb7sxCD0sQV9GsmlDmVd4WS_NZvKqFZbVWqfVem5as3SLEES8dyyMVYzdIAZtNsfCAZqgoeTw-ySXx2EgSdqx--o-OzU7" />
-            </div>
+          <div className="flex items-center gap-3 bg-white border border-[#c7c4d8]/30 px-5 py-3 rounded-xl shadow-sm">
+            <span className="material-symbols-outlined text-green-600 text-lg" style={{fontVariationSettings: "'FILL' 1"}}>lock</span>
+            <span className="text-sm font-medium text-[#464555]">Powered by <strong>Creem</strong></span>
           </div>
         </div>
       </main>
@@ -197,9 +194,9 @@ export default function PricingClient() {
             <p className="text-slate-500 text-sm tracking-wide uppercase">{t('footer_tagline')}</p>
           </div>
           <div className="flex flex-wrap justify-center gap-8">
-            <a className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="#">{t('footer_privacy')}</a>
-            <a className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="#">{t('footer_terms')}</a>
-            <a className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="#">{t('footer_support')}</a>
+            <Link className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="/privacy">{t('footer_privacy')}</Link>
+            <Link className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="/terms">{t('footer_terms')}</Link>
+            <a className="text-slate-500 hover:text-indigo-600 transition-colors text-sm tracking-wide uppercase opacity-80 hover:opacity-100" href="mailto:support@careerflow.ai">{t('footer_support')}</a>
           </div>
         </div>
       </footer>

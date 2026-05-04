@@ -12,7 +12,10 @@ const nextConfig = {
   async redirects() {
     // Pages that live under /[locale]/ — bare paths (e.g. /library) must redirect
     // to the locale-prefixed version. Without middleware, bare paths return 404.
-    const localedPages = ['/library', '/workspace', '/settings', '/login', '/pricing', '/upload']
+    const localedPages = [
+      '/library', '/workspace', '/settings', '/login',
+      '/pricing', '/upload', '/privacy', '/terms',
+    ]
 
     const pageRedirects = localedPages.flatMap((page) => [
       // Returning user with saved locale cookie

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 import { callAI } from '@/lib/ai-router'
 import { getPrompt } from '@/lib/prompts'
 import { trackEvent } from '@/lib/analytics'
-import { extractTextFromFile, extractImageFromBuffer, extractFirstImageFromPDF } from '@/lib/utils/file-parser'
+import { extractTextFromFile, extractFirstImageFromPDF, extractFirstImageFromDOCX } from '@/lib/utils/file-parser'
 import { detectPII } from '@/lib/utils/detect-pii'
 import { logError } from '@/lib/error-logger'
 import type { BeautifyOutput, RawStructureOutput, AchievementBeautifyResult } from '@/lib/types/domain'
@@ -35,7 +35,8 @@ function computeAiScore(text: string): number {
 }
 
 /** Map AI free-text skill category to DB enum */
-function mapSkillCategory(cat: string): string {
+function mapSkillCategory(cat: string | null | undefined): string {
+  if (!cat) return 'other'
   const lower = cat.toLowerCase()
   if (lower.includes('programming') || lower.includes('language') || lower.includes('编程') || lower.includes('语言')) return 'programming_language'
   if (lower.includes('framework') || lower.includes('库') || lower.includes('框架')) return 'framework'
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
     console.log('[parse] scanning for embedded photo, buffer size:', fileBuffer.length)
     const photo = fileExt === 'pdf'
       ? await extractFirstImageFromPDF(fileBuffer)
-      : extractImageFromBuffer(fileBuffer)
+      : await extractFirstImageFromDOCX(fileBuffer)
     if (photo) {
       photoExtractedPath = await uploadPhotoToStorage(photo)
     } else {
@@ -155,9 +156,17 @@ export async function POST(req: NextRequest) {
       if (profile?.payment_market === 'en_paid') market = 'en'
     }
 
+    // Detect resume content language independently of user's payment market.
+    // CJK character ratio > 15% → treat as Chinese resume; otherwise English.
+    const cjkMatches = rawText.match(/[一-鿿㐀-䶿＀-￯]/g) ?? []
+    const nonSpaceLen = rawText.replace(/\s/g, '').length
+    const contentLang: 'cn' | 'en' =
+      nonSpaceLen > 50 && cjkMatches.length / nonSpaceLen > 0.15 ? 'cn' : 'en'
+    console.log('[parse] contentLang:', contentLang, '(cjk ratio:', (cjkMatches.length / nonSpaceLen).toFixed(3), ')')
+
     // ── Call 1: Verbatim structure extraction ─────────────────────────────────
-    const structurePrompt = await getPrompt('resume_structure_extract', market)
-    console.log('[parse] Call 1 — structure extract, market:', market, 'prompt length:', structurePrompt.length)
+    const structurePrompt = await getPrompt('resume_structure_extract', contentLang)
+    console.log('[parse] Call 1 — structure extract, contentLang:', contentLang, 'prompt length:', structurePrompt.length)
 
     const structureResponse = await callAI(
       'resume_structure_extract',
@@ -206,8 +215,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Call 2: Achievement beautification ───────────────────────────────────
-    const beautifyPrompt = await getPrompt('resume_achievement_beautify', market)
-    console.log('[parse] Call 2 — achievement beautify, bullets:', bulletMap.length, 'prompt length:', beautifyPrompt.length)
+    const beautifyPrompt = await getPrompt('resume_achievement_beautify', contentLang)
+    console.log('[parse] Call 2 — achievement beautify, bullets:', bulletMap.length, 'contentLang:', contentLang, 'prompt length:', beautifyPrompt.length)
 
     const inputPayload = bulletMap.map(b => ({ index: b.globalIdx, raw: b.raw }))
     const beautifyResponse = await callAI(
@@ -534,6 +543,7 @@ export async function POST(req: NextRequest) {
         parse_status: 'completed',
         photo_extracted_path: photoExtractedPath,
         parsed_data: {
+          content_lang: contentLang,
           personal_info: output.personal_info ?? null,
           education: output.education ?? [],
           skills: output.skills ?? [],

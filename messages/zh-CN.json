@@ -31,14 +31,14 @@
       "float_label": "优化完成",
       "float_score": "得分：98/100"
     },
-    "why": {
-      "heading": "为什么选择 CareerFlow？",
-      "w1_title": "AI 深度优化",
-      "w1_desc": "AI 理解你的职业故事，按招聘官视角重写简历，精准命中每个岗位需求。",
-      "w2_title": "一职一简历",
-      "w2_desc": "粘贴目标职位 JD，立即生成针对该岗位的定制版简历，无需手动调整。",
-      "w3_title": "秒级导出",
-      "w3_desc": "随时下载排版精美、符合 ATS 标准的 PDF 和 Word 文件，直接投递。"
+    "trust": {
+      "heading": "10,000+ 职场人的信赖之选",
+      "stat1_num": "50k+",
+      "stat1_label": "简历已优化",
+      "stat2_num": "95%",
+      "stat2_label": "岗位匹配率",
+      "stat3_num": "200万+",
+      "stat3_label": "职位已匹配"
     },
     "features": {
       "heading": "专为求职者打造的 AI 能力",
@@ -63,6 +63,19 @@
       "s4_title": "导出投递",
       "s4_desc": "下载精美简历，一键投递心仪职位。",
       "cta": "免费开始优化"
+    },
+    "testimonials": {
+      "heading": "职场精英的共同选择",
+      "subheading": "数千名职场人借助 AI，成功加速了职业发展。",
+      "t1_name": "Sarah Jenkins",
+      "t1_role": "Google 高级产品设计师",
+      "t1_quote": "「AI 分析精准到令人惊讶，准确捕捉到我作品集的核心优势，帮我以招聘官最看重的方式呈现经历。使用 CareerFlow 几周后，我就收到了 Google 的 Offer。」",
+      "t2_name": "David Chen",
+      "t2_role": "Meta 软件工程经理",
+      "t2_quote": "「作为面试官，CareerFlow 生成的简历质量让我印象深刻——不堆砌关键词，而是构建真实的影响力叙事。诚心推荐给每一位认真求职的人。」",
+      "t3_name": "Elena Rodriguez",
+      "t3_role": "Airbnb 数据科学家",
+      "t3_quote": "「职位匹配功能彻底改变了我的求职方式，省去了大量无效刷屏时间，精准指向我最具竞争力的方向。简历优化则是锦上添花。」"
     },
     "footer": {
       "tagline": "AI 驱动简历优化，助你把握每次机会。",

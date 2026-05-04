@@ -1,5 +1,6 @@
 import pdf from 'pdf-parse'
 import mammoth from 'mammoth'
+import { inflateSync } from 'zlib'
 
 export async function extractTextFromFile(
   blob: Blob,
@@ -225,25 +226,116 @@ export async function extractFirstImageFromDOCX(
 }
 
 /**
+ * Decompress all FlateDecode streams in a PDF binary and scan each for JPEG/PNG.
+ *
+ * Some PDF exporters (Canva, Adobe InDesign, certain Word versions) store
+ * images inside zlib-compressed (FlateDecode) object streams rather than as
+ * raw DCTDecode bytes. Direct binary scan misses those entirely.
+ *
+ * Strategy:
+ *  1. Locate every "/FlateDecode" token in the PDF.
+ *  2. Find the "stream … endstream" block that follows.
+ *  3. Try inflateSync on the raw stream bytes.
+ *  4. Scan the decompressed buffer for JPEG/PNG markers.
+ *  5. Return the largest image found across all streams.
+ */
+function extractImagesFromPDFFlateDecode(
+  buffer: Buffer
+): { data: Buffer; contentType: string } | null {
+  const FLATE  = Buffer.from('/FlateDecode')
+  const STREAM = Buffer.from('stream')
+  const ENDSTREAM = Buffer.from('endstream')
+
+  const candidates: { data: Buffer; contentType: string }[] = []
+  let pos = 0
+
+  while (pos < buffer.length) {
+    const flateIdx = buffer.indexOf(FLATE, pos)
+    if (flateIdx === -1) break
+
+    // Find "stream" keyword within 512 bytes after /FlateDecode
+    const searchEnd = Math.min(flateIdx + 512, buffer.length - STREAM.length - 2)
+    let streamKeywordEnd = -1
+    for (let k = flateIdx; k < searchEnd; k++) {
+      if (buffer.slice(k, k + STREAM.length).equals(STREAM)) {
+        // Data starts after the newline(s) following "stream"
+        const afterKeyword = k + STREAM.length
+        if (buffer[afterKeyword] === 0x0D && buffer[afterKeyword + 1] === 0x0A) {
+          streamKeywordEnd = afterKeyword + 2  // \r\n
+        } else if (buffer[afterKeyword] === 0x0A) {
+          streamKeywordEnd = afterKeyword + 1  // \n
+        } else {
+          streamKeywordEnd = afterKeyword
+        }
+        break
+      }
+    }
+
+    if (streamKeywordEnd === -1) { pos = flateIdx + 1; continue }
+
+    // Find "endstream" — limit to 20 MB to avoid huge streams
+    const endIdx = buffer.indexOf(ENDSTREAM, streamKeywordEnd)
+    if (endIdx === -1 || endIdx - streamKeywordEnd > 20 * 1024 * 1024) {
+      pos = flateIdx + 1; continue
+    }
+
+    // Strip optional trailing \n or \r\n before endstream
+    let dataEnd = endIdx
+    if (dataEnd > streamKeywordEnd && buffer[dataEnd - 1] === 0x0A) dataEnd--
+    if (dataEnd > streamKeywordEnd && buffer[dataEnd - 1] === 0x0D) dataEnd--
+
+    const compressed = buffer.slice(streamKeywordEnd, dataEnd)
+    if (compressed.length < 16) { pos = flateIdx + FLATE.length; continue }
+
+    try {
+      const decompressed = inflateSync(compressed)
+      // Scan decompressed content with lower size threshold (photos inside streams
+      // can be cropped/compressed; 5 KB is safe against icon noise but catches small photos)
+      const jpegs = scanJPEGsInBuffer(decompressed, 5 * 1024)
+      const pngs  = scanPNGsInBuffer(decompressed,  5 * 1024)
+      for (const d of jpegs) candidates.push({ data: d, contentType: 'image/jpeg' })
+      for (const d of pngs)  candidates.push({ data: d, contentType: 'image/png'  })
+    } catch {
+      // Not valid zlib / different filter — skip silently
+    }
+
+    pos = flateIdx + FLATE.length
+  }
+
+  if (!candidates.length) return null
+  candidates.sort((a, b) => b.data.length - a.data.length)
+  return candidates[0]
+}
+
+/**
  * Extract the profile photo from a PDF file.
  *
- * PDF stores JPEG images as raw DCTDecode streams — the JPEG bytes appear
- * verbatim in the file binary, making marker-based scanning reliable.
- * PNG images also appear as-is in most PDFs (stored without additional compression).
+ * Two-pass strategy:
+ *  Pass 1 — Direct binary scan: works for PDFs that store JPEG as raw
+ *    DCTDecode streams (Microsoft Word, Google Docs, LaTeX, most resume builders).
+ *    The JPEG bytes appear verbatim in the file so JPEG SOI/EOI markers are found.
+ *  Pass 2 — FlateDecode decompress + scan: handles PDFs where images are inside
+ *    zlib-compressed object streams (Canva exports, some Adobe InDesign PDFs).
+ *    We decompress each FlateDecode stream and scan the result for JPEG/PNG.
  */
 export async function extractFirstImageFromPDF(
   buffer: Buffer
 ): Promise<{ data: Buffer; contentType: string } | null> {
-  const result = pickLargestImage(buffer)
-  if (result) {
-    console.log(
-      '[extractFirstImageFromPDF] found image:',
-      result.data.length,
-      'bytes,',
-      result.contentType
-    )
-  } else {
-    console.log('[extractFirstImageFromPDF] no image found in PDF')
+  // Pass 1: direct binary scan
+  const direct = pickLargestImage(buffer)
+  if (direct) {
+    console.log('[extractFirstImageFromPDF] direct scan found image:', direct.data.length, 'bytes,', direct.contentType)
+    return direct
   }
-  return result
+
+  // Pass 2: FlateDecode decompress + scan
+  console.log('[extractFirstImageFromPDF] direct scan found nothing, trying FlateDecode streams...')
+  const flate = extractImagesFromPDFFlateDecode(buffer)
+  if (flate) {
+    console.log('[extractFirstImageFromPDF] FlateDecode found image:', flate.data.length, 'bytes,', flate.contentType)
+    return flate
+  }
+
+  console.log('[extractFirstImageFromPDF] no image found in PDF')
+  return null
 }

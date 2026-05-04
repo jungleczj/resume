@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/lib/i18n/navigation'
@@ -10,6 +10,18 @@ import { trackEvent } from '@/lib/analytics'
 type State = 'verifying' | 'generating' | 'ready' | 'error'
 
 export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-[#fcf8ff] flex items-center justify-center px-4">
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+      </main>
+    }>
+      <PaymentSuccessContent />
+    </Suspense>
+  )
+}
+
+function PaymentSuccessContent() {
   const t = useTranslations('payment_success')
   const params = useSearchParams()
   const format = (params.get('format') ?? 'pdf') as 'pdf' | 'docx'

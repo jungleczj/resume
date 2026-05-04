@@ -1,6 +1,6 @@
 import { routing } from '@/lib/i18n/routing'
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages } from 'next-intl/server'
+import { getMessages, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 
@@ -21,6 +21,11 @@ export default async function LocaleLayout({
     notFound()
   }
 
+  // Without middleware, next-intl can't detect locale automatically.
+  // setRequestLocale injects it into the request context so getMessages()
+  // and useTranslations() in all server components load the correct language.
+  setRequestLocale(locale)
+
   const messages = await getMessages()
 
   return (
@@ -31,7 +36,7 @@ export default async function LocaleLayout({
           __html: `document.documentElement.lang="${locale}"`
         }}
       />
-      <NextIntlClientProvider messages={messages}>
+      <NextIntlClientProvider locale={locale} messages={messages}>
         {children}
       </NextIntlClientProvider>
     </>

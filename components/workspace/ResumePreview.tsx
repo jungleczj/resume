@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useWorkspaceStore } from '@/store/workspace'
 import { cn } from '@/lib/utils'
 import type { Achievement, ResumePersonalInfo } from '@/lib/types/domain'
 import { PhotoCropModal } from './PhotoCropModal'
 import { trackEvent } from '@/lib/analytics'
+import { COBALT } from '@/lib/styles/resume-theme'
 
 // ─── Inline-editable text cell ───────────────────────────────────────────────
 function EditableCell({
@@ -93,7 +94,9 @@ function HighlightedEditableCell({
   }, [editing]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function parseSegments(text: string) {
-    return text.split(/(\[\[.*?\]\]|\{\{.*?\}\})/g).map((part, i) => {
+    // Order matters: match [[...]] before [...] to avoid confusing double-bracket placeholders
+    return text.split(/(\[\[.*?\]\]|\{\{.*?\}\}|\[(?!\[)[^\]]*\])/g).map((part, i) => {
+      // [[type:description]] — orange placeholder (user must fill in)
       if (/^\[\[.*?\]\]$/.test(part)) {
         return (
           <mark
@@ -110,6 +113,7 @@ function HighlightedEditableCell({
           </mark>
         )
       }
+      // {{...}} — blue highlight (key metric or suggestion)
       if (/^\{\{.*?\}\}$/.test(part)) {
         return (
           <mark
@@ -122,6 +126,23 @@ function HighlightedEditableCell({
             }}
           >
             {part.slice(2, -2)}
+          </mark>
+        )
+      }
+      // [...] — green AI-addition marker (content the AI added, not in original)
+      if (/^\[(?!\[)[^\]]*\]$/.test(part)) {
+        return (
+          <mark
+            key={i}
+            style={{
+              background: 'rgba(16,185,129,0.12)',
+              color: '#059669',
+              borderRadius: 3,
+              padding: '0 2px',
+              fontStyle: 'normal',
+            }}
+          >
+            {part.slice(1, -1)}
           </mark>
         )
       }
@@ -178,15 +199,8 @@ const PROFICIENCY_LABELS: Record<string, { zh: string; en: string }> = {
   native_bilingual:     { zh: '母语',     en: 'Native' },
 }
 
-// ─── Cobalt theme tokens ──────────────────────────────────────────────────────
-const C = {
-  accent:    '#2563eb',
-  textMain:  '#334155',
-  textBright:'#0f172a',
-  surface:   '#f8fafc',
-  surfaceDark:'#f1f5f9',
-  border:    '#e2e8f0',
-}
+// ─── Cobalt theme tokens (single source: lib/styles/resume-theme.ts) ─────────
+const C = COBALT
 
 // ─── Section heading (left sidebar) ──────────────────────────────────────────
 function SidebarHeading({ children }: { children: React.ReactNode }) {
@@ -238,6 +252,12 @@ export function ResumePreview() {
   // Scale the A4 canvas to fit the right panel while keeping A4 proportions
   const [scale, setScale] = useState(1)
   const [paperHeight, setPaperHeight] = useState(1123)
+  // Per-section pixel offsets injected before rendering to push content past page boundaries
+  const [pageSpacers, setPageSpacers] = useState<Record<string, number>>({})
+
+  // Multi-page layout constants (used by both layout JSX and pagination measurement)
+  const PAGE_H = 1123
+  const PAGE_GAP = 20
 
   const {
     showPhoto,
@@ -322,6 +342,71 @@ export function ResumePreview() {
     ro.observe(paper)
     return () => ro.disconnect()
   }, [])
+
+  // ── Page-break logic: reset cached spacers whenever layout-affecting data changes
+  useLayoutEffect(() => {
+    setPageSpacers({})
+  }, [
+    experiences,
+    resumePersonalInfo,
+    resumeEducation,
+    resumeSkills,
+    resumeCertifications,
+    resumeLanguages,
+    resumeAwards,
+    resumePublications,
+    resumeLang,
+    showPhoto,
+    photoPath,
+    translatedTexts,
+    translatedExperiences,
+    translatedCertifications,
+    translatedAwards,
+    translatedPublications,
+    translatedLanguages,
+    translatedProjectNames,
+    originalPersonalInfo,
+    originalEducation,
+    originalSkills,
+  ])
+
+  // ── Page-break logic: measure each [data-section] and push it past gap zones
+  // Sidebar (aside) and main (article) flow independently, so cumulative push is tracked per-column.
+  useLayoutEffect(() => {
+    if (Object.keys(pageSpacers).length > 0 || !paperRef.current) return
+    const STEP = PAGE_H + PAGE_GAP
+    const paperRect = paperRef.current.getBoundingClientRect()
+    const sections = Array.from(
+      paperRef.current.querySelectorAll('[data-section]')
+    ) as HTMLElement[]
+
+    const cumulativeByCol = new Map<Element | null, number>()
+    const newSpacers: Record<string, number> = {}
+
+    sections.forEach((s) => {
+      const id = s.getAttribute('data-section-id')
+      if (!id) return
+      const col = s.closest('aside, article')
+      const cumulative = cumulativeByCol.get(col) || 0
+      const rect = s.getBoundingClientRect()
+      const top = rect.top - paperRect.top + cumulative
+      const height = rect.height
+      // Skip overlong sections (allow internal split rather than wasting a page)
+      if (height > PAGE_H) return
+      const pageIdx = Math.floor(top / STEP)
+      const pageEnd = pageIdx * STEP + PAGE_H
+      if (top + height > pageEnd) {
+        const newTop = (pageIdx + 1) * STEP
+        const push = newTop - top
+        newSpacers[id] = push
+        cumulativeByCol.set(col, cumulative + push)
+      }
+    })
+
+    if (Object.keys(newSpacers).length > 0) {
+      setPageSpacers(newSpacers)
+    }
+  }, [pageSpacers])
 
   // Block all clipboard copy/cut document-wide while mounted
   useEffect(() => {
@@ -421,6 +506,23 @@ export function ResumePreview() {
 
   const hasData = !!resumePersonalInfo || confirmedExps.some((e) => e.achievements.length > 0)
 
+  // Pages drawn behind the resume content (incl. spacer-pushed content)
+  const pageCount = Math.max(1, Math.ceil(paperHeight / PAGE_H))
+  const totalVisualHeight = pageCount * PAGE_H + (pageCount - 1) * PAGE_GAP
+
+  // CSS mask that hides content falling in gap zones (y = n*1123 to n*1123+PAGE_GAP).
+  // This prevents content from visually bleeding into the gray inter-page strips.
+  const paperMask = pageCount > 1 ? (() => {
+    const stops: string[] = ['black 0']
+    for (let i = 0; i < pageCount - 1; i++) {
+      const gapStart = (i + 1) * 1123 + i * PAGE_GAP
+      const gapEnd = gapStart + PAGE_GAP
+      stops.push(`black ${gapStart}px`, `transparent ${gapStart}px`, `transparent ${gapEnd}px`, `black ${gapEnd}px`)
+    }
+    stops.push('black')
+    return `linear-gradient(to bottom, ${stops.join(', ')})`
+  })() : undefined
+
   const pInfo = (field: keyof ResumePersonalInfo): string => {
     const val = resumePersonalInfo?.[field]
     return val == null ? '' : String(val)
@@ -465,31 +567,91 @@ export function ResumePreview() {
         }
       `}</style>
 
-      {/* A4 paper — scaled to fit the panel, transformOrigin top-center keeps centering */}
+      {/* ── Page layout wrapper: scale transform + page-sheet backgrounds ──────── */}
       <div
-        id="resume-paper"
-        ref={paperRef}
-        className={cn('cobalt-resume select-none relative', dragActive && 'ring-2 ring-blue-300/50')}
+        id="resume-paper-wrapper"
         style={{
+          position: 'relative',
           width: 794,
-          minHeight: 1123,
-          background: '#ffffff',
-          color: C.textMain,
-          boxShadow: '0 4px 32px rgba(0,0,0,0.12)',
-          fontFamily: "'Inter', sans-serif",
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          // Responsive scaling: shrink to fit the panel width while keeping A4 ratio
+          height: totalVisualHeight,
+          // Scale to fit panel width while keeping A4 ratio
           transform: scale < 1 ? `scale(${scale})` : undefined,
           transformOrigin: 'top center',
-          // Collapse the extra layout space that CSS transform doesn't affect
-          // so the scrollable container height matches the visual height
-          marginBottom: scale < 1 ? `${(scale - 1) * paperHeight}px` : undefined,
-          // Cross-browser font smoothing for consistent rendering on Mac/Win/Linux
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale',
+          // Collapse unused layout space so the scroll container matches visual height
+          marginBottom: scale < 1 ? `${(scale - 1) * totalVisualHeight}px` : undefined,
         }}
+      >
+        {/* Individual A4 page backgrounds — white paper sheets behind the content */}
+        {Array.from({ length: pageCount }, (_, i) => (
+          <div
+            key={`page-bg-${i}`}
+            data-html2canvas-ignore="true"
+            style={{
+              position: 'absolute',
+              top: i * (1123 + PAGE_GAP),
+              left: 0,
+              width: 794,
+              height: 1123,
+              background: '#ffffff',
+              boxShadow: '0 4px 32px rgba(0,0,0,0.12)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+          />
+        ))}
+
+        {/* Gap strips between pages — gray band with page number label */}
+        {pageCount > 1 && Array.from({ length: pageCount - 1 }, (_, i) => (
+          <div
+            key={`page-gap-${i}`}
+            data-html2canvas-ignore="true"
+            style={{
+              position: 'absolute',
+              top: (i + 1) * 1123 + i * PAGE_GAP,
+              left: 0,
+              right: 0,
+              height: PAGE_GAP,
+              background: C.surfaceDark,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingInline: 10,
+              zIndex: 5,
+              pointerEvents: 'none',
+            }}
+          >
+            <span style={{ fontSize: 8, color: '#94a3b8', fontFamily: 'monospace', letterSpacing: '0.06em', userSelect: 'none' }}>
+              ─── Page {i + 1} ───
+            </span>
+            <span style={{ fontSize: 8, fontWeight: 700, color: '#475569', fontFamily: 'monospace', letterSpacing: '0.08em', userSelect: 'none' }}>
+              PAGE {i + 2}
+            </span>
+          </div>
+        ))}
+
+        {/* Resume content — transparent bg, overflow visible, z-index above page backgrounds */}
+        <div
+          id="resume-paper"
+          ref={paperRef}
+          className={cn('cobalt-resume select-none', dragActive && 'ring-2 ring-blue-300/50')}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: 794,
+            minHeight: 1123,
+            background: 'transparent',
+            color: C.textMain,
+            fontFamily: "'Inter', sans-serif",
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'visible',
+            WebkitFontSmoothing: 'antialiased',
+            MozOsxFontSmoothing: 'grayscale',
+            zIndex: 2,
+            maskImage: paperMask,
+            WebkitMaskImage: paperMask,
+          }}
         onContextMenu={(e) => e.preventDefault()}
         onDragStart={(e) => e.preventDefault()}
         onDragEnter={(e) => {
@@ -549,15 +711,20 @@ export function ResumePreview() {
               <aside style={{ width: '32%', flexShrink: 0, paddingRight: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
                 {/* Photo + Name + Title */}
-                <div style={{
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 6,
-                  padding: '18px 14px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                }}>
+                <div
+                  data-section
+                  data-section-id="sidebar-identity"
+                  style={{
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    borderRadius: 6,
+                    padding: '18px 14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    marginTop: pageSpacers['sidebar-identity'] || 0,
+                  }}
+                >
                   {/* Photo slot */}
                   {showPhoto && (
                     <>
@@ -657,7 +824,16 @@ export function ResumePreview() {
 
                 {/* Skills */}
                 {resumeSkills.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div
+                    data-section
+                    data-section-id="sidebar-skills"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                      marginTop: pageSpacers['sidebar-skills'] || 0,
+                    }}
+                  >
                     <SidebarHeading>{sectionLabel('核心技能', 'Core Skills')}</SidebarHeading>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {resumeSkills.map((group, i) => {
@@ -665,7 +841,7 @@ export function ResumePreview() {
                         const zhGroup = isBilingual && origSkill ? origSkill : group
                         return (
                           <div key={i}>
-                            <p style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: `${C.accent}b3`, marginBottom: 5 }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: `${C.accent}b3`, marginBottom: 5 }}>
                               <EditableCell
                                 value={zhGroup.category}
                                 onSave={(v) => {
@@ -692,7 +868,7 @@ export function ResumePreview() {
                               ))}
                             </div>
                             {isBilingual && origSkill && group.category !== origSkill.category && (
-                              <p style={{ fontSize: 9, color: '#94a3b8', marginTop: 2 }}>{group.category}</p>
+                              <p style={{ fontSize: 9, color: '#64748b', marginTop: 2 }}>{group.category}</p>
                             )}
                           </div>
                         )
@@ -703,7 +879,16 @@ export function ResumePreview() {
 
                 {/* Certifications + Awards combined */}
                 {(resumeCertifications.length > 0 || resumeAwards.length > 0) && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div
+                    data-section
+                    data-section-id="sidebar-cert-awards"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      marginTop: pageSpacers['sidebar-cert-awards'] || 0,
+                    }}
+                  >
                     <SidebarHeading>{sectionLabel('证书与荣誉', 'Awards & Certs')}</SidebarHeading>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {resumeCertifications.map((cert, i) => {
@@ -719,7 +904,7 @@ export function ResumePreview() {
                           }}>
                             <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayName}</p>
                             {cert.issue_year && (
-                              <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
+                              <p style={{ fontSize: 9, color: '#64748b', marginTop: 1 }}>
                                 {displayCertOrg ? `${displayCertOrg} · ` : ''}{cert.issue_year}
                               </p>
                             )}
@@ -739,7 +924,7 @@ export function ResumePreview() {
                           }}>
                             <p style={{ fontSize: 9, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
                             {award.award_year && (
-                              <p style={{ fontSize: 8, color: '#94a3b8', marginTop: 1 }}>
+                              <p style={{ fontSize: 9, color: '#64748b', marginTop: 1 }}>
                                 {displayAwardOrg ? `${displayAwardOrg} · ` : ''}{award.award_year}
                               </p>
                             )}
@@ -752,7 +937,16 @@ export function ResumePreview() {
 
                 {/* Languages */}
                 {resumeLanguages.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div
+                    data-section
+                    data-section-id="sidebar-languages"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      marginTop: pageSpacers['sidebar-languages'] || 0,
+                    }}
+                  >
                     <SidebarHeading>{sectionLabel('语言能力', 'Languages')}</SidebarHeading>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                       {resumeLanguages.map((lang, i) => {
@@ -788,13 +982,18 @@ export function ResumePreview() {
 
                 {/* Executive Summary */}
                 {pInfo('summary') && (
-                  <section style={{
-                    background: C.surface,
-                    border: `1px solid ${C.border}`,
-                    borderLeft: `3px solid ${C.accent}`,
-                    borderRadius: 5,
-                    padding: '14px 16px',
-                  }}>
+                  <section
+                    data-section
+                    data-section-id="main-summary"
+                    style={{
+                      background: C.surface,
+                      border: `1px solid ${C.border}`,
+                      borderLeft: `3px solid ${C.accent}`,
+                      borderRadius: 5,
+                      padding: '14px 16px',
+                      marginTop: pageSpacers['main-summary'] || 0,
+                    }}
+                  >
                     <h3 style={{
                       fontFamily: "'Noto Serif', serif",
                       fontWeight: 700,
@@ -813,7 +1012,7 @@ export function ResumePreview() {
                         className="block w-full"
                       />
                       {isBilingual && originalPersonalInfo && resumePersonalInfo?.summary && (
-                        <span style={{ display: 'block', fontSize: 10, color: '#94a3b8', marginTop: 4, lineHeight: 1.65, fontStyle: 'italic' }}>
+                        <span style={{ display: 'block', fontSize: 10, color: '#64748b', marginTop: 4, lineHeight: 1.65, fontStyle: 'italic' }}>
                           {pInfo('summary')}
                         </span>
                       )}
@@ -824,10 +1023,20 @@ export function ResumePreview() {
                 {/* Work Experience */}
                 {confirmedExps.length > 0 && (
                   <section>
-                    <MainHeading>{sectionLabel('工作经历', 'Professional Experience')}</MainHeading>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                      {confirmedExps.map((exp, expIdx) => (
-                        <div key={exp.id} style={{ position: 'relative', paddingLeft: 18 }}>
+                      {confirmedExps.map((exp, expIdx) => {
+                        const expSid = `main-exp-${exp.id}`
+                        return (
+                        <div
+                          key={exp.id}
+                          data-section
+                          data-section-id={expSid}
+                          style={{ marginTop: pageSpacers[expSid] || 0 }}
+                        >
+                          {expIdx === 0 && (
+                            <MainHeading>{sectionLabel('工作经历', 'Professional Experience')}</MainHeading>
+                          )}
+                          <div style={{ position: 'relative', paddingLeft: 18 }}>
                           {/* Timeline dot + line */}
                           <div style={{
                             position: 'absolute',
@@ -869,7 +1078,7 @@ export function ResumePreview() {
                               </p>
                             </div>
                             <span style={{
-                              fontSize: 8,
+                              fontSize: 9,
                               fontFamily: 'monospace',
                               background: C.surface,
                               border: `1px solid ${C.border}`,
@@ -1001,7 +1210,7 @@ export function ResumePreview() {
                                                       multiline
                                                       className="block"
                                                     />
-                                                    <div style={{ fontSize: 9.5, color: '#94a3b8', lineHeight: 1.6, fontStyle: 'italic' }}>{enText}</div>
+                                                    <div style={{ fontSize: 9.5, color: '#64748b', lineHeight: 1.6, fontStyle: 'italic' }}>{enText}</div>
                                                   </div>
                                                 )
                                               }
@@ -1099,15 +1308,20 @@ export function ResumePreview() {
                               </div>
                             )
                           })()}
+                          </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </section>
                 )}
 
                 {/* Education */}
                 {resumeEducation.length > 0 && (
-                  <section>
+                  <section
+                    data-section
+                    data-section-id="main-education"
+                    style={{ marginTop: pageSpacers['main-education'] || 0 }}
+                  >
                     <MainHeading>{sectionLabel('教育背景', 'Academic Background')}</MainHeading>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                       {resumeEducation.map((edu, i) => {
@@ -1127,7 +1341,7 @@ export function ResumePreview() {
                             padding: '12px 14px',
                           }}>
                             {(edu.degree || edu.major) && (
-                              <p style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.accent, marginBottom: 3 }}>
+                              <p style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: C.accent, marginBottom: 3 }}>
                                 {[zhEdu.degree].filter(Boolean).join('')}
                               </p>
                             )}
@@ -1153,7 +1367,7 @@ export function ResumePreview() {
                                 placeholder={isZH ? '学校名称' : 'School'}
                               />
                             </p>
-                            <p style={{ fontSize: 8, fontFamily: 'monospace', color: '#94a3b8', marginTop: 5 }}>
+                            <p style={{ fontSize: 9, fontFamily: 'monospace', color: '#64748b', marginTop: 5 }}>
                               {gpaRankParts.length > 0 && (
                                 <span style={{ color: C.accent }}>{gpaRankParts.join(' · ')}</span>
                               )}
@@ -1182,7 +1396,11 @@ export function ResumePreview() {
 
                 {/* Publications */}
                 {resumePublications.length > 0 && (
-                  <section>
+                  <section
+                    data-section
+                    data-section-id="main-publications"
+                    style={{ marginTop: pageSpacers['main-publications'] || 0 }}
+                  >
                     <MainHeading>{sectionLabel('学术成果', 'Publications & Research')}</MainHeading>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {resumePublications.map((pub, i) => {
@@ -1204,12 +1422,12 @@ export function ResumePreview() {
                             <div>
                               <p style={{ fontSize: 9.5, fontWeight: 700, color: C.textBright }}>{displayTitle}</p>
                               {displayVenue && (
-                                <p style={{ fontSize: 8.5, color: C.textMain, fontStyle: 'italic', marginTop: 2 }}>
+                                <p style={{ fontSize: 9, color: C.textMain, fontStyle: 'italic', marginTop: 2 }}>
                                   {displayVenue}{pub.pub_year ? `, ${pub.pub_year}` : ''}
                                 </p>
                               )}
                               {isBilingual && tPub && tPub.title !== pub.title && (
-                                <p style={{ fontSize: 8.5, color: '#94a3b8', marginTop: 2, fontStyle: 'italic' }}>{tPub.title}</p>
+                                <p style={{ fontSize: 9, color: '#64748b', marginTop: 2, fontStyle: 'italic' }}>{tPub.title}</p>
                               )}
                             </div>
                           </div>
@@ -1238,7 +1456,8 @@ export function ResumePreview() {
         <div style={{ position: 'absolute', bottom: 12, right: 16, pointerEvents: 'none', userSelect: 'none' }}>
           <span style={{ fontSize: 8, color: `${C.border}`, letterSpacing: '0.05em' }}>CareerFlow · Protected</span>
         </div>
-      </div>
+        </div>{/* ─── end #resume-paper ─── */}
+      </div>{/* ─── end #resume-paper-wrapper ─── */}
 
       {/* File input lives outside select-none so browser user-gesture chain is never broken */}
       <input

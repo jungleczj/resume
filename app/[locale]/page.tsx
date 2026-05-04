@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from '@/lib/i18n/navigation'
+import { useRouter, Link } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { NavBar } from '@/components/layout/NavBar'
 
@@ -218,19 +218,33 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="w-full py-16 px-6 md:px-12 bg-[#f5f2ff] text-sm">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto border-t border-indigo-100/20 pt-8">
-          <div className="mb-8 md:mb-0">
-            <span className="text-lg font-bold text-indigo-900 font-headline">CareerFlow AI</span>
-            <p className="mt-2 text-slate-500">{t('footer.tagline')}</p>
-          </div>
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="flex gap-8">
-              <a className="text-slate-500 hover:text-indigo-700 underline underline-offset-4 transition-all" href="#">{t('footer.about')}</a>
-              <a className="text-slate-500 hover:text-indigo-700 underline underline-offset-4 transition-all" href="#">{t('footer.privacy')}</a>
-              <a className="text-slate-500 hover:text-indigo-700 underline underline-offset-4 transition-all" href="#">{t('footer.terms')}</a>
+        <div className="max-w-7xl mx-auto border-t border-indigo-100/20 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+            <div className="mb-4 md:mb-0">
+              <span className="text-lg font-bold text-indigo-900 font-headline">CareerFlow AI</span>
+              <p className="mt-2 text-slate-500 max-w-xs">{t('footer.tagline')}</p>
+              <p className="mt-3 text-slate-400 text-xs">support@careerflow.ai</p>
             </div>
-            <p className="text-slate-500 mt-4 md:mt-0">{t('footer.copyright')}</p>
+            <div className="flex flex-col sm:flex-row gap-6 sm:gap-12">
+              <div className="flex flex-col gap-3">
+                <Link href="/pricing" className="text-slate-500 hover:text-indigo-700 transition-all">
+                  {t('footer.pricing')}
+                </Link>
+                <a href="mailto:support@careerflow.ai" className="text-slate-500 hover:text-indigo-700 transition-all">
+                  {t('footer.support')}
+                </a>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Link href="/privacy" className="text-slate-500 hover:text-indigo-700 transition-all">
+                  {t('footer.privacy')}
+                </Link>
+                <Link href="/terms" className="text-slate-500 hover:text-indigo-700 transition-all">
+                  {t('footer.terms')}
+                </Link>
+              </div>
+            </div>
           </div>
+          <p className="text-slate-400 text-xs mt-8 pt-6 border-t border-indigo-100/10">{t('footer.copyright')}</p>
         </div>
       </footer>
     </div>

@@ -31,14 +31,14 @@
       "float_label": "Optimization Complete",
       "float_score": "Score: 98/100"
     },
-    "why": {
-      "heading": "Why CareerFlow?",
-      "w1_title": "AI-Powered Optimization",
-      "w1_desc": "Our AI understands your career story and rewrites your resume to match exactly what recruiters look for.",
-      "w2_title": "Tailored to Every Job",
-      "w2_desc": "Paste any job description and instantly generate a version of your resume tailored to that role.",
-      "w3_title": "Export in Seconds",
-      "w3_desc": "Download polished, ATS-ready PDFs and Word files whenever you need them."
+    "trust": {
+      "heading": "Trusted by 10,000+ professionals",
+      "stat1_num": "50k+",
+      "stat1_label": "Resumes optimized",
+      "stat2_num": "95%",
+      "stat2_label": "Match rate",
+      "stat3_num": "2M+",
+      "stat3_label": "Jobs matched"
     },
     "features": {
       "heading": "Precision-Engineered Features",
@@ -63,6 +63,19 @@
       "s4_title": "Export & Apply",
       "s4_desc": "Get your polished resume and start applying to matched roles.",
       "cta": "Start Free Optimization"
+    },
+    "testimonials": {
+      "heading": "Trusted by Industry Leaders",
+      "subheading": "Join thousands of professionals who have accelerated their careers with AI.",
+      "t1_name": "Sarah Jenkins",
+      "t1_role": "Senior Product Designer at Google",
+      "t1_quote": "\"The AI analysis was surprisingly accurate. It picked up on nuances in my portfolio and helped me frame my experience in a way that resonated perfectly with top-tier recruiters. I landed my role at Google within weeks of using CareerFlow.\"",
+      "t2_name": "David Chen",
+      "t2_role": "Software Engineering Manager at Meta",
+      "t2_quote": "\"As someone who hires engineers, I'm impressed by the quality of resumes generated here. CareerFlow doesn't just buzzword-stuff; it builds a genuine narrative of impact. Highly recommended for any serious job seeker.\"",
+      "t3_name": "Elena Rodriguez",
+      "t3_role": "Data Scientist at Airbnb",
+      "t3_quote": "\"The job matching feature is a game-changer. It saved me hours of scrolling through irrelevant listings by showing me exactly where my skills were most in demand. The resume optimization was the cherry on top.\""
     },
     "footer": {
       "tagline": "AI resume optimization for the modern job seeker.",

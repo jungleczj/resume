@@ -124,8 +124,6 @@ export function WorkspaceClient({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false)
   const [savedRecently, setSavedRecently] = useState(false)
   const layer3TimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Photo detection bubble — path of auto-detected photo awaiting user confirmation
-  const [detectedPhotoBubble, setDetectedPhotoBubble] = useState<string | null>(null)
 
   // ── Resizable panel dividers ──────────────────────────────────────────────
   const mainRef = useRef<HTMLDivElement>(null)
@@ -211,19 +209,11 @@ export function WorkspaceClient({
       )
     }
 
-    // Photo extraction: show bubble asking user instead of auto-enabling
+    // Photo extraction: auto-show when a photo is detected from the uploaded file
     if (initialPhotoPath) {
       setPhotoPath(initialPhotoPath)
-      try {
-        const decision = localStorage.getItem(`cf_photo_decision_${anonymousId}`)
-        if (decision === '1') {
-          setShowPhoto(true) // previously accepted
-        } else if (decision !== '0') {
-          setDetectedPhotoBubble(initialPhotoPath) // first time — ask user
-        }
-      } catch {
-        setDetectedPhotoBubble(initialPhotoPath)
-      }
+      setShowPhoto(true)
+      try { localStorage.setItem(`cf_photo_${anonymousId}`, 'true') } catch { /* quota */ }
     }
 
     // Store original file info for preview
@@ -326,21 +316,15 @@ export function WorkspaceClient({
               (pd.awards as Award[]) ?? [],
               (pd.publications as Publication[]) ?? []
             )
+            // Auto-switch template language to match the uploaded resume's language
+            if (pd.content_lang === 'en') setResumeLang('en')
           }
 
-          // Photo extraction: show bubble asking user instead of auto-enabling
+          // Photo extraction: auto-show when a photo is detected from the uploaded file
           if (data.photo_extracted_path) {
-            setPhotoPath(data.photo_extracted_path)
-            try {
-              const decision = localStorage.getItem(`cf_photo_decision_${anonymousId}`)
-              if (decision === '1') {
-                setShowPhoto(true)
-              } else if (decision !== '0') {
-                setDetectedPhotoBubble(data.photo_extracted_path as string)
-              }
-            } catch {
-              setDetectedPhotoBubble(data.photo_extracted_path as string)
-            }
+            setPhotoPath(data.photo_extracted_path as string)
+            setShowPhoto(true)
+            try { localStorage.setItem(`cf_photo_${anonymousId}`, 'true') } catch { /* quota */ }
           }
 
           // Hide progress bar after brief success flash
@@ -623,35 +607,6 @@ export function WorkspaceClient({
       {/* PII detection notice — only shown when resume contains sensitive data */}
       <PIIBanner uploadId={uploadId} anonymousId={anonymousId} userId={userId} />
 
-      {/* Photo detection bubble — shown once when a photo is extracted from the resume */}
-      {detectedPhotoBubble && (
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-indigo-50 border-b border-indigo-200 text-xs z-20 flex-shrink-0">
-          <span className="material-symbols-outlined text-indigo-500 text-base flex-shrink-0">photo_camera</span>
-          <span className="text-indigo-800 font-medium flex-1">
-            {t('workspace.photo_detected.message')}
-          </span>
-          <button
-            onClick={() => {
-              setShowPhoto(true)
-              setDetectedPhotoBubble(null)
-              try { localStorage.setItem(`cf_photo_decision_${anonymousId}`, '1') } catch { /* quota */ }
-              trackEvent('photo_toggled', { anonymous_id: anonymousId, state: 'on', trigger: 'detection_bubble' })
-            }}
-            className="px-3 py-1 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors"
-          >
-            {t('workspace.photo_detected.use')}
-          </button>
-          <button
-            onClick={() => {
-              setDetectedPhotoBubble(null)
-              try { localStorage.setItem(`cf_photo_decision_${anonymousId}`, '0') } catch { /* quota */ }
-            }}
-            className="px-3 py-1 text-indigo-700 hover:bg-indigo-100 rounded-lg font-bold transition-colors"
-          >
-            {t('workspace.photo_detected.ignore')}
-          </button>
-        </div>
-      )}
 
       {/* Crash recovery banner */}
       {draftRecoveryAvailable && (

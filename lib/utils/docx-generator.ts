@@ -16,6 +16,7 @@ import {
   convertMillimetersToTwip,
 } from 'docx'
 import type { WorkExperience, ResumeEducation, ResumeSkillGroup, Certification, SpokenLanguage, Award, Publication } from '../types/domain'
+import { COBALT_HEX } from '../styles/resume-theme'
 
 interface DOCXData {
   name: string
@@ -39,14 +40,14 @@ interface DOCXData {
   lang: 'zh' | 'en'
 }
 
-// ── Cobalt palette (matches ResumePreview.tsx exactly) ───────────────────────
-const ACCENT      = '2563eb'
-const TEXT_BRIGHT  = '0f172a'
-const TEXT_MAIN    = '334155'
-const TEXT_MUTED   = '64748b'
-const MUTED_LIGHT  = '94a3b8'
-const SURFACE      = 'f8fafc'
-const BORDER_COLOR = 'e2e8f0'
+// ── Cobalt palette (single source: lib/styles/resume-theme.ts) ───────────────
+const ACCENT      = COBALT_HEX.accent
+const TEXT_BRIGHT  = COBALT_HEX.textBright
+const TEXT_MAIN    = COBALT_HEX.textMain
+const TEXT_MUTED   = COBALT_HEX.textMuted
+const MUTED_LIGHT  = COBALT_HEX.mutedLight
+const SURFACE      = COBALT_HEX.surface
+const BORDER_COLOR = COBALT_HEX.border
 
 // ── Font helpers ─────────────────────────────────────────────────────────────
 // DOCX sizes are in half-points (1 pt = 2 half-points)
@@ -54,7 +55,9 @@ const BORDER_COLOR = 'e2e8f0'
 const hp = (px: number) => Math.round(px * 1.5)
 
 // ── No-border preset (reused for table cells) ───────────────────────────────
-const NONE_BORDER = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' }
+// NIL explicitly suppresses borders at the highest OOXML priority, preventing
+// any inherited table-style borders from showing (stronger than NONE).
+const NONE_BORDER = { style: BorderStyle.NIL, size: 0, color: 'FFFFFF' }
 const CELL_BORDERS = {
   top: NONE_BORDER, bottom: NONE_BORDER, left: NONE_BORDER, right: NONE_BORDER,
 }
@@ -81,6 +84,8 @@ function sidebarHeading(label: string): Paragraph {
       }),
     ],
     spacing: { before: 200, after: 80 },
+    keepNext: true,   // heading stays with following content (prevents orphan heading at page bottom)
+    keepLines: true,
     border: {
       left: { style: BorderStyle.SINGLE, size: 6, color: ACCENT, space: 4 },
     },
@@ -100,6 +105,8 @@ function mainHeading(label: string): Paragraph {
       }),
     ],
     spacing: { before: 200, after: 120 },
+    keepNext: true,   // heading stays with following content
+    keepLines: true,
     border: {
       bottom: { style: BorderStyle.SINGLE, size: 2, color: BORDER_COLOR, space: 4 },
     },
@@ -205,7 +212,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
     leftChildren.push(sidebarHeading(lbl('核心技能', 'Core Skills')))
 
     for (const group of data.skills) {
-      // Category label
+      // Category label — bound to its skill items
       leftChildren.push(
         new Paragraph({
           children: [
@@ -217,6 +224,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
             }),
           ],
           spacing: { before: 60, after: 30 },
+          keepNext: true,
+          keepLines: true,
         }),
       )
       // Skill items inline
@@ -235,7 +244,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
         }
       })
       leftChildren.push(
-        new Paragraph({ children: skillRuns, spacing: { after: 60 } }),
+        new Paragraph({ children: skillRuns, spacing: { after: 60 }, keepLines: true }),
       )
     }
     leftChildren.push(new Paragraph({ children: [], spacing: { after: 40 } }))
@@ -263,6 +272,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
         new Paragraph({
           children: [new TextRun({ text: item.title, bold: true, size: hp(9), color: TEXT_BRIGHT })],
           spacing: { after: item.sub ? 10 : 60 },
+          keepNext: !!item.sub,
+          keepLines: true,
           shading: { type: ShadingType.CLEAR, fill: SURFACE },
         }),
       )
@@ -271,6 +282,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
           new Paragraph({
             children: [new TextRun({ text: item.sub, size: hp(8), color: MUTED_LIGHT })],
             spacing: { after: 60 },
+            keepLines: true,
           }),
         )
       }
@@ -295,6 +307,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
             new TextRun({ text: `  (${prof})`, size: hp(9), color: TEXT_MUTED }),
           ],
           spacing: { after: 40 },
+          keepLines: true,
           shading: { type: ShadingType.CLEAR, fill: SURFACE },
         }),
       )
@@ -318,6 +331,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
           }),
         ],
         spacing: { before: 0, after: 60 },
+        keepNext: true,
+        keepLines: true,
         border: {
           left: { style: BorderStyle.SINGLE, size: 8, color: ACCENT, space: 6 },
         },
@@ -334,6 +349,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
           }),
         ],
         spacing: { after: 160 },
+        keepLines: true,
         border: {
           left: { style: BorderStyle.SINGLE, size: 8, color: ACCENT, space: 6 },
         },
@@ -354,13 +370,15 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
         return sy ? `${sy}${el ? ` – ${el}` : ''}` : el
       })()
 
-      // Job title
+      // Job title — keepNext binds it to company; together they bind to the first achievement
       rightChildren.push(
         new Paragraph({
           children: [
             new TextRun({ text: exp.job_title || '', bold: true, size: hp(12), color: TEXT_BRIGHT }),
           ],
           spacing: { before: 60, after: 20 },
+          keepNext: true,
+          keepLines: true,
         }),
       )
 
@@ -375,6 +393,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
           ],
           tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
           spacing: { after: 60 },
+          keepNext: true,
+          keepLines: true,
         }),
       )
 
@@ -395,6 +415,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
                 new TextRun({ text: `▸ ${group.projectName}`, size: hp(10), color: ACCENT, bold: true }),
               ],
               spacing: { before: 60, after: 30 },
+              keepNext: true,
+              keepLines: true,
             }),
           )
         }
@@ -407,11 +429,12 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
             new Paragraph({
               children: [
                 new TextRun({ text: '/ ', bold: true, size: hp(11), color: ACCENT }),
-                new TextRun({ text: tierChar + ' ', size: hp(7), color: tierColor }),
+                new TextRun({ text: tierChar + ' ', size: hp(5), color: tierColor }),
                 new TextRun({ text: ach.text, size: hp(10.5), color: TEXT_MAIN }),
               ],
               spacing: { after: 30 },
               indent: { left: convertMillimetersToTwip(2) },
+              keepLines: true,   // single bullet shouldn't split mid-line across pages
             }),
           )
         }
@@ -458,6 +481,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
                 new TextRun({ text: edu.degree.toUpperCase(), bold: true, size: hp(8), color: ACCENT }),
               ],
               spacing: { after: 20 },
+              keepNext: true,
+              keepLines: true,
             }),
           )
         }
@@ -469,6 +494,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
               new TextRun({ text: edu.major || edu.school, bold: true, size: hp(11), color: TEXT_BRIGHT }),
             ],
             spacing: { after: 20 },
+            keepNext: true,
+            keepLines: true,
           }),
         )
         if (edu.major && edu.school) {
@@ -476,6 +503,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
             new Paragraph({
               children: [new TextRun({ text: edu.school, size: hp(9.5), color: TEXT_MAIN })],
               spacing: { after: 30 },
+              keepNext: true,
+              keepLines: true,
             }),
           )
         }
@@ -490,7 +519,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
           bottomParts.push(new TextRun({ text: yearText, size: hp(8), color: MUTED_LIGHT, font: 'Courier New' }))
         }
         if (bottomParts.length > 0) {
-          cellParagraphs.push(new Paragraph({ children: bottomParts, spacing: { after: 20 } }))
+          cellParagraphs.push(new Paragraph({ children: bottomParts, spacing: { after: 20 }, keepLines: true }))
         }
 
         cells.push(
@@ -520,8 +549,9 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
       }
 
       // Wrap the pair in a mini table (inside the right column)
+      // cantSplit ensures each education-pair row stays on one page (typically small enough).
       const eduRow = new Table({
-        rows: [new TableRow({ children: cells })],
+        rows: [new TableRow({ children: cells, cantSplit: true })],
         width: { size: 100, type: WidthType.PERCENTAGE },
         borders: {
           top: NONE_BORDER, bottom: NONE_BORDER,
@@ -552,6 +582,8 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
             new TextRun({ text: pub.title, bold: true, size: hp(9.5), color: TEXT_BRIGHT }),
           ],
           spacing: { after: venueText ? 10 : 60 },
+          keepNext: !!venueText,
+          keepLines: true,
         }),
       )
       if (venueText) {
@@ -561,6 +593,7 @@ export async function generateDOCX(data: DOCXData): Promise<Blob> {
               new TextRun({ text: '     ' + venueText, size: hp(8.5), color: TEXT_MAIN, italics: true }),
             ],
             spacing: { after: 60 },
+            keepLines: true,
           }),
         )
       }

@@ -96,16 +96,29 @@ export function ExportModal({
 
       const paper = document.getElementById('resume-paper') as HTMLElement | null
       if (!paper) return null
+      // The scale transform is now on the wrapper div, not the paper itself
+      const wrapper = document.getElementById('resume-paper-wrapper') as HTMLElement | null
 
-      const origTransform   = paper.style.transform
-      const origMarginBottom = paper.style.marginBottom
-      const origBoxShadow   = paper.style.boxShadow
+      const origWrapperTransform    = wrapper?.style.transform ?? ''
+      const origWrapperMarginBottom = wrapper?.style.marginBottom ?? ''
+      const origBoxShadow           = paper.style.boxShadow
 
-      paper.style.transform    = 'none'
-      paper.style.marginBottom = '0'
-      paper.style.boxShadow    = 'none'
+      if (wrapper) {
+        wrapper.style.transform    = 'none'
+        wrapper.style.marginBottom = '0'
+      }
+      paper.style.boxShadow = 'none'
 
-      // Let the browser reflow and ensure fonts are ready before capture
+      // Explicitly load required fonts to avoid Google Fonts async race condition
+      await Promise.race([
+        Promise.all([
+          document.fonts.load('900 14px "Noto Serif"'),
+          document.fonts.load('700 14px "Noto Serif"'),
+          document.fonts.load('400 14px "Inter"'),
+          document.fonts.load('600 14px "Inter"'),
+        ]),
+        new Promise(resolve => setTimeout(resolve, 2000)),
+      ])
       await document.fonts.ready
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
 
@@ -132,8 +145,14 @@ export function ExportModal({
         if (totalH <= A4_H) {
           pdf.addImage(canvas, 'PNG', 0, 0, A4_W, totalH)
         } else {
-          // Multi-page: slice the canvas into A4-height strips
+          // Multi-page: slice the canvas into A4-height strips, stepping by PAGE_H + GAP
+          // so the GAP region (where the preview shows the gray separator) is skipped.
+          // Preview's spacer logic ensures every section starts cleanly at a page boundary.
           const pageHeightPx = Math.floor(A4_H / mmPerPx)
+          const PAGE_GAP_LOGICAL = 20  // must match PAGE_GAP in ResumePreview
+          const scaleRatio = canvas.width / 794
+          const gapPx = Math.round(PAGE_GAP_LOGICAL * scaleRatio)
+          const stepPx = pageHeightPx + gapPx
           let offsetY = 0
           let pageNum = 0
           while (offsetY < canvas.height) {
@@ -145,16 +164,18 @@ export function ExportModal({
             const ctx = sliceCanvas.getContext('2d')!
             ctx.drawImage(canvas, 0, -offsetY)
             pdf.addImage(sliceCanvas, 'PNG', 0, 0, A4_W, sliceH * mmPerPx)
-            offsetY += pageHeightPx
+            offsetY += stepPx
             pageNum++
           }
         }
 
         return pdf.output('blob')
       } finally {
-        paper.style.transform    = origTransform
-        paper.style.marginBottom = origMarginBottom
-        paper.style.boxShadow    = origBoxShadow
+        if (wrapper) {
+          wrapper.style.transform    = origWrapperTransform
+          wrapper.style.marginBottom = origWrapperMarginBottom
+        }
+        paper.style.boxShadow = origBoxShadow
       }
     } catch (e) {
       console.error('[ExportModal] PDF capture failed:', e)

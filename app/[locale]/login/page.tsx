@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter } from '@/lib/i18n/navigation'
+import { useRouter, Link } from '@/lib/i18n/navigation'
 import { useTranslations } from 'next-intl'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -137,9 +137,9 @@ function LoginContent() {
           <footer className="mt-8 text-center lg:text-left">
             <p className="text-xs text-[#464555] leading-relaxed">
               {t('legal_prefix')}{' '}
-              <a className="underline font-medium hover:text-[#3525cd] transition-colors" href="#">{t('privacy')}</a>{' '}
+              <Link className="underline font-medium hover:text-[#3525cd] transition-colors" href="/privacy">{t('privacy')}</Link>{' '}
               {t('legal_and')}{' '}
-              <a className="underline font-medium hover:text-[#3525cd] transition-colors" href="#">{t('terms')}</a>.
+              <Link className="underline font-medium hover:text-[#3525cd] transition-colors" href="/terms">{t('terms')}</Link>.
             </p>
           </footer>
         </div>

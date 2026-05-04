@@ -8,9 +8,9 @@
 @layer base {
   :root {
     --brand: #4F46E5;
-    --achievement-tier1: #16A34A;
-    --achievement-tier2: #CA8A04;
-    --achievement-tier3: #DC2626;
+    --achievement-tier1: #10b981;
+    --achievement-tier2: #f59e0b;
+    --achievement-tier3: #f87171;
   }
 
   body {

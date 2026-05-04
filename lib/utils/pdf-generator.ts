@@ -3,6 +3,7 @@ import fontkit from '@pdf-lib/fontkit'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import type { WorkExperience, ResumeEducation, ResumeSkillGroup, Certification, SpokenLanguage, Award, Publication } from '../types/domain'
+import { COBALT_RGB } from '../styles/resume-theme'
 
 interface PDFData {
   name: string
@@ -37,14 +38,14 @@ const PH = 842
 // ── Margins (HTML: padding 36 px sides) ──────────────────────────────────────
 const MX = Math.round(36 * S)           // 27
 
-// ── Cobalt palette (matches ResumePreview.tsx) ───────────────────────────────
-const ACCENT      = rgb(0.145, 0.388, 0.922)  // #2563eb
-const TEXT_MAIN   = rgb(0.204, 0.255, 0.341)  // #334155
-const TEXT_BRIGHT = rgb(0.059, 0.090, 0.165)  // #0f172a
-const TEXT_MUTED  = rgb(0.392, 0.455, 0.545)  // #64748b
-const SURFACE     = rgb(0.973, 0.980, 0.988)  // #f8fafc
-const BORDER      = rgb(0.886, 0.910, 0.941)  // #e2e8f0
-const MUTED_LIGHT = rgb(0.580, 0.639, 0.722)  // #94a3b8
+// ── Cobalt palette (single source: lib/styles/resume-theme.ts) ───────────────
+const ACCENT      = rgb(...COBALT_RGB.accent)
+const TEXT_MAIN   = rgb(...COBALT_RGB.textMain)
+const TEXT_BRIGHT = rgb(...COBALT_RGB.textBright)
+const TEXT_MUTED  = rgb(...COBALT_RGB.textMuted)
+const SURFACE     = rgb(...COBALT_RGB.surface)
+const BORDER      = rgb(...COBALT_RGB.border)
+const MUTED_LIGHT = rgb(...COBALT_RGB.mutedLight)
 
 // ── Two-column layout (HTML: sidebar 32 %, paddingRight 24 px) ───────────────
 const CONTENT_W    = PW - 2 * MX                          // ~541
